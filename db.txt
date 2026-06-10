@@ -177,6 +177,26 @@
       ],
       "createdAt": "2026-06-10T15:50:42.308Z",
       "id": "_glenfljdj"
+    },
+    {
+      "name": "SEISMIC",
+      "code": "PR-005",
+      "description": "",
+      "status": "in-progress",
+      "priority": "high",
+      "startDate": "2026-05-20",
+      "endDate": "2026-07-24",
+      "budget": 0,
+      "spent": 0,
+      "progress": 68,
+      "category": "IT",
+      "client": "7",
+      "manager": "u1",
+      "team": [
+        "u1"
+      ],
+      "createdAt": "2026-06-10T16:08:49.149Z",
+      "id": "_wfisnc3vw"
     }
   ],
   "tasks": [
