@@ -455,17 +455,17 @@
     },
     {
       "id": "tm4",
-      "name": "Pedro Reyes",
-      "role": "DevOps Engineer",
+      "name": "Richard ravago",
+      "role": "Engineer",
       "department": "Engineering",
-      "email": "pedro@protrack.com",
+      "email": "pedro@protrack",
       "skills": [
-        "Docker",
-        "AWS",
-        "CI/CD"
+        "AUTOCAD",
+        "communication skills",
+        "computer literature"
       ],
       "userId": null,
-      "avatar": "P"
+      "avatar": "R"
     }
   ],
   "notifications": [
