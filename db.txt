@@ -170,26 +170,6 @@
       "createdAt": "2024-01-05"
     },
     {
-      "name": "Jdjdjdjd",
-      "code": "PR-009",
-      "description": "",
-      "status": "completed",
-      "priority": "high",
-      "startDate": "2026-05-21",
-      "endDate": "2026-06-26",
-      "budget": 0,
-      "spent": 0,
-      "progress": 0,
-      "category": "",
-      "client": "4",
-      "manager": "u1",
-      "team": [
-        "u1"
-      ],
-      "createdAt": "2026-06-10T15:50:42.308Z",
-      "id": "_glenfljdj"
-    },
-    {
       "name": "SEISMIC",
       "code": "PR-005",
       "description": "",
