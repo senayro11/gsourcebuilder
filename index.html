@@ -825,8 +825,8 @@ const LOCAL_DB_KEY = 'protrack_db_v1';
 // ================================================================
 const BUILT_IN_GH = {
   token: '',   // e.g. 'ghp_xxxxxxxxxxxxxxxxxxxx'
-  owner: 'senayro11',   // e.g. 'senayro11'
-  repo:  'gsourcebuilder',   // e.g. 'gsourcebuilder'
+  owner: '',   // e.g. 'senayro11'
+  repo: '',   // e.g. 'gsourcebuilder'
   branch: 'main'
 };
 // ================================================================
@@ -1716,8 +1716,8 @@ function bakeConfigToFile() {
       // Replace the BUILT_IN_GH block with filled values
       const oldBlock = `const BUILT_IN_GH = {
   token: '',   // e.g. 'ghp_xxxxxxxxxxxxxxxxxxxx'
-  owner: 'senayro11',   // e.g. 'senayro11'
-  repo:  'gsourcebuilder',   // e.g. 'gsourcebuilder'
+  owner: '',   // e.g. 'senayro11'
+  repo:  '',   // e.g. 'gsourcebuilder'
   branch: 'main'
 };`;
       const newBlock = `const BUILT_IN_GH = {
