@@ -33,12 +33,12 @@
     "active": true
   },
   {
-    "name": "pogi",
-    "username": "pogiako",
+    "name": "Red Matienzo",
+    "username": "redmatienzo",
     "role": "admin",
     "email": "admin@local",
     "department": "IT",
-    "active": false,
+    "active": true,
     "password": "1234",
     "createdAt": "2026-06-10T17:27:51.673Z",
     "id": "_b53hyy52t"
