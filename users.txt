@@ -1,7 +1,7 @@
 [
   {
     "id": "u1",
-    "username": "Ville Ryane",
+    "username": "Ville",
     "password": "1234",
     "name": "Ville Ryane San Esteban",
     "role": "admin",
