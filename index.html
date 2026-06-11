@@ -824,9 +824,9 @@ const LOCAL_DB_KEY = 'protrack_db_v1';
 // Lahat ng devices ay automatic na mag-sync pagkatapos nito
 // ================================================================
 const BUILT_IN_GH = {
-  token: '',   // e.g. 'ghp_xxxxxxxxxxxxxxxxxxxx'
-  owner: '',   // e.g. 'senayro11'
-  repo:  '',   // e.g. 'gsourcebuilder'
+  token: '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',   // e.g. 'ghp_xxxxxxxxxxxxxxxxxxxx'
+  owner: 'senayro11',   // e.g. 'senayro11'
+  repo:  'gsourcebuilder',   // e.g. 'gsourcebuilder'
   branch: 'main'
 };
 // ================================================================
@@ -1715,9 +1715,9 @@ function bakeConfigToFile() {
     .then(src => {
       // Replace the BUILT_IN_GH block with filled values
       const oldBlock = `const BUILT_IN_GH = {
-  token: '',   // e.g. 'ghp_xxxxxxxxxxxxxxxxxxxx'
-  owner: '',   // e.g. 'senayro11'
-  repo:  '',   // e.g. 'gsourcebuilder'
+  token: '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',   // e.g. 'ghp_xxxxxxxxxxxxxxxxxxxx'
+  owner: 'senayro11',   // e.g. 'senayro11'
+  repo:  'gsourcebuilder',   // e.g. 'gsourcebuilder'
   branch: 'main'
 };`;
       const newBlock = `const BUILT_IN_GH = {
