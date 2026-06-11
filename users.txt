@@ -1,12 +1,12 @@
 [
   {
     "id": "u1",
-    "username": "admin",
-    "password": "admin123",
-    "name": "Admin User",
+    "username": "Ville Ryane",
+    "password": "1234",
+    "name": "Ville Ryane San Esteban",
     "role": "admin",
-    "email": "admin@protrack.com",
-    "department": "Management",
+    "email": "admin@protrack",
+    "department": "Owner",
     "createdAt": "2024-01-01",
     "active": true
   },
