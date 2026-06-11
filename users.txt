@@ -12,11 +12,11 @@
   },
   {
     "id": "u2",
-    "username": "user",
-    "password": "user123",
-    "name": "Juan dela Cruz",
+    "username": "Richard",
+    "password": "1234",
+    "name": "Richard ravago",
     "role": "user",
-    "email": "juan@protrack.com",
+    "email": "richard@protrack",
     "department": "Engineering",
     "createdAt": "2024-01-15",
     "active": true
