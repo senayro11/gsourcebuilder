@@ -440,29 +440,15 @@
       "avatar": "A"
     },
     {
-      "id": "tm2",
-      "name": "Juan dela Cruz",
-      "role": "Full Stack Developer",
-      "department": "Engineering",
-      "email": "juan@protrack.com",
-      "skills": [
-        "React",
-        "Node.js",
-        "Python"
-      ],
-      "userId": "u2",
-      "avatar": "J"
-    },
-    {
       "id": "tm3",
-      "name": "Maria Santos",
-      "role": "UI/UX Designer",
-      "department": "Design",
-      "email": "maria@protrack.com",
+      "name": "Red Matienzo",
+      "role": "Assistant",
+      "department": "Field",
+      "email": "red@protrack",
       "skills": [
-        "Figma",
-        "CSS",
-        "User Research"
+        "Electronic tech",
+        "electrical installer",
+        "good communication"
       ],
       "userId": null,
       "avatar": "M"
