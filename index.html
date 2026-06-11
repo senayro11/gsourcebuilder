@@ -824,7 +824,7 @@ const LOCAL_DB_KEY = 'protrack_db_v1';
 // Lahat ng devices ay automatic na mag-sync pagkatapos nito
 // ================================================================
 const BUILT_IN_GH = {
-  token: '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',   // e.g. 'ghp_xxxxxxxxxxxxxxxxxxxx'
+  token: '',   // e.g. 'ghp_xxxxxxxxxxxxxxxxxxxx'
   owner: 'senayro11',   // e.g. 'senayro11'
   repo:  'gsourcebuilder',   // e.g. 'gsourcebuilder'
   branch: 'main'
@@ -1715,7 +1715,7 @@ function bakeConfigToFile() {
     .then(src => {
       // Replace the BUILT_IN_GH block with filled values
       const oldBlock = `const BUILT_IN_GH = {
-  token: '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',   // e.g. 'ghp_xxxxxxxxxxxxxxxxxxxx'
+  token: '',   // e.g. 'ghp_xxxxxxxxxxxxxxxxxxxx'
   owner: 'senayro11',   // e.g. 'senayro11'
   repo:  'gsourcebuilder',   // e.g. 'gsourcebuilder'
   branch: 'main'
