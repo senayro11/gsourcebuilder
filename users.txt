@@ -38,7 +38,7 @@
     "role": "admin",
     "email": "admin@local",
     "department": "IT",
-    "active": true,
+    "active": false,
     "password": "1234",
     "createdAt": "2026-06-10T17:27:51.673Z",
     "id": "_b53hyy52t"
