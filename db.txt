@@ -427,14 +427,14 @@
   "team": [
     {
       "id": "tm1",
-      "name": "Admin User",
+      "name": "Ville Ryane",
       "role": "Project Manager",
-      "department": "Management",
-      "email": "admin@protrack.com",
+      "department": "IT Department",
+      "email": "v.ryane59@gmail.com",
       "skills": [
-        "Management",
         "Planning",
-        "Budgeting"
+        "Arduino programming",
+        "C++"
       ],
       "userId": "u1",
       "avatar": "A"
