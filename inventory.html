@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="fil">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory — Enterprise</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .stock-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .stock-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <nav class="navbar">
+    <div class="navbar-brand" id="navbar-brand">🏢 Enterprise System</div>
+    <div class="navbar-right">
+      <div class="user-chip">
+        <div class="avatar" id="user-avatar">A</div>
+        <div class="user-info"><span class="name" id="user-name"></span><span class="role" id="user-role"></span></div>
+      </div>
+      <a href="dashboard.html" class="btn btn-ghost btn-sm">🏠</a>
+      <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">🚪</button>
+    </div>
+  </nav>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main">
+    <div class="stats-grid" id="inv-stats"></div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="tab-products">📦 Products</div>
+      <div class="tab" data-tab="tab-movements" data-perm="reports">📊 Stock Movements</div>
+      <div class="tab" data-tab="tab-lowstock">⚠️ Low Stock</div>
+    </div>
+
+    <!-- Products -->
+    <div class="tab-pane active" id="tab-products">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div style="display:flex;gap:8px;flex:1">
+          <div class="search-bar" style="max-width:280px">
+            <span>🔍</span>
+            <input type="text" id="prod-search" placeholder="Hanapin produkto..." oninput="filterProds()">
+          </div>
+          <select id="cat-filter" style="padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)" onchange="filterProds()">
+            <option value="">All Categories</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="loadAll()">🔄</button>
+          <button class="btn btn-primary btn-sm" onclick="openAdjust(null,'restock')" data-perm="adjust">📥 Restock</button>
+          <button class="btn btn-primary btn-sm" onclick="openAddProd()" data-perm="create">+ Produkto</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Stock</th><th>Price</th><th>Cost</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="prod-tbody"></tbody>
+          </table>
+        </div>
+        <div id="prod-pagination"></div>
+      </div>
+    </div>
+
+    <!-- Movements -->
+    <div class="tab-pane" id="tab-movements">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div class="search-bar" style="max-width:280px">
+          <span>🔍</span>
+          <input type="text" id="mov-search" placeholder="Hanapin..." oninput="filterMov()">
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadMovements()">🔄 Refresh</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Product</th><th>Type</th><th>Qty Change</th><th>Before</th><th>After</th><th>Reason</th><th>By</th></tr></thead>
+            <tbody id="mov-tbody"></tbody>
+          </table>
+        </div>
+        <div id="mov-pagination"></div>
+      </div>
+    </div>
+
+    <!-- Low Stock -->
+    <div class="tab-pane" id="tab-lowstock">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">⚠️ Low Stock Alert (below 50 units)</span>
+          <button class="btn btn-ghost btn-sm" onclick="loadLowStock()">🔄 Refresh</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Product</th><th>Category</th><th>Current Stock</th><th>Unit</th><th>Action</th></tr></thead>
+            <tbody id="low-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Add/Edit Product Modal -->
+<div class="modal-backdrop" id="prod-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="prod-modal-title">+ Dagdag Produkto</span>
+      <button class="modal-close" onclick="UI.closeModal('prod-modal')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Product Name *</label><input type="text" id="pf-name"></div>
+      <div class="form-group"><label>Category *</label><input type="text" id="pf-cat"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Selling Price *</label><input type="number" id="pf-price" step="0.01"></div>
+      <div class="form-group"><label>Cost Price</label><input type="number" id="pf-cost" step="0.01"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Initial Stock</label><input type="number" id="pf-stock" value="0"></div>
+      <div class="form-group"><label>Unit</label><input type="text" id="pf-unit" placeholder="piece, kg, bottle..."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Barcode</label><input type="text" id="pf-barcode"></div>
+      <div class="form-group"><label>Status</label><select id="pf-status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('prod-modal')">Kanselahin</button>
+      <button class="btn btn-primary" onclick="saveProd()">I-save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Adjust/Restock Modal -->
+<div class="modal-backdrop" id="adjust-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title" id="adj-title">📥 Stock Adjustment</span>
+      <button class="modal-close" onclick="UI.closeModal('adjust-modal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label>Produkto</label>
+      <select id="adj-product"></select>
+    </div>
+    <div class="form-group">
+      <label>Type</label>
+      <select id="adj-type">
+        <option value="restock">📥 Restock (add stock)</option>
+        <option value="adjustment">🔧 Adjustment (correct count)</option>
+        <option value="damage">💔 Damage / Loss (deduct)</option>
+        <option value="return">↩️ Return to supplier</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Quantity</label>
+      <input type="number" id="adj-qty" min="1" value="1">
+    </div>
+    <div class="form-group">
+      <label>Reason / Notes</label>
+      <input type="text" id="adj-reason" placeholder="e.g. Supplier delivery, Stock count correction...">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('adjust-modal')">Kanselahin</button>
+      <button class="btn btn-primary" onclick="saveAdjust()">I-apply</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<div id="loading-overlay" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
+
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script>
+  Auth.loadToken();
+  const user = Auth.guard('inventory');
+  if (!user) throw 0;
+  UI.buildNavbar(user, 'Inventory');
+  UI.buildSidebar(user, 'inventory');
+  Auth.applyUIPermissions(user, 'inventory');
+  UI.initTabs();
+
+  let allProds = [], allMovs = [], editProdId = null, prodPage = 1, movPage = 1;
+
+  async function loadAll() {
+    UI.loading(true, 'Loading inventory...');
+    try {
+      allProds = await DB.read('productsDB', true);
+      renderStats();
+      renderProds(allProds, 1);
+      buildCatFilter();
+      loadLowStock();
+    } catch(e) { UI.toast('Error: '+e.message,'error'); }
+    UI.loading(false);
+  }
+
+  function renderStats() {
+    const active = allProds.filter(p => p.status==='active');
+    const lowStock = active.filter(p => parseInt(p.stock) < 50 && parseInt(p.stock) > 0);
+    const outOfStock = active.filter(p => parseInt(p.stock) <= 0);
+    const totalVal = active.reduce((s,p) => s + parseFloat(p.cost||0)*parseInt(p.stock||0), 0);
+    document.getElementById('inv-stats').innerHTML = `
+      <div class="stat-card blue"><div class="stat-label">Total Products</div><div class="stat-value">${active.length}</div></div>
+      <div class="stat-card yellow"><div class="stat-label">Low Stock</div><div class="stat-value">${lowStock.length}</div><div class="stat-sub">below 50 units</div></div>
+      <div class="stat-card red"><div class="stat-label">Out of Stock</div><div class="stat-value">${outOfStock.length}</div></div>
+      <div class="stat-card green"><div class="stat-label">Inventory Value</div><div class="stat-value" style="font-size:20px">${UI.peso(totalVal)}</div><div class="stat-sub">at cost price</div></div>`;
+  }
+
+  function buildCatFilter() {
+    const cats = ['', ...new Set(allProds.map(p=>p.category))];
+    const sel = document.getElementById('cat-filter');
+    sel.innerHTML = cats.map(c => `<option value="${c}">${c||'All Categories'}</option>`).join('');
+  }
+
+  function filterProds() {
+    const q   = document.getElementById('prod-search').value.toLowerCase();
+    const cat = document.getElementById('cat-filter').value;
+    let filtered = allProds;
+    if (q) filtered = filtered.filter(p => p.name.toLowerCase().includes(q));
+    if (cat) filtered = filtered.filter(p => p.category === cat);
+    renderProds(filtered, 1);
+  }
+
+  function renderProds(rows, page) {
+    prodPage = page;
+    const paged = UI.paginate(rows, page, 12);
+    document.getElementById('prod-tbody').innerHTML = paged.rows.map(p => {
+      const stock = parseInt(p.stock);
+      const maxStock = 500;
+      const pct = Math.min(100, (stock/maxStock)*100);
+      const barColor = stock <= 0 ? '#ef4444' : stock < 50 ? '#f59e0b' : '#10b981';
+      return `<tr>
+        <td class="mono">${p.id}</td>
+        <td><strong>${p.name}</strong>${p.barcode ? `<br><small class="mono" style="color:var(--text3)">${p.barcode}</small>` : ''}</td>
+        <td>${p.category}</td>
+        <td>
+          <strong>${stock}</strong> ${p.unit}
+          <div class="stock-bar"><div class="stock-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+        </td>
+        <td>${UI.peso(p.price)}</td>
+        <td>${UI.peso(p.cost)}</td>
+        <td>${UI.statusBadge(p.status)}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="openAdjust('${p.id}','restock')" data-perm="adjust" title="Restock">📥</button>
+          <button class="btn btn-ghost btn-sm" onclick="editProd('${p.id}')" data-perm="edit" title="Edit">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="archiveProd('${p.id}')" data-perm="delete" title="Archive">🗑</button>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang produkto</td></tr>';
+    UI.renderPagination('prod-pagination', paged, p => renderProds(rows, p));
+    Auth.applyUIPermissions(user, 'inventory');
+  }
+
+  // Add/Edit product
+  function openAddProd() { editProdId=null; ['pf-name','pf-cat','pf-price','pf-cost','pf-barcode'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''}); document.getElementById('pf-stock').value='0'; document.getElementById('pf-unit').value=''; document.getElementById('pf-status').value='active'; document.getElementById('prod-modal-title').textContent='+ Dagdag Produkto'; UI.openModal('prod-modal'); }
+  function editProd(id) {
+    const p = allProds.find(x=>x.id===id); if(!p) return;
+    editProdId=id;
+    document.getElementById('pf-name').value=p.name; document.getElementById('pf-cat').value=p.category;
+    document.getElementById('pf-price').value=p.price; document.getElementById('pf-cost').value=p.cost;
+    document.getElementById('pf-stock').value=p.stock; document.getElementById('pf-unit').value=p.unit;
+    document.getElementById('pf-barcode').value=p.barcode||''; document.getElementById('pf-status').value=p.status;
+    document.getElementById('prod-modal-title').textContent='✏️ I-edit ang Produkto';
+    UI.openModal('prod-modal');
+  }
+  async function saveProd() {
+    const name=document.getElementById('pf-name').value.trim(), price=document.getElementById('pf-price').value;
+    if(!name||!price){UI.toast('Punan ang required fields','warning');return;}
+    UI.loading(true,'Nagse-save...');
+    try {
+      if(editProdId) {
+        await DB.update('productsDB',r=>r.id===editProdId,{name,category:document.getElementById('pf-cat').value,price,cost:document.getElementById('pf-cost').value,stock:document.getElementById('pf-stock').value,unit:document.getElementById('pf-unit').value,barcode:document.getElementById('pf-barcode').value,status:document.getElementById('pf-status').value});
+        UI.toast('Na-update ✅','success');
+      } else {
+        const all=await DB.read('productsDB',true);
+        await DB.insert('productsDB',{id:DB.nextId(all,'id','P'),name,category:document.getElementById('pf-cat').value,price,cost:document.getElementById('pf-cost').value,stock:document.getElementById('pf-stock').value,unit:document.getElementById('pf-unit').value,barcode:document.getElementById('pf-barcode').value,status:document.getElementById('pf-status').value,created_at:new Date().toISOString().split('T')[0]});
+        UI.toast('Naidagdag ✅','success');
+      }
+      UI.closeModal('prod-modal'); await loadAll();
+    } catch(e){UI.toast('Error: '+e.message,'error');}
+    UI.loading(false);
+  }
+  function archiveProd(id) {
+    UI.confirm('I-archive ang produktong ito?', async()=>{
+      UI.loading(true);
+      try{await DB.update('productsDB',r=>r.id===id,{status:'inactive'});UI.toast('Na-archive','success');await loadAll();}
+      catch(e){UI.toast('Error: '+e.message,'error');}
+      UI.loading(false);
+    });
+  }
+
+  // Adjust stock
+  function openAdjust(productId, type) {
+    const sel = document.getElementById('adj-product');
+    sel.innerHTML = allProds.filter(p=>p.status==='active').map(p=>`<option value="${p.id}" ${p.id===productId?'selected':''}>${p.name} (${p.stock} ${p.unit})</option>`).join('');
+    document.getElementById('adj-type').value = type||'restock';
+    document.getElementById('adj-qty').value = 1;
+    document.getElementById('adj-reason').value = '';
+    UI.openModal('adjust-modal');
+  }
+  async function saveAdjust() {
+    const prodId = document.getElementById('adj-product').value;
+    const type   = document.getElementById('adj-type').value;
+    const qty    = parseInt(document.getElementById('adj-qty').value);
+    const reason = document.getElementById('adj-reason').value.trim();
+    if(!qty || qty<1){UI.toast('Invalid quantity','warning');return;}
+    const prod = allProds.find(p=>p.id===prodId); if(!prod) return;
+    const before = parseInt(prod.stock);
+    let after;
+    if(type==='restock') after = before + qty;
+    else if(type==='adjustment') after = qty; // set exact
+    else after = Math.max(0, before - qty);
+    UI.loading(true,'Nag-a-apply ng adjustment...');
+    try {
+      await DB.update('productsDB',r=>r.id===prodId,{stock:String(after)});
+      const movs = await DB.read('inventoryDB',true);
+      await DB.insert('inventoryDB',{id:DB.nextId(movs,'id','INV'),date:new Date().toISOString().split('T')[0],product_id:prodId,type,quantity:type==='adjustment'?qty:(type==='restock'?qty:-qty),before_stock:String(before),after_stock:String(after),reason:reason||type,recorded_by:user.username});
+      UI.toast(`Stock updated: ${before} → ${after} ✅`,'success');
+      UI.closeModal('adjust-modal'); await loadAll();
+    } catch(e){UI.toast('Error: '+e.message,'error');}
+    UI.loading(false);
+  }
+
+  // Movements
+  async function loadMovements() {
+    UI.loading(true,'Loading movements...');
+    try {
+      allMovs = await DB.read('inventoryDB',true);
+      allMovs.sort((a,b)=>b.date.localeCompare(a.date));
+      renderMovements(allMovs,1);
+    } catch(e){UI.toast('Error: '+e.message,'error');}
+    UI.loading(false);
+  }
+  function filterMov() {
+    const q = document.getElementById('mov-search').value.toLowerCase();
+    const filtered = allMovs.filter(m=>m.type.includes(q)||m.reason.toLowerCase().includes(q)||(m.product_id||'').toLowerCase().includes(q));
+    renderMovements(filtered,1);
+  }
+  function renderMovements(rows,page) {
+    movPage=page;
+    const paged = UI.paginate(rows,page);
+    document.getElementById('mov-tbody').innerHTML = paged.rows.map(m=>{
+      const prod = allProds.find(p=>p.id===m.product_id);
+      const qtyColor = parseInt(m.quantity)>=0 ? 'var(--success)' : 'var(--danger)';
+      return `<tr>
+        <td>${m.date}</td>
+        <td>${prod?prod.name:m.product_id}</td>
+        <td><span class="badge badge-info">${m.type}</span></td>
+        <td style="color:${qtyColor};font-weight:700">${parseInt(m.quantity)>=0?'+':''}${m.quantity}</td>
+        <td>${m.before_stock}</td>
+        <td>${m.after_stock}</td>
+        <td>${m.reason}</td>
+        <td>${m.recorded_by}</td>
+      </tr>`;
+    }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang movements</td></tr>';
+    UI.renderPagination('mov-pagination',paged,p=>renderMovements(rows,p));
+  }
+
+  // Low stock
+  function loadLowStock() {
+    const low = allProds.filter(p=>p.status==='active'&&parseInt(p.stock)<50);
+    document.getElementById('low-tbody').innerHTML = low.map(p=>`<tr>
+      <td><strong>${p.name}</strong></td>
+      <td>${p.category}</td>
+      <td><strong style="color:${parseInt(p.stock)===0?'var(--danger)':'var(--warning)'}">${p.stock}</strong></td>
+      <td>${p.unit}</td>
+      <td><button class="btn btn-success btn-sm" onclick="openAdjust('${p.id}','restock')" data-perm="adjust">📥 Restock</button></td>
+    </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--success);padding:30px">✅ Lahat ng items ay may sapat na stock!</td></tr>';
+    Auth.applyUIPermissions(user,'inventory');
+  }
+
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.addEventListener('click',()=>{
+      if(t.dataset.tab==='tab-movements') loadMovements();
+    });
+  });
+
+  loadAll();
+</script>
+</body>
+</html>

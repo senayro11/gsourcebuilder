@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="fil">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POS System — Enterprise</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .pos-layout { display: grid; grid-template-columns: 1fr 360px; gap: 20px; }
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 10px; }
+    .prod-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 10px;
+      cursor: pointer; text-align: center; transition: all 0.15s;
+    }
+    .prod-btn:hover { border-color: var(--accent); background: rgba(99,102,241,0.1); }
+    .prod-btn .name { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .prod-btn .price { font-size: 15px; font-weight: 700; color: var(--accent2); }
+    .prod-btn .stock { font-size: 11px; color: var(--text3); }
+    .cart-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); display: flex; flex-direction: column; height: calc(100vh - 120px); position: sticky; top: 80px; }
+    .cart-header { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+    .cart-header h3 { font-size: 15px; font-weight: 700; }
+    .cart-items { flex: 1; overflow-y: auto; padding: 12px; }
+    .cart-item { display: flex; align-items: center; gap: 8px; padding: 8px; background: var(--surface2); border-radius: 8px; margin-bottom: 6px; }
+    .cart-item .item-name { flex: 1; font-size: 12px; font-weight: 600; }
+    .cart-item .item-price { font-size: 12px; color: var(--accent2); white-space: nowrap; }
+    .qty-ctrl { display: flex; align-items: center; gap: 4px; }
+    .qty-ctrl button { width: 24px; height: 24px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: 14px; display:flex;align-items:center;justify-content:center; }
+    .qty-ctrl button:hover { background: var(--accent); }
+    .qty-ctrl span { min-width: 24px; text-align: center; font-size: 13px; font-weight: 600; }
+    .cart-footer { padding: 16px 20px; border-top: 1px solid var(--border); }
+    .totals-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
+    .totals-row.grand { font-size: 18px; font-weight: 700; color: var(--white); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+    .pay-btn { width: 100%; margin-top: 12px; padding: 14px; font-size: 15px; }
+    .category-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .cat-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface2); color: var(--text2); cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.15s; }
+    .cat-btn:hover, .cat-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+    /* Receipt modal */
+    .receipt { font-family: var(--mono); background: #fff; color: #111; padding: 24px; border-radius: 8px; max-width: 320px; margin: 0 auto; }
+    .receipt h2 { text-align: center; font-size: 16px; margin-bottom: 4px; }
+    .receipt .center { text-align: center; font-size: 12px; margin-bottom: 12px; color: #555; }
+    .receipt hr { border: none; border-top: 1px dashed #999; margin: 8px 0; }
+    .receipt .r-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px; }
+    .receipt .r-total { font-size: 14px; font-weight: 700; }
+    .receipt .footer-msg { text-align: center; margin-top: 12px; font-size: 11px; color: #888; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <nav class="navbar">
+    <div class="navbar-brand" id="navbar-brand">🏢 Enterprise System</div>
+    <div class="navbar-right">
+      <div class="user-chip">
+        <div class="avatar" id="user-avatar">A</div>
+        <div class="user-info">
+          <span class="name" id="user-name"></span>
+          <span class="role" id="user-role"></span>
+        </div>
+      </div>
+      <a href="dashboard.html" class="btn btn-ghost btn-sm">🏠 Dashboard</a>
+      <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">🚪</button>
+    </div>
+  </nav>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main">
+    <!-- Tabs for admin -->
+    <div class="tabs" id="pos-tabs">
+      <div class="tab active" data-tab="tab-cashier">🛒 Cashier</div>
+      <div class="tab" data-tab="tab-transactions" data-perm="reports">📋 Transactions</div>
+      <div class="tab" data-tab="tab-products" data-perm="settings">🛍 Products</div>
+    </div>
+
+    <!-- CASHIER TAB -->
+    <div class="tab-pane active" id="tab-cashier">
+      <div class="pos-layout">
+        <div>
+          <div class="page-header-row" style="margin-bottom:12px">
+            <div class="search-bar" style="flex:1;max-width:340px">
+              <span>🔍</span>
+              <input type="text" id="prod-search" placeholder="Hanapin ang produkto o i-scan ang barcode..." oninput="filterProducts()">
+            </div>
+            <div class="category-tabs" id="cat-tabs"></div>
+          </div>
+          <div class="product-grid" id="product-grid">
+            <div style="color:var(--text3);grid-column:1/-1;text-align:center;padding:40px">Loading products...</div>
+          </div>
+        </div>
+        <!-- Cart -->
+        <div class="cart-panel">
+          <div class="cart-header">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <h3>🛒 Cart <span id="cart-count" class="badge badge-purple" style="margin-left:6px">0</span></h3>
+              <button class="btn btn-ghost btn-sm" onclick="clearCart()">🗑 Clear</button>
+            </div>
+            <div style="margin-top:8px">
+              <input type="text" id="customer-name" placeholder="Customer name (optional)" style="font-size:12px;padding:6px 10px">
+            </div>
+          </div>
+          <div class="cart-items" id="cart-items">
+            <div class="empty-state" style="padding:30px">
+              <div class="icon">🛒</div>
+              <p>Walang item sa cart</p>
+            </div>
+          </div>
+          <div class="cart-footer">
+            <div class="totals-row"><span>Subtotal</span><span id="subtotal">₱0.00</span></div>
+            <div class="totals-row">
+              <span>Discount</span>
+              <span><input type="number" id="discount" value="0" min="0" style="width:70px;padding:3px 6px;font-size:12px" oninput="updateTotals()">%</span>
+            </div>
+            <div class="totals-row grand"><span>TOTAL</span><span id="grand-total">₱0.00</span></div>
+            <div class="form-group" style="margin-bottom:8px;margin-top:10px">
+              <label style="font-size:11px">Payment Method</label>
+              <select id="pay-method">
+                <option value="cash">💵 Cash</option>
+                <option value="gcash">📱 GCash</option>
+                <option value="card">💳 Card</option>
+                <option value="utang">📝 Utang (Credit)</option>
+              </select>
+            </div>
+            <div class="form-group" id="cash-tender-wrap" style="margin-bottom:0">
+              <label style="font-size:11px">Amount Tendered</label>
+              <input type="number" id="amount-tendered" placeholder="0.00" oninput="computeChange()">
+              <div id="change-display" style="font-size:12px;color:var(--success);margin-top:4px;font-weight:600"></div>
+            </div>
+            <button class="btn btn-success pay-btn" onclick="checkout()" data-perm="create">💳 I-process ang Bayad</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS TAB -->
+    <div class="tab-pane" id="tab-transactions">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div class="search-bar" style="max-width:300px">
+          <span>🔍</span>
+          <input type="text" id="txn-search" placeholder="Hanapin..." oninput="filterTxns()">
+        </div>
+        <div style="display:flex;gap:8px">
+          <input type="date" id="txn-date-filter" style="padding:6px 10px">
+          <button class="btn btn-ghost btn-sm" onclick="loadTransactions()">🔄 Refresh</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>TXN ID</th><th>Date & Time</th><th>Cashier</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th></th>
+            </tr></thead>
+            <tbody id="txn-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text3)">Loading...</td></tr></tbody>
+          </table>
+        </div>
+        <div id="txn-pagination"></div>
+      </div>
+    </div>
+
+    <!-- PRODUCTS MANAGEMENT TAB -->
+    <div class="tab-pane" id="tab-products">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div class="search-bar" style="max-width:300px">
+          <span>🔍</span>
+          <input type="text" id="prod-mgmt-search" placeholder="Hanapin produkto..." oninput="filterProdMgmt()">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openAddProduct()" data-perm="create">+ Dagdag Produkto</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Cost</th><th>Stock</th><th>Status</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="prod-mgmt-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text3)">Loading...</td></tr></tbody>
+          </table>
+        </div>
+        <div id="prod-mgmt-pagination"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Product/Edit Modal -->
+<div class="modal-backdrop" id="product-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="product-modal-title">Dagdag Produkto</span>
+      <button class="modal-close" onclick="UI.closeModal('product-modal')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Product Name *</label><input type="text" id="f-pname"></div>
+      <div class="form-group"><label>Category *</label><input type="text" id="f-pcat" placeholder="e.g. Groceries"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Selling Price (₱) *</label><input type="number" id="f-pprice" step="0.01"></div>
+      <div class="form-group"><label>Cost Price (₱)</label><input type="number" id="f-pcost" step="0.01"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Stock Quantity</label><input type="number" id="f-pstock" value="0"></div>
+      <div class="form-group"><label>Unit</label><input type="text" id="f-punit" placeholder="e.g. piece, kg, bottle"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Barcode</label><input type="text" id="f-pbarcode"></div>
+      <div class="form-group"><label>Status</label><select id="f-pstatus"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('product-modal')">Kanselahin</button>
+      <button class="btn btn-primary" onclick="saveProduct()" id="save-prod-btn">I-save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Receipt Modal -->
+<div class="modal-backdrop" id="receipt-modal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title">🧾 Resibo</span>
+      <button class="modal-close" onclick="UI.closeModal('receipt-modal')">✕</button>
+    </div>
+    <div id="receipt-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('receipt-modal')">Isara</button>
+      <button class="btn btn-primary" onclick="window.print()">🖨 I-print</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<div id="loading-overlay" class="loading-overlay"><div class="spinner"></div><div>Processing...</div></div>
+
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script>
+  Auth.loadToken();
+  const user = Auth.guard('pos');
+  if (!user) throw 0;
+  UI.buildNavbar(user, 'POS System');
+  UI.buildSidebar(user, 'pos');
+  Auth.applyUIPermissions(user, 'pos');
+  UI.initTabs();
+
+  let allProducts = [], cart = [], editProductId = null, txnPage = 1, prodPage = 1;
+
+  // ---- Products ----
+  async function loadProducts() {
+    allProducts = (await DB.read('productsDB')).filter(p => p.status === 'active');
+    renderProductGrid(allProducts);
+    renderCategoryTabs(allProducts);
+  }
+
+  function renderCategoryTabs(prods) {
+    const cats = ['All', ...new Set(prods.map(p => p.category))];
+    document.getElementById('cat-tabs').innerHTML = cats.map(c =>
+      `<button class="cat-btn ${c==='All'?'active':''}" onclick="filterByCategory('${c}',this)">${c}</button>`
+    ).join('');
+  }
+
+  function filterByCategory(cat, el) {
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    const filtered = cat === 'All' ? allProducts : allProducts.filter(p => p.category === cat);
+    renderProductGrid(filtered);
+  }
+
+  function filterProducts() {
+    const q = document.getElementById('prod-search').value.toLowerCase();
+    const filtered = allProducts.filter(p =>
+      p.name.toLowerCase().includes(q) || (p.barcode||'').includes(q)
+    );
+    renderProductGrid(filtered);
+  }
+
+  function renderProductGrid(prods) {
+    const grid = document.getElementById('product-grid');
+    if (!prods.length) { grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="icon">📦</div><p>Walang produktong nahanap</p></div>'; return; }
+    grid.innerHTML = prods.map(p => `
+      <div class="prod-btn" onclick="addToCart('${p.id}')">
+        <div class="name">${p.name}</div>
+        <div class="price">${UI.peso(p.price)}</div>
+        <div class="stock">Stock: ${p.stock} ${p.unit}</div>
+      </div>`).join('');
+  }
+
+  // ---- Cart ----
+  function addToCart(productId) {
+    const prod = allProducts.find(p => p.id === productId);
+    if (!prod) return;
+    const existing = cart.find(c => c.id === productId);
+    if (existing) {
+      if (existing.qty >= parseInt(prod.stock)) { UI.toast('Kulang ang stock!', 'warning'); return; }
+      existing.qty++;
+    } else {
+      cart.push({ id: prod.id, name: prod.name, price: parseFloat(prod.price), qty: 1, stock: parseInt(prod.stock) });
+    }
+    renderCart();
+  }
+
+  function updateQty(id, delta) {
+    const item = cart.find(c => c.id === id);
+    if (!item) return;
+    item.qty += delta;
+    if (item.qty <= 0) cart = cart.filter(c => c.id !== id);
+    if (item.qty > item.stock) { item.qty = item.stock; UI.toast('Maximum stock reached','warning'); }
+    renderCart();
+  }
+
+  function clearCart() { cart = []; renderCart(); }
+
+  function renderCart() {
+    const el = document.getElementById('cart-items');
+    if (!cart.length) {
+      el.innerHTML = '<div class="empty-state" style="padding:30px"><div class="icon">🛒</div><p>Walang item</p></div>';
+    } else {
+      el.innerHTML = cart.map(c => `
+        <div class="cart-item">
+          <div class="item-name">${c.name}<br><small style="color:var(--text3)">${UI.peso(c.price)} each</small></div>
+          <div class="qty-ctrl">
+            <button onclick="updateQty('${c.id}',-1)">−</button>
+            <span>${c.qty}</span>
+            <button onclick="updateQty('${c.id}',1)">+</button>
+          </div>
+          <div class="item-price">${UI.peso(c.price * c.qty)}</div>
+        </div>`).join('');
+    }
+    document.getElementById('cart-count').textContent = cart.reduce((s,c) => s+c.qty, 0);
+    updateTotals();
+  }
+
+  function updateTotals() {
+    const subtotal = cart.reduce((s,c) => s + c.price * c.qty, 0);
+    const discPct  = parseFloat(document.getElementById('discount').value) || 0;
+    const disc     = subtotal * (discPct / 100);
+    const total    = subtotal - disc;
+    document.getElementById('subtotal').textContent = UI.peso(subtotal);
+    document.getElementById('grand-total').textContent = UI.peso(total);
+    computeChange();
+  }
+
+  function computeChange() {
+    const totalText = document.getElementById('grand-total').textContent;
+    const total = parseFloat(totalText.replace('₱','').replace(/,/g,'')) || 0;
+    const tendered = parseFloat(document.getElementById('amount-tendered').value) || 0;
+    const change = tendered - total;
+    const el = document.getElementById('change-display');
+    if (document.getElementById('pay-method').value === 'cash' && tendered > 0) {
+      el.textContent = change >= 0 ? `Sukli: ${UI.peso(change)}` : `⚠️ Hindi sapat: kulang ng ${UI.peso(Math.abs(change))}`;
+      el.style.color = change >= 0 ? 'var(--success)' : 'var(--danger)';
+    } else { el.textContent = ''; }
+  }
+
+  document.getElementById('pay-method').addEventListener('change', function() {
+    document.getElementById('cash-tender-wrap').style.display = this.value === 'cash' ? '' : 'none';
+  });
+
+  async function checkout() {
+    if (!cart.length) { UI.toast('Walang laman ang cart!', 'warning'); return; }
+    const subtotal = cart.reduce((s,c) => s + c.price * c.qty, 0);
+    const discPct  = parseFloat(document.getElementById('discount').value) || 0;
+    const total    = subtotal * (1 - discPct/100);
+    const method   = document.getElementById('pay-method').value;
+    const tendered = parseFloat(document.getElementById('amount-tendered').value) || total;
+    if (method === 'cash' && tendered < total) { UI.toast('Hindi sapat ang bayad!', 'error'); return; }
+
+    UI.loading(true, 'Nagpo-process ng transaction...');
+    try {
+      const txns = await DB.read('transactionsDB', true);
+      const id = DB.nextId(txns, 'id', 'TXN');
+      const newTxn = {
+        id, date: new Date().toISOString().replace('T',' ').substring(0,19),
+        cashier: user.username,
+        items_json: JSON.stringify(cart.map(c => ({id:c.id, name:c.name, qty:c.qty, price:c.price, total:c.price*c.qty}))),
+        subtotal: subtotal.toFixed(2),
+        discount: (subtotal * discPct/100).toFixed(2),
+        tax: '0.00',
+        total: total.toFixed(2),
+        payment_method: method,
+        amount_tendered: tendered.toFixed(2),
+        change: (tendered - total).toFixed(2),
+        status: 'completed'
+      };
+      await DB.insert('transactionsDB', newTxn);
+      // Update stock
+      const prods = await DB.read('productsDB', true);
+      for (const item of cart) {
+        await DB.update('productsDB',
+          r => r.id === item.id,
+          { stock: String(parseInt(prods.find(p=>p.id===item.id)?.stock||0) - item.qty) }
+        );
+      }
+      showReceipt(newTxn);
+      clearCart();
+      await loadProducts();
+      UI.toast('Transaction successful! 🎉', 'success');
+    } catch(e) { UI.toast('Error: ' + e.message, 'error'); }
+    UI.loading(false);
+  }
+
+  function showReceipt(txn) {
+    const items = JSON.parse(txn.items_json || '[]');
+    const change = parseFloat(txn.change);
+    document.getElementById('receipt-content').innerHTML = `
+      <div class="receipt">
+        <h2>🏢 ENTERPRISE SYSTEM</h2>
+        <div class="center">Official Receipt<br>${txn.date}</div>
+        <hr>
+        <div class="r-row"><span><strong>TXN:</strong> ${txn.id}</span><span><strong>Cashier:</strong> ${txn.cashier}</span></div>
+        <hr>
+        ${items.map(i => `<div class="r-row"><span>${i.name} x${i.qty}</span><span>₱${parseFloat(i.total).toFixed(2)}</span></div>`).join('')}
+        <hr>
+        <div class="r-row"><span>Subtotal</span><span>₱${parseFloat(txn.subtotal).toFixed(2)}</span></div>
+        ${parseFloat(txn.discount)>0 ? `<div class="r-row"><span>Discount</span><span>-₱${parseFloat(txn.discount).toFixed(2)}</span></div>` : ''}
+        <div class="r-row r-total"><span><strong>TOTAL</strong></span><span><strong>₱${parseFloat(txn.total).toFixed(2)}</strong></span></div>
+        <div class="r-row"><span>Paid (${txn.payment_method})</span><span>₱${parseFloat(txn.amount_tendered).toFixed(2)}</span></div>
+        ${change > 0 ? `<div class="r-row"><span>Change</span><span>₱${change.toFixed(2)}</span></div>` : ''}
+        <div class="footer-msg">Salamat sa inyong pagbili!<br>Bumalik po kayo! 😊</div>
+      </div>`;
+    UI.openModal('receipt-modal');
+  }
+
+  // ---- Transactions list ----
+  let allTxns = [];
+  async function loadTransactions() {
+    allTxns = await DB.read('transactionsDB', true);
+    allTxns.sort((a,b) => b.date.localeCompare(a.date));
+    renderTxnTable(allTxns, 1);
+  }
+
+  function filterTxns() {
+    const q = document.getElementById('txn-search').value.toLowerCase();
+    const d = document.getElementById('txn-date-filter').value;
+    let filtered = allTxns;
+    if (q) filtered = filtered.filter(t => t.id.toLowerCase().includes(q) || t.cashier.toLowerCase().includes(q));
+    if (d) filtered = filtered.filter(t => t.date.startsWith(d));
+    renderTxnTable(filtered, 1);
+  }
+
+  function renderTxnTable(rows, page) {
+    txnPage = page;
+    const paged = UI.paginate(rows, page);
+    const tbody = document.getElementById('txn-tbody');
+    tbody.innerHTML = paged.rows.map(t => {
+      const items = JSON.parse(t.items_json||'[]');
+      return `<tr>
+        <td class="mono">${t.id}</td>
+        <td>${t.date}</td>
+        <td>${t.cashier}</td>
+        <td>${items.length} item(s)</td>
+        <td><strong>${UI.peso(t.total)}</strong></td>
+        <td>${t.payment_method}</td>
+        <td>${UI.statusBadge(t.status)}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="viewTxnReceipt('${t.id}')">🧾</button></td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang transactions</td></tr>';
+    UI.renderPagination('txn-pagination', paged, p => renderTxnTable(rows, p));
+  }
+
+  function viewTxnReceipt(id) {
+    const t = allTxns.find(x => x.id === id);
+    if (t) showReceipt(t);
+  }
+
+  // ---- Products management ----
+  let allProdsMgmt = [];
+  async function loadProductsMgmt() {
+    allProdsMgmt = await DB.read('productsDB', true);
+    renderProdMgmt(allProdsMgmt, 1);
+  }
+  function filterProdMgmt() {
+    const q = document.getElementById('prod-mgmt-search').value.toLowerCase();
+    const filtered = allProdsMgmt.filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
+    renderProdMgmt(filtered, 1);
+  }
+  function renderProdMgmt(rows, page) {
+    prodPage = page;
+    const paged = UI.paginate(rows, page, 10);
+    const tbody = document.getElementById('prod-mgmt-tbody');
+    tbody.innerHTML = paged.rows.map(p => `<tr>
+      <td class="mono">${p.id}</td>
+      <td><strong>${p.name}</strong></td>
+      <td>${p.category}</td>
+      <td>${UI.peso(p.price)}</td>
+      <td>${UI.peso(p.cost)}</td>
+      <td>${parseInt(p.stock) < 50 ? `<span style="color:var(--warning)">${p.stock}</span>` : p.stock} ${p.unit}</td>
+      <td>${UI.statusBadge(p.status)}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="editProduct('${p.id}')" data-perm="edit">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')" data-perm="delete">🗑</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang produkto</td></tr>';
+    UI.renderPagination('prod-mgmt-pagination', paged, p => renderProdMgmt(rows, p));
+    Auth.applyUIPermissions(user, 'pos');
+  }
+
+  function openAddProduct() { editProductId = null; clearProductForm(); document.getElementById('product-modal-title').textContent = '+ Dagdag Produkto'; UI.openModal('product-modal'); }
+  function clearProductForm() { ['f-pname','f-pcat','f-pprice','f-pcost','f-pstock','f-punit','f-pbarcode'].forEach(id => { const el=document.getElementById(id); if(el)el.value=''; }); document.getElementById('f-pstock').value='0'; document.getElementById('f-pstatus').value='active'; }
+  function editProduct(id) {
+    const p = allProdsMgmt.find(x => x.id === id);
+    if (!p) return;
+    editProductId = id;
+    document.getElementById('product-modal-title').textContent = '✏️ I-edit ang Produkto';
+    document.getElementById('f-pname').value  = p.name;
+    document.getElementById('f-pcat').value   = p.category;
+    document.getElementById('f-pprice').value = p.price;
+    document.getElementById('f-pcost').value  = p.cost;
+    document.getElementById('f-pstock').value = p.stock;
+    document.getElementById('f-punit').value  = p.unit;
+    document.getElementById('f-pbarcode').value = p.barcode || '';
+    document.getElementById('f-pstatus').value = p.status;
+    UI.openModal('product-modal');
+  }
+  async function saveProduct() {
+    const name = document.getElementById('f-pname').value.trim();
+    const price = document.getElementById('f-pprice').value;
+    if (!name || !price) { UI.toast('Punan ang Name at Price.', 'warning'); return; }
+    UI.loading(true, 'Nagse-save...');
+    try {
+      if (editProductId) {
+        await DB.update('productsDB', r => r.id === editProductId, {
+          name, category: document.getElementById('f-pcat').value,
+          price, cost: document.getElementById('f-pcost').value,
+          stock: document.getElementById('f-pstock').value,
+          unit: document.getElementById('f-punit').value,
+          barcode: document.getElementById('f-pbarcode').value,
+          status: document.getElementById('f-pstatus').value
+        });
+        UI.toast('Na-update ang produkto ✅', 'success');
+      } else {
+        const all = await DB.read('productsDB', true);
+        const id  = DB.nextId(all, 'id', 'P');
+        await DB.insert('productsDB', {
+          id, name, category: document.getElementById('f-pcat').value,
+          price, cost: document.getElementById('f-pcost').value,
+          stock: document.getElementById('f-pstock').value,
+          unit: document.getElementById('f-punit').value,
+          barcode: document.getElementById('f-pbarcode').value,
+          status: document.getElementById('f-pstatus').value,
+          created_at: new Date().toISOString().split('T')[0]
+        });
+        UI.toast('Naidagdag ang produkto ✅', 'success');
+      }
+      UI.closeModal('product-modal');
+      await loadProductsMgmt(); await loadProducts();
+    } catch(e) { UI.toast('Error: ' + e.message, 'error'); }
+    UI.loading(false);
+  }
+  function deleteProduct(id) {
+    UI.confirm('Sigurado ka bang gusto mong i-delete ang produktong ito?', async () => {
+      UI.loading(true);
+      try {
+        await DB.update('productsDB', r => r.id === id, { status: 'inactive' });
+        UI.toast('Na-delete ang produkto', 'success');
+        await loadProductsMgmt(); await loadProducts();
+      } catch(e) { UI.toast('Error: ' + e.message, 'error'); }
+      UI.loading(false);
+    });
+  }
+
+  // Tab change listeners
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      const tab = t.dataset.tab;
+      if (tab === 'tab-transactions') loadTransactions();
+      if (tab === 'tab-products') loadProductsMgmt();
+    });
+  });
+
+  // Init
+  loadProducts();
+</script>
+</body>
+</html>

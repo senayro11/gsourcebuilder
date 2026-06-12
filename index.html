@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fil">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enterprise System — Login</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--bg); }
+    .login-wrap { width: 100%; max-width: 420px; padding: 24px; }
+    .login-logo { text-align: center; margin-bottom: 40px; }
+    .login-logo .logo-icon { font-size: 52px; margin-bottom: 12px; }
+    .login-logo h1 { font-size: 24px; font-weight: 800; color: var(--white); letter-spacing: -0.5px; }
+    .login-logo p  { color: var(--text2); margin-top: 4px; font-size: 14px; }
+    .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; }
+    .login-card h2 { font-size: 18px; font-weight: 700; margin-bottom: 24px; color: var(--white); }
+    .login-footer { text-align: center; margin-top: 24px; color: var(--text3); font-size: 12px; }
+    .input-wrap { position: relative; }
+    .input-wrap input { padding-left: 40px; }
+    .input-wrap .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); }
+    .token-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .token-section summary { cursor: pointer; color: var(--text2); font-size: 12px; font-weight: 500; }
+    .token-help { background: var(--surface2); border-radius: 8px; padding: 12px; margin-top: 10px; font-size: 12px; color: var(--text2); line-height: 1.7; }
+    .token-help a { color: var(--accent2); }
+    .demo-accounts { margin-top: 16px; background: var(--surface2); border-radius: 8px; padding: 12px; }
+    .demo-accounts p { font-size: 11px; color: var(--text3); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .demo-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .demo-chip { background: var(--border); color: var(--text2); font-size: 11px; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-family: var(--mono); }
+    .demo-chip:hover { background: var(--accent); color: white; }
+  </style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-logo">
+    <div class="logo-icon">🏢</div>
+    <h1>Enterprise System</h1>
+    <p>Integrated Business Management</p>
+  </div>
+
+  <div class="login-card">
+    <h2>Mag-login</h2>
+    <div class="form-group">
+      <label>Username</label>
+      <div class="input-wrap">
+        <span class="input-icon">👤</span>
+        <input type="text" id="username" placeholder="Enter username" autocomplete="username">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <div class="input-wrap">
+        <span class="input-icon">🔒</span>
+        <input type="password" id="password" placeholder="Enter password" autocomplete="current-password">
+      </div>
+    </div>
+    <button class="btn btn-primary w-full" onclick="doLogin()" id="login-btn">
+      🚀 Mag-login
+    </button>
+    <div id="login-error" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:#f87171;font-size:13px"></div>
+
+    <details class="token-section">
+      <summary>⚙️ GitHub Token Settings</summary>
+      <div class="token-help">
+        Para gumana ang system, kailangan ng GitHub Personal Access Token (PAT).<br>
+        1. Pumunta sa <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a><br>
+        2. Generate new token (classic)<br>
+        3. I-check ang <strong>repo</strong> scope<br>
+        4. I-paste dito:
+      </div>
+      <div class="form-group mt-16">
+        <label>Personal Access Token</label>
+        <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx">
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="saveToken()">💾 I-save ang Token</button>
+    </details>
+
+    <div class="demo-accounts">
+      <p>Demo accounts (password: admin123)</p>
+      <div class="demo-row">
+        <span class="demo-chip" onclick="fillDemo('superadmin','admin123')">superadmin</span>
+        <span class="demo-chip" onclick="fillDemo('admin_pos','admin123')">admin_pos</span>
+        <span class="demo-chip" onclick="fillDemo('staff01','admin123')">staff01</span>
+        <span class="demo-chip" onclick="fillDemo('ojt01','admin123')">ojt01</span>
+        <span class="demo-chip" onclick="fillDemo('guest01','admin123')">guest01</span>
+      </div>
+    </div>
+  </div>
+  <div class="login-footer">Enterprise System v1.0 &bull; Powered by GitHub Pages</div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script>
+  // Redirect if already logged in
+  if (Auth.getSession()) window.location.href = 'dashboard.html';
+
+  // Load saved token
+  Auth.loadToken();
+  const savedToken = localStorage.getItem('ent_gh_token');
+  if (savedToken) document.getElementById('gh-token').value = savedToken;
+
+  function saveToken() {
+    const t = document.getElementById('gh-token').value.trim();
+    if (!t) { UI.toast('Walang token na nilagay.','warning'); return; }
+    Auth.saveToken(t);
+    UI.toast('Token na-save! ✅','success');
+  }
+
+  async function doLogin() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const errEl    = document.getElementById('login-error');
+    const btn      = document.getElementById('login-btn');
+
+    if (!username || !password) {
+      showError('Punan ang lahat ng fields.'); return;
+    }
+    if (!GITHUB_CONFIG.token) {
+      showError('Kailangan muna mag-set ng GitHub Token sa settings sa ibaba.'); return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Nag-lo-login...';
+    errEl.style.display = 'none';
+
+    const result = await Auth.login(username, password);
+    btn.disabled = false;
+    btn.innerHTML = '🚀 Mag-login';
+
+    if (result.success) {
+      UI.toast(`Maligayang pagdating, ${result.user.full_name}! 👋`, 'success');
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+    } else {
+      showError(result.message);
+    }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('login-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function fillDemo(user, pass) {
+    document.getElementById('username').value = user;
+    document.getElementById('password').value = pass;
+  }
+
+  // Enter key support
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+</script>
+</body>
+</html>
