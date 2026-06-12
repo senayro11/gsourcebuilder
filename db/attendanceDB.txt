@@ -1,0 +1,6 @@
+id|employee_id|date|time_in|time_out|hours_worked|overtime|status|notes
+ATT001|EMP001|2024-01-15|08:02:00|17:05:00|9.05|1.05|present|
+ATT002|EMP002|2024-01-15|08:00:00|17:00:00|9.00|1.00|present|
+ATT003|EMP003|2024-01-15|07:55:00|18:30:00|10.58|2.58|present|
+ATT004|EMP001|2024-01-16|08:10:00|17:00:00|8.83|0.83|present|
+ATT005|EMP002|2024-01-16|||0|0|absent|Sick leave

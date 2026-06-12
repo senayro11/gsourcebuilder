@@ -1,0 +1,3 @@
+id|date|cashier|items_json|subtotal|discount|tax|total|payment_method|amount_tendered|change|status
+TXN001|2024-01-15 10:30:00|staff01|[{"id":"P001","name":"White Rice (1kg)","qty":2,"price":55,"total":110}]|110.00|0.00|0.00|110.00|cash|120.00|10.00|completed
+TXN002|2024-01-15 11:00:00|staff01|[{"id":"P008","name":"Mineral Water (500ml)","qty":3,"price":15,"total":45},{"id":"P004","name":"Instant Noodles","qty":2,"price":13,"total":26}]|71.00|0.00|0.00|71.00|cash|100.00|29.00|completed

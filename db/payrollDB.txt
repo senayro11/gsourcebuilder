@@ -1,0 +1,3 @@
+id|employee_id|period_start|period_end|days_worked|basic_pay|overtime_pay|allowance|gross_pay|sss|philhealth|pagibig|tax|total_deductions|net_pay|status|released_date
+PAY001|EMP001|2024-01-01|2024-01-15|13|8450.00|683.75|500.00|9633.75|200.00|150.00|100.00|962.00|1412.00|8221.75|released|2024-01-17
+PAY002|EMP002|2024-01-01|2024-01-15|12|6600.00|366.67|0.00|6966.67|150.00|100.00|100.00|696.00|1046.00|5920.67|released|2024-01-17

@@ -1,0 +1,9 @@
+username|password_hash|role|assigned_system|full_name|email|status|created_at
+superadmin|8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918|superadmin|all|Super Administrator|superadmin@company.com|active|2024-01-01
+admin_pos|e3afed0047b08059d0fada10f400c1e5|admin|pos|POS Administrator|admin.pos@company.com|active|2024-01-01
+admin_inv|e3afed0047b08059d0fada10f400c1e5|admin|inventory|Inventory Administrator|admin.inv@company.com|active|2024-01-01
+admin_att|e3afed0047b08059d0fada10f400c1e5|admin|attendance|Attendance Administrator|admin.att@company.com|active|2024-01-01
+admin_bud|e3afed0047b08059d0fada10f400c1e5|admin|budget|Budget Administrator|admin.bud@company.com|active|2024-01-01
+staff01|e3afed0047b08059d0fada10f400c1e5|staff|pos|Juan dela Cruz|juan@company.com|active|2024-01-01
+ojt01|e3afed0047b08059d0fada10f400c1e5|ojt|inventory|Maria Santos|maria@company.com|active|2024-01-01
+guest01|e3afed0047b08059d0fada10f400c1e5|guest|pos|Guest User|guest@company.com|active|2024-01-01
