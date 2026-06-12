@@ -4,8 +4,8 @@
 // ============================================================
 
 const GITHUB_CONFIG = {
-  owner: 'YOUR_GITHUB_USERNAME',       // e.g. 'senayro11'
-  repo:  'YOUR_REPO_NAME',             // e.g. 'enterprise-system'
+  owner: 'senayro11',       // e.g. 'senayro11'
+  repo:  'gsourcebuilder',             // e.g. 'enterprise-system'
   branch: 'main',
   token: '',  // PAT token - i-paste lang dito or use login prompt
   // Base path ng db folder sa iyong repo
