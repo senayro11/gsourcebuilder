@@ -7,3 +7,4 @@ admin_bud|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|admin
 staff01|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|staff|pos|Juan dela Cruz|juan@company.com|active|2024-01-01
 ojt01|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|ojt|inventory|Maria Santos|maria@company.com|active|2024-01-01
 guest01|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|guest|pos|Guest User|guest@company.com|active|2024-01-01
+redmat|9fa7b1c3f5ae1bbcd5a9a444acbeba2c0ce3eeecea3508d25964dac2fb29bd64|superadmin|all|Red Matienzo|redmatienzo@gmail.com|active|2026-06-13
