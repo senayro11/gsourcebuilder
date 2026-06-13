@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="fil">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POS System — Enterprise</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .pos-layout { display:grid; grid-template-columns:1fr 340px; gap:16px; }
+    .product-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; }
+    .prod-btn {
+      background:var(--surface2); border:1px solid var(--border);
+      border-radius:var(--radius); padding:10px; cursor:pointer;
+      text-align:center; transition:all .15s; position:relative; overflow:hidden;
+    }
+    .prod-btn:hover { border-color:var(--accent); background:rgba(99,102,241,.1); }
+    .prod-btn .prod-img { width:100%; height:80px; object-fit:cover; border-radius:6px; margin-bottom:6px; background:var(--border); display:flex; align-items:center; justify-content:center; font-size:32px; }
+    .prod-btn img.prod-img { display:block; }
+    .prod-btn .name  { font-size:11px; font-weight:600; color:var(--text); margin-bottom:3px; line-height:1.3; }
+    .prod-btn .price { font-size:14px; font-weight:700; color:var(--accent2); }
+    .prod-btn .stock { font-size:10px; color:var(--text3); }
+    .prod-btn .has-var { position:absolute; top:4px; right:4px; font-size:9px; background:var(--accent); color:white; padding:1px 5px; border-radius:10px; }
+    .cart-panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); display:flex; flex-direction:column; height:calc(100vh - 110px); position:sticky; top:72px; }
+    .cart-header { padding:12px 16px; border-bottom:1px solid var(--border); }
+    .cart-items  { flex:1; overflow-y:auto; padding:10px; }
+    .cart-item   { background:var(--surface2); border-radius:8px; padding:8px; margin-bottom:6px; }
+    .cart-item-top { display:flex; align-items:center; gap:6px; }
+    .cart-item .item-name  { flex:1; font-size:12px; font-weight:600; }
+    .cart-item .item-price { font-size:12px; color:var(--accent2); white-space:nowrap; }
+    .cart-item .item-var   { font-size:10px; color:var(--text3); margin-top:2px; }
+    .qty-ctrl { display:flex; align-items:center; gap:4px; }
+    .qty-ctrl button { width:22px; height:22px; border-radius:4px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; }
+    .qty-ctrl button:hover { background:var(--accent); }
+    .qty-ctrl span { min-width:22px; text-align:center; font-size:12px; font-weight:600; }
+    .cart-footer { padding:12px 16px; border-top:1px solid var(--border); }
+    .totals-row { display:flex; justify-content:space-between; margin-bottom:5px; font-size:13px; }
+    .totals-row.grand { font-size:16px; font-weight:700; color:var(--white); padding-top:6px; border-top:1px solid var(--border); margin-top:4px; }
+    .cat-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+    .cat-btn { padding:5px 12px; border-radius:20px; border:1px solid var(--border); background:var(--surface2); color:var(--text2); cursor:pointer; font-size:11px; font-weight:500; }
+    .cat-btn.active, .cat-btn:hover { background:var(--accent); border-color:var(--accent); color:white; }
+    /* Variation picker modal */
+    .var-group { margin-bottom:14px; }
+    .var-group label { font-size:12px; font-weight:600; color:var(--text2); display:block; margin-bottom:6px; }
+    .var-options { display:flex; gap:6px; flex-wrap:wrap; }
+    .var-opt { padding:5px 12px; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:12px; background:var(--surface2); color:var(--text2); }
+    .var-opt.selected { background:var(--accent); border-color:var(--accent); color:white; }
+    /* Receipt */
+    .receipt { font-family:var(--mono); background:#fff; color:#111; padding:20px; border-radius:8px; max-width:300px; margin:0 auto; font-size:12px; }
+    .receipt h2 { text-align:center; font-size:15px; margin-bottom:2px; }
+    .receipt .center { text-align:center; color:#555; margin-bottom:10px; }
+    .receipt hr { border:none; border-top:1px dashed #999; margin:6px 0; }
+    .receipt .r-row { display:flex; justify-content:space-between; margin-bottom:2px; }
+    .receipt .r-total { font-weight:700; font-size:13px; }
+    /* Product image preview */
+    .img-preview { width:100%; height:120px; object-fit:cover; border-radius:8px; margin-bottom:8px; display:none; }
+    .img-placeholder { width:100%; height:120px; background:var(--surface2); border:2px dashed var(--border); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--text3); font-size:13px; cursor:pointer; margin-bottom:8px; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <nav class="navbar">
+    <div class="navbar-brand" id="navbar-brand">🏢</div>
+    <div class="navbar-right">
+      <div class="user-chip">
+        <div class="avatar" id="user-avatar">A</div>
+        <div class="user-info"><span class="name" id="user-name"></span><span class="role" id="user-role"></span></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">🚪</button>
+    </div>
+  </nav>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main">
+
+    <!-- Tabs -->
+    <div class="tabs" id="pos-tabs">
+      <div class="tab active" data-tab="tab-cashier">🛒 Cashier</div>
+      <div class="tab" data-tab="tab-transactions" data-perm="reports">📋 Transactions</div>
+      <div class="tab" data-tab="tab-products" data-perm="settings">🛍 Products</div>
+      <div class="tab" data-tab="tab-reports" data-perm="reports">📊 Reports</div>
+    </div>
+
+    <!-- ===== CASHIER TAB ===== -->
+    <div class="tab-pane active" id="tab-cashier">
+      <div class="pos-layout">
+        <div>
+          <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+            <div class="search-bar" style="flex:1;min-width:200px">
+              <span>🔍</span>
+              <input type="text" id="prod-search" placeholder="Hanapin o i-scan ang barcode..." oninput="filterProducts()">
+            </div>
+          </div>
+          <div class="cat-tabs" id="cat-tabs"></div>
+          <div class="product-grid" id="product-grid">
+            <div style="color:var(--text3);grid-column:1/-1;text-align:center;padding:40px">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Cart -->
+        <div class="cart-panel">
+          <div class="cart-header">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-weight:700;font-size:14px">🛒 Cart <span id="cart-count" class="badge badge-purple">0</span></span>
+              <button class="btn btn-ghost btn-sm" onclick="clearCart()">🗑</button>
+            </div>
+            <input type="text" id="customer-name" placeholder="Customer name (optional)" style="margin-top:8px;font-size:12px;padding:5px 10px">
+          </div>
+          <div class="cart-items" id="cart-items">
+            <div class="empty-state" style="padding:24px"><div class="icon">🛒</div><p>Walang item</p></div>
+          </div>
+          <div class="cart-footer">
+            <div class="totals-row"><span>Subtotal</span><span id="subtotal">₱0.00</span></div>
+            <div class="totals-row">
+              <span>Discount</span>
+              <span><input type="number" id="discount" value="0" min="0" max="100" style="width:55px;padding:2px 6px;font-size:12px" oninput="updateTotals()">%</span>
+            </div>
+            <div class="totals-row grand"><span>TOTAL</span><span id="grand-total">₱0.00</span></div>
+            <div class="form-group" style="margin:8px 0 4px">
+              <label style="font-size:11px">Payment</label>
+              <select id="pay-method" onchange="toggleTender()">
+                <option value="cash">💵 Cash</option>
+                <option value="gcash">📱 GCash</option>
+                <option value="card">💳 Card</option>
+                <option value="utang">📝 Utang</option>
+              </select>
+            </div>
+            <div id="cash-tender-wrap" class="form-group" style="margin-bottom:4px">
+              <label style="font-size:11px">Amount Tendered</label>
+              <input type="number" id="amount-tendered" placeholder="0.00" oninput="computeChange()">
+              <div id="change-display" style="font-size:12px;margin-top:3px;font-weight:600"></div>
+            </div>
+            <button class="btn btn-success w-full" style="padding:12px;font-size:14px" onclick="checkout()" data-perm="create">💳 I-process ang Bayad</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TRANSACTIONS TAB ===== -->
+    <div class="tab-pane" id="tab-transactions">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <div class="search-bar" style="flex:1"><span>🔍</span><input type="text" id="txn-search" placeholder="Hanapin..." oninput="filterTxns()"></div>
+        <input type="date" id="txn-date" style="padding:7px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)" onchange="filterTxns()">
+        <button class="btn btn-ghost btn-sm" onclick="loadTransactions()">🔄</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>TXN ID</th><th>Date</th><th>Cashier</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th></th></tr></thead>
+            <tbody id="txn-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text3)">Loading...</td></tr></tbody>
+          </table>
+        </div>
+        <div id="txn-pagination"></div>
+      </div>
+    </div>
+
+    <!-- ===== PRODUCTS MANAGEMENT TAB ===== -->
+    <div class="tab-pane" id="tab-products">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <div class="search-bar" style="flex:1"><span>🔍</span><input type="text" id="pmgmt-search" placeholder="Hanapin produkto..." oninput="filterProdMgmt()"></div>
+        <button class="btn btn-primary btn-sm" onclick="openAddProduct()" data-perm="create">+ Produkto</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Larawan</th><th>Pangalan</th><th>Category</th><th>Price</th><th>Stock</th><th>Variations</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="pmgmt-tbody"></tbody>
+          </table>
+        </div>
+        <div id="pmgmt-pagination"></div>
+      </div>
+    </div>
+
+    <!-- ===== REPORTS TAB ===== -->
+    <div class="tab-pane" id="tab-reports">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <input type="date" id="rpt-from" style="padding:7px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">
+        <input type="date" id="rpt-to"   style="padding:7px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">
+        <button class="btn btn-primary btn-sm" onclick="generateReport()">📊 Generate</button>
+      </div>
+      <div class="stats-grid" id="rpt-stats"></div>
+      <div class="card mt-16">
+        <div class="card-header"><span class="card-title">Top Selling Products</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Product</th><th>Qty Sold</th><th>Revenue</th></tr></thead>
+            <tbody id="rpt-top-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Variation Picker Modal -->
+<div class="modal-backdrop" id="var-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title" id="var-prod-name">Pumili ng Variation</span>
+      <button class="modal-close" onclick="UI.closeModal('var-modal')">✕</button>
+    </div>
+    <div id="var-groups"></div>
+    <div class="form-group mt-16">
+      <label>Quantity</label>
+      <input type="number" id="var-qty" value="1" min="1">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('var-modal')">Kanselahin</button>
+      <button class="btn btn-primary" onclick="confirmVariation()">🛒 Idagdag sa Cart</button>
+    </div>
+  </div>
+</div>
+
+<!-- Product Add/Edit Modal -->
+<div class="modal-backdrop" id="product-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="prod-modal-title">+ Bagong Produkto</span>
+      <button class="modal-close" onclick="UI.closeModal('product-modal')">✕</button>
+    </div>
+
+    <!-- Image upload -->
+    <div class="form-group">
+      <label>Larawan ng Produkto</label>
+      <div id="img-placeholder" class="img-placeholder" onclick="document.getElementById('prod-img-input').click()">
+        📷 I-click para mag-upload ng larawan
+      </div>
+      <img id="img-preview" class="img-preview" alt="preview">
+      <input type="file" id="prod-img-input" accept="image/*" style="display:none" onchange="previewImage(this)">
+      <button class="btn btn-ghost btn-sm" onclick="removeImage()" id="remove-img-btn" style="display:none;margin-top:4px">🗑 Alisin ang Larawan</button>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group"><label>Pangalan *</label><input type="text" id="f-pname"></div>
+      <div class="form-group"><label>Category *</label><input type="text" id="f-pcat" placeholder="e.g. Groceries, Baby Care..."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Presyo (₱) *</label><input type="number" id="f-pprice" step="0.01"></div>
+      <div class="form-group"><label>Gastos (₱)</label><input type="number" id="f-pcost" step="0.01"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Stock</label><input type="number" id="f-pstock" value="0"></div>
+      <div class="form-group"><label>Unit</label><input type="text" id="f-punit" placeholder="piece, kg, bottle..."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Barcode</label><input type="text" id="f-pbarcode"></div>
+      <div class="form-group"><label>Status</label><select id="f-pstatus"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+    </div>
+
+    <!-- Variations — admin only -->
+    <div data-perm="edit" style="margin-top:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <label style="margin:0;font-size:13px;font-weight:600;color:var(--text)">📦 Mga Variation Groups</label>
+        <button class="btn btn-ghost btn-sm" onclick="addVarGroup()">+ Dagdag Group</button>
+      </div>
+      <div id="var-builder" style="display:flex;flex-direction:column;gap:10px"></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px">ℹ️ Halimbawa: Group = "Lasa", Options = "Original, Beef, Chicken"</div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('product-modal')">Kanselahin</button>
+      <button class="btn btn-primary" onclick="saveProduct()">💾 I-save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Receipt Modal -->
+<div class="modal-backdrop" id="receipt-modal">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-header">
+      <span class="modal-title">🧾 Resibo</span>
+      <button class="modal-close" onclick="UI.closeModal('receipt-modal')">✕</button>
+    </div>
+    <div id="receipt-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('receipt-modal')">Isara</button>
+      <button class="btn btn-primary" onclick="window.print()">🖨 I-print</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<div id="loading-overlay" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
+
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/usermgmt.js"></script>
+<script>
+Auth.loadToken();
+const user = Auth.guard('pos');
+if (!user) throw 0;
+UI.buildNavbar(user, 'POS System');
+UI.buildSidebar(user, 'pos');
+Auth.applyUIPermissions(user, 'pos');
+UI.initTabs();
+UserMgmt.init(user, 'pos');
+
+let allProducts=[], cart=[], varTarget=null, editProdId=null, imgBase64='', allTxns=[];
+
+// ============ PRODUCTS ============
+async function loadProducts() {
+  allProducts = (await DB.read('productsDB')).filter(p=>p.status==='active');
+  renderCatTabs(); filterProducts();
+}
+
+function renderCatTabs() {
+  const cats=['All',...new Set(allProducts.map(p=>p.category))];
+  document.getElementById('cat-tabs').innerHTML=cats.map(c=>
+    `<button class="cat-btn ${c==='All'?'active':''}" onclick="filterByCategory('${c}',this)">${c}</button>`
+  ).join('');
+}
+
+function filterByCategory(cat,el) {
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  const f=cat==='All'?allProducts:allProducts.filter(p=>p.category===cat);
+  renderProductGrid(f);
+}
+
+function filterProducts() {
+  const q=document.getElementById('prod-search').value.toLowerCase();
+  const f=q?allProducts.filter(p=>p.name.toLowerCase().includes(q)||(p.barcode||'').includes(q)):allProducts;
+  renderProductGrid(f);
+}
+
+function renderProductGrid(prods) {
+  const grid=document.getElementById('product-grid');
+  if(!prods.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="icon">📦</div><p>Walang produkto</p></div>';return;}
+  grid.innerHTML=prods.map(p=>{
+    const hasVar=p.variations_json&&p.variations_json.trim()&&p.variations_json!=='[]'&&p.variations_json!=='';
+    const imgHtml=p.image&&p.image.length>10
+      ? `<img class="prod-img" src="${p.image}" alt="${p.name}">`
+      : `<div class="prod-img">📦</div>`;
+    return `<div class="prod-btn" onclick="addToCart('${p.id}')">
+      ${hasVar?'<span class="has-var">VAR</span>':''}
+      ${imgHtml}
+      <div class="name">${p.name}</div>
+      <div class="price">${UI.peso(p.price)}</div>
+      <div class="stock">Stock: ${p.stock} ${p.unit}</div>
+    </div>`;
+  }).join('');
+}
+
+// ============ CART ============
+function addToCart(productId) {
+  const prod=allProducts.find(p=>p.id===productId); if(!prod) return;
+  const hasVar=prod.variations_json&&prod.variations_json.trim()&&prod.variations_json!=='[]';
+  if(hasVar) { openVarPicker(prod); return; }
+  pushToCart(prod,1,'');
+}
+
+function pushToCart(prod,qty,varLabel) {
+  const key=prod.id+'|'+varLabel;
+  const existing=cart.find(c=>c.key===key);
+  if(existing){
+    if(existing.qty+qty>parseInt(prod.stock)){UI.toast('Hindi sapat ang stock!','warning');return;}
+    existing.qty+=qty;
+  } else {
+    cart.push({key,id:prod.id,name:prod.name,price:parseFloat(prod.price),qty,stock:parseInt(prod.stock),variation:varLabel});
+  }
+  renderCart(); UI.toast(`${prod.name} iddinagdag ✅`,'success',1200);
+}
+
+function openVarPicker(prod) {
+  varTarget=prod;
+  document.getElementById('var-prod-name').textContent=prod.name;
+  document.getElementById('var-qty').value=1;
+  let groups=[];
+  try{groups=JSON.parse(prod.variations_json||'[]');}catch(e){}
+  document.getElementById('var-groups').innerHTML=groups.map((g,gi)=>`
+    <div class="var-group">
+      <label>${g.group}</label>
+      <div class="var-options">
+        ${g.options.map((o,oi)=>`<div class="var-opt" data-gi="${gi}" data-oi="${oi}" onclick="selectVarOpt(this,'${gi}')">${o}</div>`).join('')}
+      </div>
+    </div>`).join('');
+  UI.openModal('var-modal');
+}
+
+function selectVarOpt(el, gi) {
+  document.querySelectorAll(`[data-gi="${gi}"]`).forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function confirmVariation() {
+  if(!varTarget)return;
+  let groups=[];
+  try{groups=JSON.parse(varTarget.variations_json||'[]');}catch(e){}
+  const selected=[];
+  let allSelected=true;
+  groups.forEach((g,gi)=>{
+    const sel=document.querySelector(`.var-opt.selected[data-gi="${gi}"]`);
+    if(sel) selected.push(sel.textContent);
+    else allSelected=false;
+  });
+  if(!allSelected){UI.toast('Pumili ng lahat ng variation','warning');return;}
+  const qty=parseInt(document.getElementById('var-qty').value)||1;
+  const varLabel=selected.join(' / ');
+  pushToCart(varTarget,qty,varLabel);
+  UI.closeModal('var-modal');
+}
+
+function updateQty(key,delta) {
+  const item=cart.find(c=>c.key===key); if(!item) return;
+  item.qty+=delta;
+  if(item.qty<=0) cart=cart.filter(c=>c.key!==key);
+  else if(item.qty>item.stock){item.qty=item.stock;UI.toast('Maximum stock reached','warning');}
+  renderCart();
+}
+
+function clearCart(){cart=[];renderCart();}
+
+function renderCart() {
+  const el=document.getElementById('cart-items');
+  if(!cart.length){el.innerHTML='<div class="empty-state" style="padding:24px"><div class="icon">🛒</div><p>Walang item</p></div>';}
+  else{el.innerHTML=cart.map(c=>`
+    <div class="cart-item">
+      <div class="cart-item-top">
+        <div class="item-name">${c.name}</div>
+        <div class="qty-ctrl">
+          <button onclick="updateQty('${c.key.replace(/'/g,"\\'")}',−1)".replace('−','-')>−</button>
+          <span>${c.qty}</span>
+          <button onclick="updateQty('${c.key.replace(/'/g,"\\'")}',1)">+</button>
+        </div>
+        <div class="item-price">${UI.peso(c.price*c.qty)}</div>
+      </div>
+      ${c.variation?`<div class="item-var">📦 ${c.variation}</div>`:''}
+    </div>`).join('');}
+  document.getElementById('cart-count').textContent=cart.reduce((s,c)=>s+c.qty,0);
+  updateTotals();
+}
+
+function updateTotals() {
+  const sub=cart.reduce((s,c)=>s+c.price*c.qty,0);
+  const disc=parseFloat(document.getElementById('discount').value)||0;
+  const total=sub*(1-disc/100);
+  document.getElementById('subtotal').textContent=UI.peso(sub);
+  document.getElementById('grand-total').textContent=UI.peso(total);
+  computeChange();
+}
+
+function toggleTender() {
+  const m=document.getElementById('pay-method').value;
+  document.getElementById('cash-tender-wrap').style.display=m==='cash'?'':'none';
+}
+
+function computeChange() {
+  const total=parseFloat(document.getElementById('grand-total').textContent.replace('₱','').replace(/,/g,''))||0;
+  const tendered=parseFloat(document.getElementById('amount-tendered').value)||0;
+  const el=document.getElementById('change-display');
+  if(document.getElementById('pay-method').value==='cash'&&tendered>0){
+    const change=tendered-total;
+    el.textContent=change>=0?`Sukli: ${UI.peso(change)}`:`⚠️ Kulang: ${UI.peso(Math.abs(change))}`;
+    el.style.color=change>=0?'var(--success)':'var(--danger)';
+  } else el.textContent='';
+}
+
+async function checkout() {
+  if(!cart.length){UI.toast('Walang laman ang cart!','warning');return;}
+  const sub=cart.reduce((s,c)=>s+c.price*c.qty,0);
+  const disc=parseFloat(document.getElementById('discount').value)||0;
+  const total=sub*(1-disc/100);
+  const method=document.getElementById('pay-method').value;
+  const tendered=parseFloat(document.getElementById('amount-tendered').value)||total;
+  if(method==='cash'&&tendered<total){UI.toast('Hindi sapat ang bayad!','error');return;}
+  UI.loading(true,'Nagpo-process...');
+  try{
+    const txns=await DB.read('transactionsDB',true);
+    const id=DB.nextId(txns,'id','TXN');
+    const items=cart.map(c=>({id:c.id,name:c.name,qty:c.qty,price:c.price,variation:c.variation,total:c.price*c.qty}));
+    await DB.insert('transactionsDB',{id,date:new Date().toISOString().replace('T',' ').substring(0,19),cashier:user.username,items_json:JSON.stringify(items),subtotal:sub.toFixed(2),discount:(sub*disc/100).toFixed(2),tax:'0.00',total:total.toFixed(2),payment_method:method,amount_tendered:tendered.toFixed(2),change:(tendered-total).toFixed(2),status:'completed'});
+    // Deduct stock
+    const prods=await DB.read('productsDB',true);
+    for(const item of cart){
+      const p=prods.find(x=>x.id===item.id);
+      if(p) await DB.update('productsDB',r=>r.id===item.id,{stock:String(parseInt(p.stock)-item.qty)});
+    }
+    showReceipt({id,date:new Date().toISOString().replace('T',' ').substring(0,19),cashier:user.username,items,subtotal:sub,discount:sub*disc/100,total,method,tendered,change:tendered-total});
+    clearCart(); await loadProducts();
+    UI.toast('Transaction successful! 🎉','success');
+  }catch(e){UI.toast('Error: '+e.message,'error');}
+  UI.loading(false);
+}
+
+function showReceipt(t) {
+  document.getElementById('receipt-content').innerHTML=`
+    <div class="receipt">
+      <h2>🏢 ENTERPRISE SYSTEM</h2>
+      <div class="center">Official Receipt<br>${t.date}</div>
+      <hr>
+      <div class="r-row"><span>TXN: ${t.id}</span><span>By: ${t.cashier}</span></div>
+      <hr>
+      ${t.items.map(i=>`<div class="r-row"><span>${i.name}${i.variation?' ('+i.variation+')':''} x${i.qty}</span><span>₱${parseFloat(i.total).toFixed(2)}</span></div>`).join('')}
+      <hr>
+      <div class="r-row"><span>Subtotal</span><span>₱${parseFloat(t.subtotal).toFixed(2)}</span></div>
+      ${parseFloat(t.discount)>0?`<div class="r-row"><span>Discount</span><span>-₱${parseFloat(t.discount).toFixed(2)}</span></div>`:''}
+      <div class="r-row r-total"><span><strong>TOTAL</strong></span><span><strong>₱${parseFloat(t.total).toFixed(2)}</strong></span></div>
+      <div class="r-row"><span>Paid (${t.method||t.payment_method})</span><span>₱${parseFloat(t.tendered||t.amount_tendered).toFixed(2)}</span></div>
+      ${parseFloat(t.change)>0?`<div class="r-row"><span>Sukli</span><span>₱${parseFloat(t.change).toFixed(2)}</span></div>`:''}
+      <div style="text-align:center;margin-top:10px;color:#888">Salamat! 😊</div>
+    </div>`;
+  UI.openModal('receipt-modal');
+}
+
+// ============ TRANSACTIONS ============
+async function loadTransactions() {
+  allTxns=(await DB.read('transactionsDB',true)).sort((a,b)=>b.date.localeCompare(a.date));
+  filterTxns();
+}
+function filterTxns(){
+  const q=(document.getElementById('txn-search').value||'').toLowerCase();
+  const d=document.getElementById('txn-date').value;
+  let f=allTxns;
+  if(q)f=f.filter(t=>t.id.toLowerCase().includes(q)||t.cashier.toLowerCase().includes(q));
+  if(d)f=f.filter(t=>t.date.startsWith(d));
+  renderTxnTable(f,1);
+}
+function renderTxnTable(rows,page){
+  const paged=UI.paginate(rows,page);
+  document.getElementById('txn-tbody').innerHTML=paged.rows.map(t=>{
+    const items=JSON.parse(t.items_json||'[]');
+    return `<tr><td class="mono">${t.id}</td><td style="font-size:11px">${t.date}</td><td>${t.cashier}</td><td>${items.length} item(s)</td><td><strong>${UI.peso(t.total)}</strong></td><td>${t.payment_method}</td><td>${UI.statusBadge(t.status)}</td><td><button class="btn btn-ghost btn-sm" onclick="viewTxnReceipt('${t.id}')">🧾</button></td></tr>`;
+  }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang transactions</td></tr>';
+  UI.renderPagination('txn-pagination',paged,p=>renderTxnTable(rows,p));
+}
+function viewTxnReceipt(id){
+  const t=allTxns.find(x=>x.id===id);if(!t)return;
+  const items=JSON.parse(t.items_json||'[]');
+  showReceipt({...t,items,subtotal:t.subtotal,discount:t.discount,total:t.total,method:t.payment_method,tendered:t.amount_tendered});
+}
+
+// ============ PRODUCT MANAGEMENT ============
+let allProdsMgmt=[];
+async function loadProdMgmt(){
+  allProdsMgmt=await DB.read('productsDB',true);
+  filterProdMgmt();
+}
+function filterProdMgmt(){
+  const q=(document.getElementById('pmgmt-search').value||'').toLowerCase();
+  const f=q?allProdsMgmt.filter(p=>p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q)):allProdsMgmt;
+  renderProdMgmt(f,1);
+}
+function renderProdMgmt(rows,page){
+  const paged=UI.paginate(rows,page,10);
+  document.getElementById('pmgmt-tbody').innerHTML=paged.rows.map(p=>{
+    let varCount=0;try{varCount=(JSON.parse(p.variations_json||'[]')).length;}catch(e){}
+    const imgHtml=p.image&&p.image.length>10?`<img src="${p.image}" style="width:44px;height:44px;object-fit:cover;border-radius:6px">`:'<div style="width:44px;height:44px;background:var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center">📦</div>';
+    return `<tr>
+      <td>${imgHtml}</td>
+      <td><strong>${p.name}</strong></td>
+      <td>${p.category}</td>
+      <td>${UI.peso(p.price)}</td>
+      <td>${parseInt(p.stock)<50?`<span style="color:var(--warning)">${p.stock}</span>`:p.stock} ${p.unit}</td>
+      <td>${varCount?`<span class="badge badge-info">${varCount} group(s)</span>`:'<span style="color:var(--text3);font-size:11px">None</span>'}</td>
+      <td>${UI.statusBadge(p.status)}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-sm" onclick="editProduct('${p.id}')" data-perm="edit">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="archiveProduct('${p.id}')" data-perm="delete">🗑</button>
+      </td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang produkto</td></tr>';
+  UI.renderPagination('pmgmt-pagination',paged,p=>renderProdMgmt(rows,p));
+  Auth.applyUIPermissions(user,'pos');
+}
+
+// Product form helpers
+let varGroups=[];
+function addVarGroup(){
+  varGroups.push({group:'',options:[]});
+  renderVarBuilder();
+}
+function removeVarGroup(i){varGroups.splice(i,1);renderVarBuilder();}
+function renderVarBuilder(){
+  document.getElementById('var-builder').innerHTML=varGroups.map((g,i)=>`
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input type="text" placeholder="Group name (e.g. Lasa, Size, Age)" value="${g.group}" oninput="varGroups[${i}].group=this.value" style="flex:1;padding:6px 10px;border-radius:6px;background:var(--bg);border:1px solid var(--border);color:var(--text)">
+        <button class="btn btn-danger btn-sm" onclick="removeVarGroup(${i})">🗑</button>
+      </div>
+      <input type="text" placeholder="Options (comma separated, e.g. Small,Medium,Large)" value="${g.options.join(',')}" oninput="varGroups[${i}].options=this.value.split(',').map(s=>s.trim()).filter(s=>s)" style="width:100%;padding:6px 10px;border-radius:6px;background:var(--bg);border:1px solid var(--border);color:var(--text)">
+    </div>`).join('');
+}
+
+// Image handling
+function previewImage(input) {
+  const file=input.files[0]; if(!file) return;
+  if(file.size>800*1024){UI.toast('Max 800KB ang larawan','warning');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    imgBase64=e.target.result;
+    document.getElementById('img-preview').src=imgBase64;
+    document.getElementById('img-preview').style.display='block';
+    document.getElementById('img-placeholder').style.display='none';
+    document.getElementById('remove-img-btn').style.display='';
+  };
+  reader.readAsDataURL(file);
+}
+function removeImage(){
+  imgBase64='';
+  document.getElementById('img-preview').src=''; document.getElementById('img-preview').style.display='none';
+  document.getElementById('img-placeholder').style.display='';
+  document.getElementById('remove-img-btn').style.display='none';
+  document.getElementById('prod-img-input').value='';
+}
+
+function openAddProduct(){
+  editProdId=null; imgBase64=''; varGroups=[];
+  ['f-pname','f-pcat','f-pprice','f-pcost','f-pbarcode'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-pstock').value='0';
+  document.getElementById('f-punit').value='';
+  document.getElementById('f-pstatus').value='active';
+  removeImage(); renderVarBuilder();
+  document.getElementById('prod-modal-title').textContent='+ Bagong Produkto';
+  UI.openModal('product-modal');
+}
+
+function editProduct(id){
+  const p=allProdsMgmt.find(x=>x.id===id);if(!p)return;
+  editProdId=id; imgBase64=p.image||'';
+  document.getElementById('f-pname').value=p.name;
+  document.getElementById('f-pcat').value=p.category;
+  document.getElementById('f-pprice').value=p.price;
+  document.getElementById('f-pcost').value=p.cost||'';
+  document.getElementById('f-pstock').value=p.stock;
+  document.getElementById('f-punit').value=p.unit;
+  document.getElementById('f-pbarcode').value=p.barcode||'';
+  document.getElementById('f-pstatus').value=p.status;
+  if(imgBase64&&imgBase64.length>10){
+    document.getElementById('img-preview').src=imgBase64;
+    document.getElementById('img-preview').style.display='block';
+    document.getElementById('img-placeholder').style.display='none';
+    document.getElementById('remove-img-btn').style.display='';
+  } else removeImage();
+  try{varGroups=JSON.parse(p.variations_json||'[]');}catch(e){varGroups=[];}
+  renderVarBuilder();
+  document.getElementById('prod-modal-title').textContent='✏️ I-edit ang Produkto';
+  UI.openModal('product-modal');
+}
+
+async function saveProduct(){
+  const name=document.getElementById('f-pname').value.trim();
+  const price=document.getElementById('f-pprice').value;
+  if(!name||!price){UI.toast('Punan ang Pangalan at Presyo','warning');return;}
+  UI.loading(true,'Nagse-save...');
+  try{
+    const data={name,category:document.getElementById('f-pcat').value,price,cost:document.getElementById('f-pcost').value,stock:document.getElementById('f-pstock').value,unit:document.getElementById('f-punit').value,barcode:document.getElementById('f-pbarcode').value,status:document.getElementById('f-pstatus').value,image:imgBase64,variations_json:JSON.stringify(varGroups)};
+    if(editProdId){
+      await DB.update('productsDB',r=>r.id===editProdId,data);
+      UI.toast('Na-update ✅','success');
+    }else{
+      const all=await DB.read('productsDB',true);
+      await DB.insert('productsDB',{id:DB.nextId(all,'id','P'),...data,created_at:new Date().toISOString().split('T')[0]});
+      UI.toast('Naidagdag ✅','success');
+    }
+    UI.closeModal('product-modal');
+    await loadProdMgmt(); await loadProducts();
+  }catch(e){UI.toast('Error: '+e.message,'error');}
+  UI.loading(false);
+}
+
+function archiveProduct(id){
+  UI.confirm('I-archive ang produktong ito?',async()=>{
+    UI.loading(true);
+    try{await DB.update('productsDB',r=>r.id===id,{status:'inactive'});UI.toast('Na-archive','success');await loadProdMgmt();await loadProducts();}
+    catch(e){UI.toast('Error: '+e.message,'error');}
+    UI.loading(false);
+  });
+}
+
+// ============ REPORTS ============
+async function generateReport(){
+  const from=document.getElementById('rpt-from').value;
+  const to=document.getElementById('rpt-to').value;
+  if(!from||!to){UI.toast('Pumili ng date range','warning');return;}
+  const txns=(await DB.read('transactionsDB',true)).filter(t=>t.date>=from&&t.date<=to+'z'&&t.status==='completed');
+  const totalSales=txns.reduce((s,t)=>s+parseFloat(t.total||0),0);
+  const totalTxns=txns.length;
+  const avgPerTxn=totalTxns?totalSales/totalTxns:0;
+  document.getElementById('rpt-stats').innerHTML=`
+    <div class="stat-card blue"><div class="stat-label">Total Sales</div><div class="stat-value" style="font-size:20px">${UI.peso(totalSales)}</div></div>
+    <div class="stat-card green"><div class="stat-label">Transactions</div><div class="stat-value">${totalTxns}</div></div>
+    <div class="stat-card"><div class="stat-label">Ave per Transaction</div><div class="stat-value" style="font-size:20px">${UI.peso(avgPerTxn)}</div></div>`;
+  // Top products
+  const prodMap={};
+  txns.forEach(t=>{
+    try{JSON.parse(t.items_json||'[]').forEach(i=>{
+      if(!prodMap[i.name])prodMap[i.name]={qty:0,rev:0};
+      prodMap[i.name].qty+=parseInt(i.qty);
+      prodMap[i.name].rev+=parseFloat(i.total||0);
+    });}catch(e){}
+  });
+  const top=Object.entries(prodMap).sort((a,b)=>b[1].rev-a[1].rev).slice(0,10);
+  document.getElementById('rpt-top-tbody').innerHTML=top.map(([name,d])=>`<tr><td>${name}</td><td>${d.qty}</td><td><strong>${UI.peso(d.rev)}</strong></td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--text3)">Walang data</td></tr>';
+}
+
+// Tab listeners
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    if(t.dataset.tab==='tab-transactions') loadTransactions();
+    if(t.dataset.tab==='tab-products') loadProdMgmt();
+  });
+});
+
+// Set default report dates
+const today=new Date().toISOString().split('T')[0];
+const monthStart=today.substring(0,7)+'-01';
+document.getElementById('rpt-from').value=monthStart;
+document.getElementById('rpt-to').value=today;
+
+// Also set today as default txn date filter
+document.getElementById('txn-date').value=today;
+
+loadProducts();
+</script>
+</body>
+</html>
