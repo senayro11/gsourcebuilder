@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fil">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperAdmin Panel — Enterprise</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-layout">
+  <nav class="navbar">
+    <div class="navbar-brand" id="navbar-brand">🏢 Enterprise System</div>
+    <div class="navbar-right">
+      <div class="user-chip">
+        <div class="avatar" id="user-avatar">A</div>
+        <div class="user-info"><span class="name" id="user-name"></span><span class="role" id="user-role"></span></div>
+      </div>
+      <a href="dashboard.html" class="btn btn-ghost btn-sm">🏠</a>
+      <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">🚪</button>
+    </div>
+  </nav>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main">
+    <div class="page-header-row" style="margin-bottom:20px">
+      <div>
+        <h1 style="font-size:22px;font-weight:700;color:var(--white)">⚙️ SuperAdmin Panel</h1>
+        <p style="color:var(--text2);margin-top:4px">Global user management at system settings</p>
+      </div>
+    </div>
+
+    <!-- System tabs -->
+    <div class="tabs">
+      <div class="tab active" data-tab="sa-all">👥 All Users</div>
+      <div class="tab" data-tab="sa-pos">🛒 POS</div>
+      <div class="tab" data-tab="sa-inventory">📦 Inventory</div>
+      <div class="tab" data-tab="sa-attendance">🕐 Attendance</div>
+      <div class="tab" data-tab="sa-budget">💰 Budget</div>
+    </div>
+
+    <!-- All users -->
+    <div class="tab-pane active" id="sa-all">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <div class="search-bar" style="flex:1"><span>🔍</span><input type="text" id="sa-search" placeholder="Hanapin user..." oninput="filterAll()"></div>
+        <select id="sa-sys-filter" style="padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)" onchange="filterAll()">
+          <option value="">All Systems</option>
+          <option value="all">SuperAdmin</option>
+          <option value="pos">POS</option>
+          <option value="inventory">Inventory</option>
+          <option value="attendance">Attendance</option>
+          <option value="budget">Budget</option>
+        </select>
+        <select id="sa-role-filter" style="padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)" onchange="filterAll()">
+          <option value="">All Roles</option>
+          <option value="superadmin">SuperAdmin</option>
+          <option value="admin">Admin</option>
+          <option value="staff">Staff</option>
+          <option value="ojt">OJT</option>
+          <option value="guest">Guest</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="openGlobalAdd()">+ Bagong User</button>
+      </div>
+      <div class="stats-grid" id="sa-stats" style="margin-bottom:16px"></div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Username</th><th>Full Name</th><th>Role</th><th>System</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+            <tbody id="sa-tbody"></tbody>
+          </table>
+        </div>
+        <div id="sa-pagination"></div>
+      </div>
+    </div>
+
+    <!-- Per-system views -->
+    <div class="tab-pane" id="sa-pos">   <div id="sys-users-pos"></div></div>
+    <div class="tab-pane" id="sa-inventory"><div id="sys-users-inventory"></div></div>
+    <div class="tab-pane" id="sa-attendance"><div id="sys-users-attendance"></div></div>
+    <div class="tab-pane" id="sa-budget"><div id="sys-users-budget"></div></div>
+  </main>
+</div>
+
+<!-- Global Add/Edit User Modal -->
+<div class="modal-backdrop" id="global-user-modal">
+  <div class="modal modal-lg" style="max-width:520px">
+    <div class="modal-header">
+      <span class="modal-title" id="gum-title">+ Bagong User</span>
+      <button class="modal-close" onclick="UI.closeModal('global-user-modal')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Username *</label><input type="text" id="gum-username"></div>
+      <div class="form-group"><label>Full Name *</label><input type="text" id="gum-fullname"></div>
+    </div>
+    <div class="form-group"><label>Email</label><input type="email" id="gum-email"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Role *</label>
+        <select id="gum-role" onchange="toggleGumSystem()">
+          <option value="superadmin">SuperAdmin</option>
+          <option value="admin">Admin</option>
+          <option value="staff">Staff</option>
+          <option value="ojt">OJT</option>
+          <option value="guest">Guest</option>
+        </select>
+      </div>
+      <div class="form-group" id="gum-sys-wrap">
+        <label>Assigned System *</label>
+        <select id="gum-system">
+          <option value="pos">POS</option>
+          <option value="inventory">Inventory</option>
+          <option value="attendance">Attendance & Payroll</option>
+          <option value="budget">Budget & Finance</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label id="gum-pw-label">Password *</label><input type="password" id="gum-password"></div>
+      <div class="form-group"><label>Confirm</label><input type="password" id="gum-password2"></div>
+    </div>
+    <div id="gum-pw-note" style="display:none;font-size:11px;color:var(--text3);margin:-8px 0 12px">ℹ️ Blangko = hindi papalitan ang password.</div>
+    <div class="form-group"><label>Status</label><select id="gum-status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="suspended">Suspended</option></select></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('global-user-modal')">Kanselahin</button>
+      <button class="btn btn-primary" onclick="saveGlobalUser()">💾 I-save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<div id="loading-overlay" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
+
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/usermgmt.js"></script>
+<script>
+Auth.loadToken();
+const user = Auth.guard('superadmin');
+if (!user) throw 0;
+UI.buildNavbar(user, 'SuperAdmin Panel');
+UI.buildSidebar(user, 'superadmin');
+UI.initTabs();
+
+let allUsers=[], editUsername=null;
+
+async function loadAll() {
+  UI.loading(true,'Loading...');
+  try {
+    allUsers = await DB.read('accountsDB', true);
+    renderStats(); filterAll();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+
+function renderStats() {
+  const systems=['all','pos','inventory','attendance','budget'];
+  const labels=['SuperAdmin','POS','Inventory','Attendance','Budget'];
+  document.getElementById('sa-stats').innerHTML=systems.map((s,i)=>{
+    const c=allUsers.filter(u=>u.assigned_system===s&&u.status==='active').length;
+    return `<div class="stat-card"><div class="stat-label">${labels[i]}</div><div class="stat-value">${c}</div><div class="stat-sub">active users</div></div>`;
+  }).join('');
+}
+
+function filterAll() {
+  const q=(document.getElementById('sa-search').value||'').toLowerCase();
+  const sys=document.getElementById('sa-sys-filter').value;
+  const role=document.getElementById('sa-role-filter').value;
+  let rows=allUsers;
+  if(q) rows=rows.filter(u=>u.username.toLowerCase().includes(q)||u.full_name.toLowerCase().includes(q));
+  if(sys) rows=rows.filter(u=>u.assigned_system===sys);
+  if(role) rows=rows.filter(u=>u.role===role);
+  renderTable(rows,1);
+}
+
+function renderTable(rows,page) {
+  const paged=UI.paginate(rows,page,15);
+  document.getElementById('sa-tbody').innerHTML=paged.rows.map(u=>`<tr>
+    <td><strong class="mono">${u.username}</strong></td>
+    <td>${u.full_name}</td>
+    <td>${UI.roleBadge(u.role)}</td>
+    <td>${u.assigned_system==='all'?'<span class="badge badge-purple">ALL</span>':(SYSTEMS[u.assigned_system]?.name||u.assigned_system)}</td>
+    <td>${UI.statusBadge(u.status)}</td>
+    <td style="font-size:11px;color:var(--text3)">${u.created_at}</td>
+    <td style="display:flex;gap:4px">
+      <button class="btn btn-ghost btn-sm" onclick="openGlobalEdit('${u.username}')">✏️</button>
+      <button class="btn btn-${u.status==='active'?'warning':'success'} btn-sm" onclick="toggleStatus('${u.username}')">${u.status==='active'?'🔒':'🔓'}</button>
+      ${u.username!=='superadmin'?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.username}')">🗑</button>`:''}
+    </td>
+  </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text3)">Walang users</td></tr>';
+  UI.renderPagination('sa-pagination',paged,p=>renderTable(rows,p));
+}
+
+// Per-system table render
+function renderSystemUsers(system, containerId) {
+  const rows=allUsers.filter(u=>u.assigned_system===system);
+  const el=document.getElementById(containerId);
+  if(!el)return;
+  el.innerHTML=`
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <button class="btn btn-primary btn-sm" onclick="openGlobalAdd('${system}')">+ Bagong User para sa ${SYSTEMS[system]?.name||system}</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Username</th><th>Full Name</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>${rows.map(u=>`<tr>
+            <td><strong class="mono">${u.username}</strong></td>
+            <td>${u.full_name}</td>
+            <td>${UI.roleBadge(u.role)}</td>
+            <td>${UI.statusBadge(u.status)}</td>
+            <td style="display:flex;gap:4px">
+              <button class="btn btn-ghost btn-sm" onclick="openGlobalEdit('${u.username}')">✏️</button>
+              <button class="btn btn-${u.status==='active'?'warning':'success'} btn-sm" onclick="toggleStatus('${u.username}')">${u.status==='active'?'🔒':'🔓'}</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.username}')">🗑</button>
+            </td>
+          </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">Walang users sa system na ito</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// Tab listeners
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    const sys={'sa-pos':'pos','sa-inventory':'inventory','sa-attendance':'attendance','sa-budget':'budget'}[t.dataset.tab];
+    if(sys) renderSystemUsers(sys,`sys-users-${sys}`);
+  });
+});
+
+// Global add/edit
+function toggleGumSystem(){
+  const r=document.getElementById('gum-role').value;
+  document.getElementById('gum-sys-wrap').style.display=r==='superadmin'?'none':'';
+}
+
+function openGlobalAdd(defaultSystem='') {
+  editUsername=null;
+  ['gum-username','gum-fullname','gum-email','gum-password','gum-password2'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('gum-role').value='staff';
+  document.getElementById('gum-status').value='active';
+  document.getElementById('gum-pw-label').textContent='Password *';
+  document.getElementById('gum-pw-note').style.display='none';
+  document.getElementById('gum-username').disabled=false;
+  if(defaultSystem) document.getElementById('gum-system').value=defaultSystem;
+  toggleGumSystem();
+  document.getElementById('gum-title').textContent='+ Bagong User';
+  UI.openModal('global-user-modal');
+}
+
+function openGlobalEdit(username) {
+  const u=allUsers.find(x=>x.username===username);if(!u)return;
+  editUsername=username;
+  document.getElementById('gum-username').value=u.username; document.getElementById('gum-username').disabled=true;
+  document.getElementById('gum-fullname').value=u.full_name;
+  document.getElementById('gum-email').value=u.email||'';
+  document.getElementById('gum-role').value=u.role;
+  document.getElementById('gum-system').value=u.assigned_system==='all'?'pos':u.assigned_system;
+  document.getElementById('gum-status').value=u.status;
+  document.getElementById('gum-password').value=''; document.getElementById('gum-password2').value='';
+  document.getElementById('gum-pw-label').textContent='Password (optional)';
+  document.getElementById('gum-pw-note').style.display='';
+  toggleGumSystem();
+  document.getElementById('gum-title').textContent='✏️ I-edit ang User';
+  UI.openModal('global-user-modal');
+}
+
+async function saveGlobalUser() {
+  const username=document.getElementById('gum-username').value.trim().toLowerCase();
+  const fullName=document.getElementById('gum-fullname').value.trim();
+  const role=document.getElementById('gum-role').value;
+  const system=role==='superadmin'?'all':document.getElementById('gum-system').value;
+  const pw=document.getElementById('gum-password').value;
+  const pw2=document.getElementById('gum-password2').value;
+  const status=document.getElementById('gum-status').value;
+  const email=document.getElementById('gum-email').value;
+  if(!username||!fullName){UI.toast('Punan ang required fields','warning');return;}
+  if(!editUsername&&!pw){UI.toast('Kailangan ng password para sa bagong user','warning');return;}
+  if(pw&&pw!==pw2){UI.toast('Hindi match ang password!','error');return;}
+  if(pw&&pw.length<6){UI.toast('Min 6 characters ang password','warning');return;}
+  UI.loading(true,'Nagse-save...');
+  try{
+    let hashed='';if(pw)hashed=await Auth.hashPassword(pw);
+    const all=await DB.read('accountsDB',true);
+    if(editUsername){
+      const updates={full_name:fullName,email,role,assigned_system:system,status};
+      if(hashed)updates.password_hash=hashed;
+      await DB.update('accountsDB',r=>r.username===editUsername,updates);
+      UI.toast('Na-update ✅','success');
+    }else{
+      if(all.find(u=>u.username===username)){UI.toast('May existing user na!','error');UI.loading(false);return;}
+      await DB.insert('accountsDB',{username,password_hash:hashed,role,assigned_system:system,full_name:fullName,email,status,created_at:new Date().toISOString().split('T')[0]});
+      UI.toast('Naidagdag ✅','success');
+    }
+    UI.closeModal('global-user-modal');
+    await loadAll();
+  }catch(e){UI.toast('Error: '+e.message,'error');}
+  UI.loading(false);
+}
+
+async function toggleStatus(username) {
+  const u=allUsers.find(x=>x.username===username);if(!u)return;
+  if(username==='superadmin'){UI.toast('Hindi pwedeng i-deactivate ang superadmin','warning');return;}
+  const ns=u.status==='active'?'suspended':'active';
+  UI.confirm(`${ns==='suspended'?'I-suspend':'I-activate'} si ${u.full_name}?`,async()=>{
+    UI.loading(true);
+    try{await DB.update('accountsDB',r=>r.username===username,{status:ns});UI.toast('Updated ✅','success');await loadAll();}
+    catch(e){UI.toast('Error: '+e.message,'error');}
+    UI.loading(false);
+  });
+}
+
+async function deleteUser(username) {
+  if(username==='superadmin'){UI.toast('Hindi pwedeng i-delete ang superadmin','warning');return;}
+  UI.confirm(`I-DELETE si ${username}? Hindi ito mababawi.`,async()=>{
+    UI.loading(true);
+    try{await DB.remove('accountsDB',r=>r.username===username);UI.toast('Na-delete','success');await loadAll();}
+    catch(e){UI.toast('Error: '+e.message,'error');}
+    UI.loading(false);
+  });
+}
+
+loadAll();
+</script>
+</body>
+</html>
