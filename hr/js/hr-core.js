@@ -111,34 +111,69 @@ function initSidebar() {
   const main     = document.getElementById('main-content');
   const overlay  = document.getElementById('sidebar-overlay');
   const toggleBtns = document.querySelectorAll('.sidebar-toggle-btn');
+
   const isMobile = () => window.innerWidth <= 1024;
 
-  function applyState(open) {
+  function openSidebar() {
+    sidebar.classList.add('open');
     if (isMobile()) {
-      sidebar.classList.toggle('mobile-open', open);
-      overlay.classList.toggle('show', open);
-      topbar.classList.remove('sidebar-hidden');
-      main.classList.remove('sidebar-hidden');
+      overlay.classList.add('show');
     } else {
-      sidebar.classList.toggle('collapsed', !open);
-      topbar.classList.toggle('sidebar-hidden', !open);
-      main.classList.toggle('sidebar-hidden', !open);
-      overlay.classList.remove('show');
+      topbar.classList.add('sidebar-open');
+      main.classList.add('sidebar-open');
     }
   }
 
-  // Default state
-  let isOpen = !isMobile();
-  applyState(isOpen);
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+    if (!isMobile()) {
+      topbar.classList.remove('sidebar-open');
+      main.classList.remove('sidebar-open');
+    }
+  }
 
+  function toggleSidebar() {
+    if (sidebar.classList.contains('open')) {
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
+  }
+
+  // Default: open on desktop, closed on mobile
+  if (isMobile()) {
+    closeSidebar();
+  } else {
+    openSidebar();
+  }
+
+  // Toggle button clicks
   toggleBtns.forEach(btn => {
-    btn.addEventListener('click', () => { isOpen = !isOpen; applyState(isOpen); });
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleSidebar();
+    });
   });
-  overlay?.addEventListener('click', () => { isOpen = false; applyState(false); });
 
+  // Close on overlay click (mobile)
+  if (overlay) {
+    overlay.addEventListener('click', () => closeSidebar());
+  }
+
+  // Handle resize
+  let wasDesktop = !isMobile();
   window.addEventListener('resize', () => {
-    isOpen = !isMobile();
-    applyState(isOpen);
+    const nowDesktop = !isMobile();
+    if (nowDesktop !== wasDesktop) {
+      wasDesktop = nowDesktop;
+      if (nowDesktop) {
+        openSidebar();
+        overlay.classList.remove('show');
+      } else {
+        closeSidebar();
+      }
+    }
   });
 }
 
@@ -235,4 +270,3 @@ const HRDB = (() => {
   function clearCache(name){if(name){delete cache[name];delete shas[name];}else{Object.keys(cache).forEach(k=>delete cache[k]);}}
   return{read,write,insert,update,remove,nextId,clearCache,parse,serialize};
 })();
-
