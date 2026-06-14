@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="fil">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Enterprise System</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .system-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 24px; }
+    .sys-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px;
+      cursor: pointer; transition: all 0.2s;
+      text-decoration: none; color: inherit;
+      display: block; position: relative; overflow: hidden;
+    }
+    .sys-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--c, var(--accent));
+    }
+    .sys-card:hover { border-color: var(--c, var(--accent)); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    .sys-card .icon { font-size: 36px; margin-bottom: 12px; }
+    .sys-card h3 { font-size: 16px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+    .sys-card p  { color: var(--text2); font-size: 13px; }
+    .sys-card .arrow { position: absolute; bottom: 20px; right: 20px; color: var(--text3); font-size: 18px; }
+    .welcome-banner {
+      background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(99,102,241,0.05));
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: var(--radius-lg); padding: 24px;
+      display: flex; align-items: center; gap: 20px; margin-bottom: 24px;
+    }
+    .welcome-banner .avatar-lg {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--accent); display: flex; align-items: center;
+      justify-content: center; font-size: 22px; font-weight: 700; color: white;
+      flex-shrink: 0;
+    }
+    .welcome-banner h2 { font-size: 20px; font-weight: 700; color: var(--white); }
+    .welcome-banner p  { color: var(--text2); margin-top: 4px; }
+    .time-display { margin-left: auto; text-align: right; }
+    .time-display .clock { font-size: 28px; font-weight: 700; color: var(--white); font-family: var(--mono); }
+    .time-display .date  { color: var(--text2); font-size: 13px; }
+    .quick-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 12px; margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-brand" id="navbar-brand">🏢 Enterprise System</div>
+    <div class="navbar-right">
+      <div class="user-chip">
+        <div class="avatar" id="user-avatar">A</div>
+        <div class="user-info">
+          <span class="name" id="user-name">Loading...</span>
+          <span class="role" id="user-role">ROLE</span>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">🚪 Logout</button>
+    </div>
+  </nav>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="welcome-banner">
+      <div class="avatar-lg" id="avatar-big">A</div>
+      <div>
+        <h2>Magandang <span id="greeting-time">araw</span>, <span id="greet-name"></span>! 👋</h2>
+        <p id="greet-role"></p>
+      </div>
+      <div class="time-display">
+        <div class="clock" id="clock">--:--</div>
+        <div class="date" id="today-date"></div>
+      </div>
+    </div>
+
+    <div class="quick-stats" id="quick-stats">
+      <div class="stat-card"><div class="stat-label">Loading data...</div></div>
+    </div>
+
+    <div class="page-header">
+      <h1>Accessible Systems</h1>
+      <p>I-click ang system na gusto mong gamitin</p>
+    </div>
+
+    <div class="system-grid" id="system-grid">
+      <!-- generated -->
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<div id="loading-overlay" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
+
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/usermgmt.js"></script>
+<script>
+  Auth.loadToken();
+  const _session = Auth.guard(null);
+  if (!_session) throw new Error('Not logged in');
+  // Non-superadmin users should go directly to their system
+  if (_session.role !== 'superadmin') {
+    const sys = SYSTEMS[_session.assigned_system];
+    if (sys) { window.location.href = sys.file; throw 0; }
+  }
+
+  // Build UI
+  UI.buildNavbar(_session);
+  UI.buildSidebar(_session, null);
+
+  // Greeting
+  const hour = new Date().getHours();
+  document.getElementById('greeting-time').textContent =
+    hour < 12 ? 'umaga' : hour < 18 ? 'hapon' : 'gabi';
+  document.getElementById('greet-name').textContent = _session.full_name.split(' ')[0];
+  document.getElementById('avatar-big').textContent = _session.full_name.charAt(0);
+  document.getElementById('greet-role').textContent =
+    `${_session.role.toUpperCase()} — ${_session.assigned_system === 'all' ? 'All Systems' : SYSTEMS[_session.assigned_system]?.name || _session.assigned_system}`;
+
+  // Clock
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent =
+      now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    document.getElementById('today-date').textContent =
+      now.toLocaleDateString('en-PH', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  }
+  updateClock(); setInterval(updateClock, 1000);
+
+  // Build system cards
+  const grid = document.getElementById('system-grid');
+  const accessible = Auth.getAccessibleSystems(_session);
+  const descriptions = {
+    pos:       'Mag-transact, mag-receive ng bayad, at mag-generate ng resibo.',
+    inventory: 'Pamahalaan ang mga produkto, stock levels, at movements.',
+    attendance:'I-manage ang HR, attendance, leave requests, at payroll ng mga empleyado.',
+    budget:    'I-monitor ang expenses, income, utang, at budget ng negosyo.',
+    users:     'Pamahalaan ang lahat ng user accounts at access rights.'
+  };
+  grid.innerHTML = accessible.map(s => {
+    const sys = SYSTEMS[s];
+    if (!sys) return '';
+    return `<a href="${sys.file}" class="sys-card" style="--c:${sys.color}">
+      <div class="icon">${sys.icon}</div>
+      <h3>${sys.name}</h3>
+      <p>${descriptions[s] || ''}</p>
+      <span class="arrow">→</span>
+    </a>`;
+  }).join('');
+
+  // Quick stats
+  async function loadStats() {
+    const statsEl = document.getElementById('quick-stats');
+    try {
+      const stats = [];
+      if (Auth.canAccessSystem(_session, 'pos')) {
+        const txns = await DB.read('transactionsDB');
+        const today = new Date().toISOString().split('T')[0];
+        const todayTxns = txns.filter(t => t.date && t.date.startsWith(today));
+        const todaySales = todayTxns.reduce((s,t) => s + parseFloat(t.total||0), 0);
+        stats.push(`<div class="stat-card blue"><div class="stat-label">Sales Ngayon</div><div class="stat-value">${UI.peso(todaySales)}</div><div class="stat-sub">${todayTxns.length} transactions</div></div>`);
+      }
+      if (Auth.canAccessSystem(_session, 'inventory')) {
+        const prods = await DB.read('productsDB');
+        const lowStock = prods.filter(p => parseInt(p.stock) < 50 && p.status === 'active');
+        stats.push(`<div class="stat-card ${lowStock.length>0?'yellow':'green'}"><div class="stat-label">Low Stock Items</div><div class="stat-value">${lowStock.length}</div><div class="stat-sub">sa ${prods.length} produkto</div></div>`);
+      }
+      if (Auth.canAccessSystem(_session, 'attendance')) {
+        const emps = await DB.read('employeesDB');
+        const active = emps.filter(e => e.status === 'active');
+        stats.push(`<div class="stat-card green"><div class="stat-label">Active Employees</div><div class="stat-value">${active.length}</div><div class="stat-sub">registered employees</div></div>`);
+      }
+      if (Auth.canAccessSystem(_session, 'budget')) {
+        const budget = await DB.read('budgetDB');
+        const expenses = budget.filter(b => b.type === 'expense' && b.status === 'approved');
+        const total = expenses.reduce((s,b) => s + parseFloat(b.amount||0), 0);
+        stats.push(`<div class="stat-card red"><div class="stat-label">Total Expenses</div><div class="stat-value">${UI.peso(total)}</div><div class="stat-sub">approved expenses</div></div>`);
+      }
+      if (_session.role === 'superadmin') {
+        const accounts = await DB.read('accountsDB');
+        const active = accounts.filter(a => a.status === 'active');
+        stats.push(`<div class="stat-card"><div class="stat-label">Active Users</div><div class="stat-value">${active.length}</div><div class="stat-sub">user accounts</div></div>`);
+      }
+      statsEl.innerHTML = stats.length ? stats.join('') : '<div class="stat-card"><div class="stat-label">No data available</div></div>';
+    } catch(e) {
+      statsEl.innerHTML = `<div class="stat-card"><div class="stat-label">⚠️ Hindi ma-load ang stats</div><div class="stat-sub">${e.message}</div></div>`;
+    }
+  }
+  loadStats();
+</script>
+</body>
+</html>
