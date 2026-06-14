@@ -1,0 +1,4 @@
+id|title|content|priority|target|posted_by|date|status
+ANN001|Company Picnic - July 5|All employees are invited to the annual company picnic on July 5 at Rizal Park. Attendance is voluntary but encouraged.|normal|all|admin|2025-06-10|active
+ANN002|Payroll Schedule Change|Payroll release for June will be on June 20 instead of June 15 due to the holiday.|high|all|admin|2025-06-08|active
+ANN003|New Health Protocol|Please be reminded to wear masks in enclosed spaces per updated health guidelines.|normal|all|admin|2025-06-05|active
