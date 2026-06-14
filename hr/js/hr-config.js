@@ -2,8 +2,8 @@
 //  HR-CONFIG.JS — I-edit ang owner at repo
 // ============================================================
 const GITHUB_CONFIG = {
-  owner:  'YOUR_GITHUB_USERNAME',
-  repo:   'YOUR_REPO_NAME',
+  owner:  'senayro11',
+  repo:   'gsourcebuilder',
   branch: 'main',
   token:  '',
   dbPath: 'hr/db'
