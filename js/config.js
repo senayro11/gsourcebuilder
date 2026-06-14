@@ -14,7 +14,7 @@ const GITHUB_CONFIG = {
 const SYSTEMS = {
   pos:        { name: 'Point of Sale',        icon: '馃洅', file: 'pos.html',        color: '#6366f1' },
   inventory:  { name: 'Inventory',            icon: '馃摝', file: 'inventory.html',  color: '#0ea5e9' },
-  attendance: { name: 'Attendance & Payroll', icon: '馃晲', file: 'attendance.html', color: '#10b981' },
+  attendance: { name: 'HR Management',        icon: '馃晲', file: 'hr/attendance.html', color: '#10b981' },
   budget:     { name: 'Budget & Finance',     icon: '馃挵', file: 'budget.html',     color: '#f59e0b' }
 };
 
@@ -52,4 +52,3 @@ const PERMISSIONS = {
     guest:  []
   }
 };
-
