@@ -5,3 +5,4 @@ EMP003|KH-0003|Pedro Reyes|pedro@company.com|09194561234|Supervisor|Operations|8
 EMP004|KH-0004|Ana Garcia|ana@company.com|09201234568|Accountant|Finance|950.00|20900.00|300.00|200.00|100.00|789-123-456|2021-07-20|active|
 EMP005|KH-0005|Jose Reyes|jose@company.com|09213456789|Driver|Logistics|550.00|12100.00|150.00|100.00|100.00|321-654-987|2023-09-01|active|
 EMP006|KW-0001|Ville ryane San Esteban|v.ryane59@gmail.com|09099236860|Tech|IT|700|15400.00|||||2026-01-16|active|
+EMP007|KW-0001|Ville ryane San Esteban|v.ryane59@gmail.com|09099236860|Tech|IT|700|15400.00||||||active|
