@@ -206,11 +206,10 @@ function showLogin(needsSetup, alreadySetupElsewhere) {
   if (needsSetup && alreadySetupElsewhere) {
     document.querySelector('#setup-box .title').textContent = '⚙️ Kailangan ng Token sa Device na Ito';
     document.querySelector('#setup-box .sub').innerHTML =
-      'May-existing na ang system, pero hindi pa naka-save ang GitHub token sa <strong>device/browser na ito</strong>. ' +
-      'Humingi ng token mula sa SuperAdmin na nag-setup, o gumawa ng sarili mong PAT (parehong repo access):<br><br>' +
-      '1. Pumunta sa <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a><br>' +
-      '2. Generate new token (classic) → i-check ang <strong>repo</strong> scope<br>' +
-      '3. I-paste dito:';
+      'May-existing na ang system. <strong>Huwag gumawa ng bagong token</strong> — hingi na lang ng ' +
+      'kopya ng token mula sa SuperAdmin (ipapadala niya ito sa iyo nang <strong>privado</strong> ' +
+      'gaya ng Messenger/Viber, hindi sa email o public chat), tapos i-paste dito para ma-save ' +
+      'lokal sa device na ito:';
   }
 }
 
