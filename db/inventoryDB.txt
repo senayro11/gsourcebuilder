@@ -1,4 +1,0 @@
-id|date|product_id|type|quantity|before_stock|after_stock|reason|recorded_by
-INV001|2024-01-10|P001|restock|200|300|500|Supplier delivery|admin_inv
-INV002|2024-01-12|P004|adjustment|-50|1050|1000|Stock count correction|admin_inv
-INV003|2024-01-13|P006|restock|500|300|800|Supplier delivery|admin_inv
