@@ -120,20 +120,23 @@
 <script>
 // ============================================================
 //  TOKEN BOOTSTRAP
-//  1. Mag-fetch ng appconfig.txt via raw GitHub URL (no auth needed
-//     dahil public ang repo — or via API kung private)
-//  2. Kung may token sa appconfig.txt → i-load, show login
-//  3. Kung wala → show setup box para sa superadmin
+//  Ang PAT ay HINDI kailanman isinusulat sa loob ng repo (mabi-block
+//  ito ng GitHub secret scanning, at delikado rin kung public ang repo).
+//  Kaya't lokal lang sa bawat device/browser (localStorage) naka-store
+//  ang token. Ang appconfig.txt sa repo ay isang beses lang na ginagamit
+//  para malaman kung "setup_done" na ang system (walang totoong secret
+//  ang nilalaman nito), para malaman ng bagong device kung dapat pa ba
+//  itong mag-generate ng bagong token o humingi na lang ng existing token
+//  mula sa taong nag-setup.
 // ============================================================
 
 const RAW_CONFIG_URL =
   `https://raw.githubusercontent.com/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/${GITHUB_CONFIG.branch}/${GITHUB_CONFIG.dbPath}/appconfig.txt`;
 
-// Config file URL via GitHub API (works for private repos too)
 const API_CONFIG_URL =
   `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.dbPath}/appconfig.txt`;
 
-let configSha = ''; // needed to update the file
+let configSha = ''; // needed lang kapag ide-flag ang setup_done
 
 async function bootstrap() {
   // Redirect if already have a valid session
@@ -143,40 +146,20 @@ async function bootstrap() {
     return;
   }
 
-  // Try to load token from localStorage first (fast path for same device)
-  const localToken = localStorage.getItem('ent_gh_token');
+  // Ang token ay palaging lokal sa device na ito lang.
+  const localToken = (localStorage.getItem('ent_gh_token') || '').trim();
 
-  // Always try to fetch appconfig from GitHub
-  // First try raw URL (fast, no auth) — works for public repos
-  let fetchedToken = null;
-  try {
-    const res = await fetch(RAW_CONFIG_URL + '?t=' + Date.now());
-    if (res.ok) {
-      const text = await res.text();
-      fetchedToken = parseAppConfig(text).token || '';
-      // Also get SHA for updating later — fetch via API with token if available
-      if (localToken || fetchedToken) {
-        await loadConfigSha(localToken || fetchedToken);
-      }
-    }
-  } catch(e) {
-    // Network error or private repo — will use local token
-  }
-
-  // Determine final token to use
-  // Priority: fetched from GitHub > localStorage
-  const finalToken = (fetchedToken && fetchedToken.trim()) ? fetchedToken.trim()
-                   : (localToken && localToken.trim())    ? localToken.trim()
-                   : '';
-
-  if (finalToken) {
-    // Token found — set it and show normal login
-    GITHUB_CONFIG.token = finalToken;
-    localStorage.setItem('ent_gh_token', finalToken);
+  if (localToken) {
+    GITHUB_CONFIG.token = localToken;
     showLogin(false);
   } else {
-    // No token anywhere — show setup box
-    showLogin(true);
+    // Walang token dito pa — tignan kung may nag-setup na sa ibang device
+    let setupDone = false;
+    try {
+      const res = await fetch(RAW_CONFIG_URL + '?t=' + Date.now());
+      if (res.ok) setupDone = parseAppConfig(await res.text()).setup_done === 'true';
+    } catch(e) { /* offline o unreachable — ituring na bagong setup */ }
+    showLogin(true, setupDone);
   }
 
   // Show change token link in URL if ?admin=1
@@ -195,6 +178,15 @@ function parseAppConfig(text) {
   return result;
 }
 
+// Actual auth check (hindi tulad ng pag-fetch ng public repo contents, kailangan
+// dito ng valid na Authorization header)
+async function verifyToken(token) {
+  const res = await fetch('https://api.github.com/user', {
+    headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+  });
+  if (!res.ok) throw new Error(res.status === 401 ? 'Hindi valid ang token.' : `Hindi ma-verify ang token (HTTP ${res.status})`);
+}
+
 async function loadConfigSha(token) {
   try {
     const res = await fetch(API_CONFIG_URL, {
@@ -207,14 +199,24 @@ async function loadConfigSha(token) {
   } catch(e) {}
 }
 
-function showLogin(needsSetup) {
+function showLogin(needsSetup, alreadySetupElsewhere) {
   document.getElementById('loading-screen').style.display = 'none';
   document.getElementById('main-login').style.display     = '';
   document.getElementById('setup-box').style.display      = needsSetup ? '' : 'none';
+  if (needsSetup && alreadySetupElsewhere) {
+    document.querySelector('#setup-box .title').textContent = '⚙️ Kailangan ng Token sa Device na Ito';
+    document.querySelector('#setup-box .sub').innerHTML =
+      'May-existing na ang system, pero hindi pa naka-save ang GitHub token sa <strong>device/browser na ito</strong>. ' +
+      'Humingi ng token mula sa SuperAdmin na nag-setup, o gumawa ng sarili mong PAT (parehong repo access):<br><br>' +
+      '1. Pumunta sa <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a><br>' +
+      '2. Generate new token (classic) → i-check ang <strong>repo</strong> scope<br>' +
+      '3. I-paste dito:';
+  }
 }
 
 // ============================================================
-//  FIRST TIME SETUP — superadmin inputs token, save to GitHub
+//  SETUP / TOKEN ENTRY — lokal lang sa device na ito, hindi kailanman
+//  isinusulat ang totoong token sa loob ng repo.
 // ============================================================
 async function doFirstTimeSetup() {
   const token = document.getElementById('gh-token-input').value.trim();
@@ -223,56 +225,50 @@ async function doFirstTimeSetup() {
     UI.toast('Mukhang hindi valid ang token format.','warning'); return;
   }
 
-  // Temporarily set token so we can write to GitHub
   GITHUB_CONFIG.token = token;
-
-  UI.loading(true, 'Nagse-save ng token sa GitHub...');
+  UI.loading(true, 'Sinusuri ang token...');
   try {
-    const ok = await saveTokenToGitHub(token);
-    if (!ok) throw new Error('Hindi na-save sa GitHub. Siguraduhing tama ang token at repo settings.');
+    await verifyToken(token);
+    await loadConfigSha(token);
     localStorage.setItem('ent_gh_token', token);
-    UI.toast('Setup complete! ✅ Lahat ng devices ay magagamit na ang system.','success',4000);
+    await markSetupDone(token); // safe: setup_done flag lang, walang totoong token value
+    UI.toast('Naka-save ang token sa device na ito! ✅ (Kailangan ulit i-enter sa ibang devices)','success',5000);
     setTimeout(() => showLogin(false), 1500);
   } catch(e) {
     GITHUB_CONFIG.token = '';
+    localStorage.removeItem('ent_gh_token');
     UI.toast('Error: ' + e.message,'error', 5000);
   }
   UI.loading(false);
 }
 
-// Change token (for superadmin via ?admin=1)
+// Change token (for superadmin via ?admin=1) — lokal lang sa device na ito
 async function doChangeToken() {
   const token = document.getElementById('gh-token-change').value.trim();
   if (!token) { UI.toast('Walang token','warning'); return; }
-  GITHUB_CONFIG.token = token;
-  UI.loading(true,'Nag-a-update...');
+  UI.loading(true,'Sinusuri ang token...');
   try {
-    // Need SHA first
-    await loadConfigSha(token);
-    const ok = await saveTokenToGitHub(token);
-    if (!ok) throw new Error('Hindi na-save.');
+    await verifyToken(token);
     localStorage.setItem('ent_gh_token', token);
-    UI.toast('Token updated! ✅','success');
+    GITHUB_CONFIG.token = token;
+    UI.toast('Na-update ang token sa device na ito ✅','success');
     document.getElementById('change-token-box').style.display='none';
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
 }
 
-// Write token to appconfig.txt in GitHub repo
-async function saveTokenToGitHub(token) {
-  // Need SHA if file already exists
+// I-flag lang na "setup_done" ang system — walang totoong token value ang
+// isinusulat dito, kaya hindi ito hahabulin ng GitHub secret scanning.
+async function markSetupDone(token) {
   if (!configSha) await loadConfigSha(token);
-
-  const content = `key|value\ntoken|${token}\nsetup_done|true\napp_name|Enterprise System\n`;
+  const content = `key|value\ntoken|\nsetup_done|true\napp_name|Enterprise System\n`;
   const encoded = btoa(unescape(encodeURIComponent(content)));
-
   const body = {
-    message: 'System setup - save app token',
+    message: 'System setup - mark setup_done',
     content:  encoded,
     branch:   GITHUB_CONFIG.branch
   };
   if (configSha) body.sha = configSha;
-
   const res = await fetch(API_CONFIG_URL, {
     method:  'PUT',
     headers: {
@@ -282,14 +278,8 @@ async function saveTokenToGitHub(token) {
     },
     body: JSON.stringify(body)
   });
-
-  if (res.ok) {
-    const json = await res.json();
-    configSha = json.content.sha;
-    return true;
-  }
-  const err = await res.json().catch(()=>({}));
-  throw new Error(err.message || `HTTP ${res.status}`);
+  if (res.ok) { const json = await res.json(); configSha = json.content.sha; }
+  // Hindi kritikal kung mabigo ito — cosmetic flag lang ito.
 }
 
 // ============================================================
