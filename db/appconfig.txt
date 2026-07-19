@@ -1,4 +1,0 @@
-key|value
-token|
-setup_done|false
-app_name|Enterprise System
