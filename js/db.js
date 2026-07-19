@@ -43,52 +43,93 @@ const DB = (() => {
   }
 
   // Read a DB file → array of row objects
+  // Kapag walang internet/GitHub access, babalik sa huling naka-cache na
+  // snapshot (localStorage) para tuloy-tuloy pa rin gumana ang app offline.
   async function read(dbName, forceRefresh = false) {
     if (cache[dbName] && !forceRefresh) return cache[dbName];
-    const res = await fetch(apiUrl(dbName), { headers: headers() });
-    if (!res.ok) {
-      if (res.status === 404) { cache[dbName] = []; return []; }
-      throw new Error(`DB read error ${res.status}: ${dbName}`);
+    try {
+      const res = await fetch(apiUrl(dbName), { headers: headers() });
+      if (!res.ok) {
+        if (res.status === 404) {
+          cache[dbName] = []; cache[`${dbName}_header`] = '';
+          if (typeof Sync !== 'undefined') Sync.cacheSet(dbName, [], '');
+          return [];
+        }
+        throw new Error(`DB read error ${res.status}: ${dbName}`);
+      }
+      const json = await res.json();
+      shas[dbName]  = json.sha;
+      const content = atob(json.content.replace(/\n/g, ''));
+      cache[dbName] = parseTxt(content);
+      cache[`${dbName}_header`] = content.split('\n')[0];
+      if (typeof Sync !== 'undefined') Sync.cacheSet(dbName, cache[dbName], cache[`${dbName}_header`]);
+      return cache[dbName];
+    } catch (e) {
+      if (typeof Sync !== 'undefined' && Sync.isConnectivityError(e)) {
+        const local = Sync.cacheGet(dbName);
+        if (local) {
+          cache[dbName] = local.rows;
+          cache[`${dbName}_header`] = local.header;
+          return cache[dbName];
+        }
+      }
+      throw e;
     }
-    const json = await res.json();
-    shas[dbName]  = json.sha;
-    const content = atob(json.content.replace(/\n/g, ''));
-    cache[dbName] = parseTxt(content);
-    cache[`${dbName}_header`] = content.split('\n')[0];
-    return cache[dbName];
   }
 
-  // Write rows back to GitHub
-  async function write(dbName, rows) {
-    const headerRow = cache[`${dbName}_header`] || Object.keys(rows[0]).join('|');
-    const content   = serializeTxt(rows, headerRow);
-    const encoded   = btoa(unescape(encodeURIComponent(content)));
-    const body = {
-      message: `Update ${dbName} - ${new Date().toISOString()}`,
-      content: encoded,
-      sha:     shas[dbName],
-      branch:  GITHUB_CONFIG.branch
-    };
-    const res = await fetch(apiUrl(dbName), {
-      method: 'PUT',
-      headers: headers(),
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(`DB write error: ${err.message}`);
+  // Write rows back to GitHub.
+  // Kung walang internet, ise-save muna nang lokal (optimistic) at ipapasok
+  // sa offline sync queue — awtomatikong ise-sync ni Sync.flush() paguwi ng koneksyon.
+  async function write(dbName, rows, description) {
+    const headerRow = cache[`${dbName}_header`] || Object.keys(rows[0] || {}).join('|');
+    try {
+      const content = serializeTxt(rows, headerRow);
+      const encoded = btoa(unescape(encodeURIComponent(content)));
+      const body = {
+        message: `Update ${dbName} - ${new Date().toISOString()}`,
+        content: encoded,
+        sha:     shas[dbName],
+        branch:  GITHUB_CONFIG.branch
+      };
+      const res = await fetch(apiUrl(dbName), {
+        method: 'PUT',
+        headers: headers(),
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `DB write error ${res.status}`);
+      }
+      const json = await res.json();
+      shas[dbName]  = json.content.sha;
+      cache[dbName] = rows;
+      if (typeof Sync !== 'undefined') Sync.cacheSet(dbName, rows, headerRow);
+      return { ok: true, queued: false };
+    } catch (e) {
+      if (typeof Sync !== 'undefined' && Sync.isConnectivityError(e)) {
+        // Offline — i-save lokal muna, i-queue para sa auto-sync mamaya
+        cache[dbName] = rows;
+        Sync.cacheSet(dbName, rows, headerRow);
+        Sync.queueWrite(dbName, rows, headerRow, description || `Update sa ${dbName}`);
+        return { ok: true, queued: true };
+      }
+      throw e;
     }
-    const json = await res.json();
-    shas[dbName]  = json.content.sha;
-    cache[dbName] = rows;  // update cache
-    return true;
+  }
+
+  // Force-commit a queue entry straight to GitHub using a fresh sha.
+  // Ginagamit ni Sync.flush() lang — hindi dapat gamitin sa normal flow.
+  async function forceCommit(dbName, rows, headerRow) {
+    await read(dbName, true); // refresh sha mula sa remote
+    cache[`${dbName}_header`] = headerRow || cache[`${dbName}_header`];
+    return write(dbName, rows, '(sync)');
   }
 
   // Insert a new row
   async function insert(dbName, newRow) {
     const rows = await read(dbName, true);
     rows.push(newRow);
-    return write(dbName, rows);
+    return write(dbName, rows, 'Bagong record');
   }
 
   // Update row(s) by condition
@@ -100,7 +141,7 @@ const DB = (() => {
       return row;
     });
     if (changed === 0) return false;
-    await write(dbName, newRows);
+    await write(dbName, newRows, 'Pag-update ng record');
     return changed;
   }
 
@@ -110,7 +151,7 @@ const DB = (() => {
     const newRows = rows.filter(row => !condition(row));
     const deleted = rows.length - newRows.length;
     if (deleted === 0) return 0;
-    await write(dbName, newRows);
+    await write(dbName, newRows, 'Pagtanggal ng record');
     return deleted;
   }
 
@@ -136,5 +177,5 @@ const DB = (() => {
     else { Object.keys(cache).forEach(k => delete cache[k]); }
   }
 
-  return { read, write, insert, update, remove, nextId, search, parseTxt, serializeTxt, clearCache };
+  return { read, write, insert, update, remove, forceCommit, nextId, search, parseTxt, serializeTxt, clearCache };
 })();

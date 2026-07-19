@@ -123,9 +123,38 @@ I-edit ang `PERMISSIONS` object sa `config.js`.
 1. Idagdag ang field sa header ng TXT file
 2. I-update ang relevant HTML/JS na nag-a-access ng field na iyon
 
+## 🔌 Offline Mode & Auto-Sync
+
+Ang system ay **offline-first**: pwede mo pa ring buksan at gamitin ang app kahit walang internet
+(hal. naka-save ang page sa computer/browser), basta't nabuksan mo na ito nang online kahit isang beses
+(para may naka-cache na data).
+
+Paano gumagana:
+
+1. **Bawat successful na `DB.read()`** ay awtomatikong sinasave sa `localStorage` ng browser
+   (`ent_cache_<dbName>`) bilang huling-kilalang snapshot.
+2. **Kapag walang internet** (o hindi ma-reach ang GitHub API):
+   - Ang mga *read* ay babalik sa naka-cache na snapshot sa halip na mag-error.
+   - Ang mga *write* (add/edit/delete) ay ise-save muna nang lokal at ilalagay sa isang
+     **offline sync queue** (`ent_sync_queue` sa localStorage) — hindi ito basta mawawala.
+3. **Kapag bumalik ang internet** (`online` event, o awtomatikong pag-check bawat ~25 segundo),
+   ise-sync ni `js/sync.js` ang lahat ng naka-queue na pagbabago pabalik sa GitHub,
+   isa-isa, gamit ang pinakabagong file `sha` para maiwasan ang stale-write errors.
+4. Makikita ang **status ng koneksyon at bilang ng pending na pagbabago** sa isang pill sa navbar
+   (🟢 Online / 🟡 May pending / 🔴 Offline) sa bawat page — i-click ito para mag-force-sync agad.
+5. Ang **SuperAdmin Panel → 🔄 Sync Center** ang buong control room: makikita dito kung anong mga
+   database ang may pending na pagbabago, ilan, kailan huling nag-sync, at may buttons para
+   mag-force sync o mag-clear ng queue.
+
+### ⚠️ Mahalagang paalala tungkol sa offline sync
+- Ito ay **last-write-wins**: kung dalawang device ang gumawa ng offline na pagbabago sa **parehong
+  database file** bago mag-sync, ang huling na-sync ang mananatili — puwedeng ma-overwrite ang isa.
+  Iwasan ang sabay-sabay na offline editing sa parehong system kung maiiwasan.
+- Kailangan pa ring naka-login/naka-access ang device online kahit minsan bago gumana nang maayos
+  ang offline mode (para may laman ang local cache).
+
 ## ⚠️ Mga Limitasyon
 
-- **Single-user writes**: Dahil GitHub API ang ginagamit, baka may conflict kung sabay-sabay mag-save ang maraming users. Para sa maliit na negosyo (≤5 concurrent users) ay okay ito.
 - **Rate limits**: GitHub API ay may 5,000 requests/hour limit per token.
 - **Token security**: Ang PAT token ay naka-store sa localStorage ng browser. Hindi ideal para sa high-security applications.
 - **No real-time sync**: Hindi automatic ang sync ng ibang tabs. I-refresh ang page para makita ang pinakabagong data.

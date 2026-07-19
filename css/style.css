@@ -83,6 +83,22 @@ body {
 .user-chip .user-info .name { font-weight: 600; font-size: 13px; }
 .user-chip .user-info .role { font-size: 10px; color: var(--text2); letter-spacing: 0.5px; }
 
+.sync-pill {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+  padding: 6px 12px; border-radius: 20px; cursor: pointer;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text2); white-space: nowrap; transition: all 0.15s;
+}
+.sync-pill:hover { border-color: var(--accent); color: var(--text); }
+.sync-pill.online  { color: var(--success); }
+.sync-pill.offline  { color: var(--danger); border-color: rgba(239,68,68,0.35); }
+.sync-pill.pending  { color: var(--warning); border-color: rgba(245,158,11,0.35); }
+.sync-pill .sync-count {
+  background: rgba(255,255,255,0.12); border-radius: 10px;
+  padding: 1px 7px; font-size: 10px;
+}
+
 /* ---- Sidebar ---- */
 .sidebar {
   position: fixed; top: var(--navbar-h); left: 0; bottom: 0;

@@ -120,6 +120,42 @@ const UI = (() => {
     if (nameEl) nameEl.textContent = user.full_name;
     if (roleEl) roleEl.textContent = user.role.toUpperCase();
     if (avEl)   avEl.textContent   = user.full_name.charAt(0).toUpperCase();
+    mountSyncPill();
+  }
+
+  // Online/offline + pending-sync indicator sa navbar. Live-updated via
+  // ang 'ent:sync-status' event na dinidispatch ng sync.js.
+  function mountSyncPill() {
+    if (typeof Sync === 'undefined') return;
+    const right = document.querySelector('.navbar-right');
+    if (!right || document.getElementById('sync-pill')) return;
+    const pill = document.createElement('div');
+    pill.id = 'sync-pill';
+    pill.className = 'sync-pill';
+    pill.title = 'I-click para i-sync ngayon';
+    pill.onclick = () => Sync.flush().then(r => {
+      if (r.synced) toast(`Na-sync ang ${r.synced} pagbabago ✅`, 'success');
+      else if (!Sync.status().online) toast('Offline — ise-save muna lokal.', 'warning');
+      else toast('Walang bagong pagbabago na i-sy-sync.', 'info');
+    });
+    right.insertBefore(pill, right.firstChild);
+    renderSyncPill(Sync.status());
+    document.addEventListener('ent:sync-status', e => renderSyncPill(e.detail));
+  }
+
+  function renderSyncPill(s) {
+    const pill = document.getElementById('sync-pill');
+    if (!pill) return;
+    if (!s.online) {
+      pill.className = 'sync-pill offline';
+      pill.innerHTML = `🔴 Offline${s.pending ? ` <span class="sync-count">${s.pending}</span>` : ''}`;
+    } else if (s.pending) {
+      pill.className = 'sync-pill pending';
+      pill.innerHTML = `🟡 Sinisync... <span class="sync-count">${s.pending}</span>`;
+    } else {
+      pill.className = 'sync-pill online';
+      pill.innerHTML = `🟢 Online`;
+    }
   }
 
   function paginate(rows, page, perPage=15) {

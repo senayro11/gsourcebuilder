@@ -35,6 +35,7 @@
       <div class="tab" data-tab="sa-inventory">📦 Inventory</div>
       <div class="tab" data-tab="sa-attendance">🕐 Attendance</div>
       <div class="tab" data-tab="sa-budget">💰 Budget</div>
+      <div class="tab" data-tab="sa-sync">🔄 Sync Center</div>
     </div>
 
     <!-- All users -->
@@ -76,6 +77,35 @@
     <div class="tab-pane" id="sa-inventory"><div id="sys-users-inventory"></div></div>
     <div class="tab-pane" id="sa-attendance"><div id="sys-users-attendance"></div></div>
     <div class="tab-pane" id="sa-budget"><div id="sys-users-budget"></div></div>
+
+    <!-- Sync Center -->
+    <div class="tab-pane" id="sa-sync">
+      <div class="stats-grid" id="sync-stats" style="margin-bottom:16px"></div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📋 Pending Offline Changes</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" onclick="forceSyncNow()">🔄 I-sync Ngayon</button>
+            <button class="btn btn-danger btn-sm" onclick="clearSyncQueue()">🗑 I-clear ang Queue</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Database</th><th># ng Pagbabago</th><th>Huling Baguhin</th><th>Detalye</th></tr></thead>
+            <tbody id="sync-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;padding:16px">
+        <div style="font-size:12px;color:var(--text3);line-height:1.7">
+          ℹ️ Kapag walang internet, ang mga pagbabago (add/edit/delete) ay ise-save muna nang lokal sa browser
+          at awtomatikong ise-sync pabalik sa GitHub paguwi ng koneksyon. Ang buong device ay tuloy-tuloy na
+          gagana offline gamit ang huling naka-cache na data. <strong>Paalala:</strong> kung sabay-sabay
+          gumawa ng offline na pagbabago ang dalawang device sa parehong database, ang huling nag-sync ang
+          mananatili (last-write-wins) — iwasan ito kung kaya.
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -129,6 +159,7 @@
 <div id="loading-overlay" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
 <script src="js/config.js"></script>
+<script src="js/sync.js"></script>
 <script src="js/db.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/ui.js"></script>
@@ -140,6 +171,51 @@ if (!user) throw 0;
 UI.buildNavbar(user, 'SuperAdmin Panel');
 UI.buildSidebar(user, 'superadmin');
 UI.initTabs();
+
+// ---- Sync Center ----
+function renderSyncCenter() {
+  const s = Sync.status();
+  const q = Sync.getQueue();
+  const dbNames = Object.keys(q);
+  document.getElementById('sync-stats').innerHTML = `
+    <div class="stat-card ${s.online?'green':'red'}"><div class="stat-label">Koneksyon</div><div class="stat-value">${s.online?'🟢 Online':'🔴 Offline'}</div></div>
+    <div class="stat-card ${dbNames.length?'yellow':'green'}"><div class="stat-label">Pending na Database</div><div class="stat-value">${dbNames.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Pending na Pagbabago</div><div class="stat-value">${s.pending}</div></div>
+    <div class="stat-card"><div class="stat-label">Huling Sync</div><div class="stat-value" style="font-size:14px">${s.lastSync ? UI.dateTimeStr(s.lastSync) : 'Wala pa'}</div></div>`;
+  document.getElementById('sync-tbody').innerHTML = dbNames.map(db => {
+    const entry = q[db];
+    const last = entry.log[entry.log.length-1];
+    return `<tr>
+      <td><strong class="mono">${db}</strong></td>
+      <td>${entry.log.length}</td>
+      <td style="font-size:12px;color:var(--text3)">${UI.dateTimeStr(last.ts)}</td>
+      <td style="font-size:12px;color:var(--text2)">${entry.log.map(l=>l.description).join(', ')}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text3)">Walang pending na pagbabago — naka-sync lahat ✅</td></tr>';
+}
+
+async function forceSyncNow() {
+  UI.loading(true, 'Sinisync sa GitHub...');
+  const r = await Sync.flush();
+  UI.loading(false);
+  if (r.synced) UI.toast(`Na-sync ang ${r.synced} database(s) ✅`, 'success');
+  else if (!Sync.status().online) UI.toast('Offline pa rin — susubukan ulit awtomatiko.', 'warning');
+  else UI.toast('Walang pending na pagbabago.', 'info');
+  renderSyncCenter();
+}
+
+function clearSyncQueue() {
+  const n = Object.keys(Sync.getQueue()).length;
+  if (!n) { UI.toast('Wala namang pending na pagbabago.', 'info'); return; }
+  UI.confirm(`I-CLEAR ang ${n} pending na pagbabago? Hindi na ito ise-sync sa GitHub — mawawala ang mga lokal na pagbabagong ito.`, () => {
+    Sync.clearQueue();
+    UI.toast('Na-clear ang sync queue.', 'success');
+    renderSyncCenter();
+  });
+}
+
+document.addEventListener('ent:sync-status', renderSyncCenter);
+renderSyncCenter();
 
 let allUsers=[], editUsername=null;
 
