@@ -92,9 +92,20 @@ const Sync = (() => {
     return realOnline;
   }
 
-  // I-commit ang bawat pending dbName sa GitHub gamit ang DB.forceCommit
-  // (fresh sha muna, tapos write). Kung mag-conflict/mag-fail ang isa,
-  // i-log at ituloy pa rin ang iba — itigil lang kung bumalik na offline.
+  // Ang dbName ay maaaring galing sa root app (walang prefix, gamit ang
+  // window.DB) o sa HR module (naka-prefix na "hr_", gamit ang window.HRDB)
+  // — magkaibang engine dahil magkaibang dbPath/file ang tinutukoy nila
+  // kahit magkapareho ang ilang pangalan (hal. "employeesDB").
+  function engineFor(dbName) {
+    if (dbName.startsWith('hr_')) {
+      return typeof HRDB !== 'undefined' ? { db: HRDB, realName: dbName.slice(3) } : null;
+    }
+    return typeof DB !== 'undefined' ? { db: DB, realName: dbName } : null;
+  }
+
+  // I-commit ang bawat pending dbName sa GitHub gamit ang tamang engine's
+  // forceCommit (fresh sha muna, tapos write). Kung mag-conflict/mag-fail
+  // ang isa, i-log at ituloy pa rin ang iba — itigil lang kung bumalik na offline.
   async function flush() {
     if (flushing) return { synced: 0, remaining: Object.keys(getQueue()).length };
     if (!(await ping())) return { synced: 0, remaining: Object.keys(getQueue()).length };
@@ -106,8 +117,10 @@ const Sync = (() => {
       for (const dbName of dbNames) {
         const entry = getQueue()[dbName];
         if (!entry) continue;
+        const engine = engineFor(dbName);
+        if (!engine) continue; // hindi available sa page na ito — subukan ulit sa ibang page/flush
         try {
-          await DB.forceCommit(dbName, entry.rows, entry.header);
+          await engine.db.forceCommit(engine.realName, entry.rows, entry.header);
           removeFromQueue(dbName);
           synced++;
         } catch (e) {

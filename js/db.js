@@ -21,6 +21,20 @@ const DB = (() => {
     };
   }
 
+  // Ilang beses subukan bago mag-give up — flaky mobile data (LTE/weak
+  // signal) ay maraming transient na fetch failures na gumagana naman
+  // kapag sinubukan ulit agad. Hindi ito naka-retry sa tunay na HTTP error
+  // responses (401/404/etc.), fetch()-level na network failure lang.
+  async function fetchRetry(url, opts, attempts = 3, delayMs = 400) {
+    for (let i = 0; i < attempts; i++) {
+      try { return await fetch(url, opts); }
+      catch (e) {
+        if (i === attempts - 1) throw e;
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+  }
+
   // Parse TXT (pipe-delimited) → array of objects
   function parseTxt(raw) {
     const lines = raw.trim().split('\n').filter(l => l.trim() && !l.startsWith('#'));
@@ -48,7 +62,7 @@ const DB = (() => {
   async function read(dbName, forceRefresh = false) {
     if (cache[dbName] && !forceRefresh) return cache[dbName];
     try {
-      const res = await fetch(apiUrl(dbName), { headers: headers() });
+      const res = await fetchRetry(apiUrl(dbName), { headers: headers() });
       if (!res.ok) {
         if (res.status === 404) {
           cache[dbName] = []; cache[`${dbName}_header`] = '';
@@ -91,7 +105,7 @@ const DB = (() => {
         sha:     shas[dbName],
         branch:  GITHUB_CONFIG.branch
       };
-      const res = await fetch(apiUrl(dbName), {
+      const res = await fetchRetry(apiUrl(dbName), {
         method: 'PUT',
         headers: headers(),
         body: JSON.stringify(body)
