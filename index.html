@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fil">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enterprise System — Login</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--bg); }
+    .login-wrap { width:100%; max-width:420px; padding:24px; }
+    .login-logo { text-align:center; margin-bottom:36px; }
+    .login-logo .logo-icon { font-size:52px; margin-bottom:12px; }
+    .login-logo h1 { font-size:24px; font-weight:800; color:var(--white); }
+    .login-logo p  { color:var(--text2); margin-top:4px; font-size:14px; }
+    .login-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:32px; }
+    .login-card h2 { font-size:18px; font-weight:700; margin-bottom:24px; color:var(--white); }
+    .login-footer { text-align:center; margin-top:20px; color:var(--text3); font-size:12px; }
+    .input-wrap { position:relative; }
+    .input-wrap input { padding-left:40px; }
+    .input-wrap .input-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text3); }
+    .setup-box { background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.3); border-radius:10px; padding:18px; margin-top:20px; }
+    .setup-box .title { font-size:13px; font-weight:700; color:var(--warning); margin-bottom:6px; }
+    .setup-box .sub   { font-size:12px; color:var(--text2); line-height:1.7; margin-bottom:12px; }
+    .setup-box a { color:var(--accent2); }
+    .demo-accounts { margin-top:16px; background:var(--surface2); border-radius:8px; padding:12px; }
+    .demo-accounts p { font-size:11px; color:var(--text3); margin-bottom:8px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
+    .demo-row { display:flex; gap:6px; flex-wrap:wrap; }
+    .demo-chip { background:var(--border); color:var(--text2); font-size:11px; padding:3px 8px; border-radius:4px; cursor:pointer; font-family:var(--mono); }
+    .demo-chip:hover { background:var(--accent); color:white; }
+    .loading-screen { position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; z-index:999; }
+    .loading-screen .spinner { width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- Loading screen while fetching token from GitHub -->
+<div class="loading-screen" id="loading-screen">
+  <div class="spinner"></div>
+  <div style="color:var(--text2);font-size:14px">Naglo-load ng system...</div>
+</div>
+
+<!-- Main login (hidden until ready) -->
+<div class="login-wrap" id="main-login" style="display:none">
+  <div class="login-logo">
+    <div class="logo-icon">🏢</div>
+    <h1>Enterprise System</h1>
+    <p>Integrated Business Management</p>
+  </div>
+
+  <div class="login-card">
+    <h2>Mag-login</h2>
+    <div class="form-group">
+      <label>Username</label>
+      <div class="input-wrap">
+        <span class="input-icon">👤</span>
+        <input type="text" id="username" placeholder="Enter username" autocomplete="username">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <div class="input-wrap">
+        <span class="input-icon">🔒</span>
+        <input type="password" id="password" placeholder="Enter password" autocomplete="current-password">
+      </div>
+    </div>
+    <button class="btn btn-primary w-full" onclick="doLogin()" id="login-btn">🚀 Mag-login</button>
+    <div id="login-error" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;color:#f87171;font-size:13px"></div>
+
+    <!-- SETUP BOX: shown only when no token saved in GitHub yet -->
+    <div id="setup-box" class="setup-box" style="display:none">
+      <div class="title">⚙️ One-time Setup — SuperAdmin Only</div>
+      <div class="sub">
+        Kailangan ng GitHub Personal Access Token (PAT) para gumana ang system.<br>
+        <strong>Isang beses lang ito</strong> — pagkatapos i-save, lahat ng devices ay awtomatikong gagana.<br><br>
+        1. Pumunta sa <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a><br>
+        2. Generate new token (classic) → i-check ang <strong>repo</strong> scope<br>
+        3. I-paste dito:
+      </div>
+      <div class="form-group" style="margin-bottom:8px">
+        <label>Personal Access Token</label>
+        <input type="password" id="gh-token-input" placeholder="ghp_xxxxxxxxxxxx">
+      </div>
+      <button class="btn btn-warning w-full" onclick="doFirstTimeSetup()">💾 I-save at I-activate ang System</button>
+    </div>
+
+    <!-- Superadmin change token (only shown when logged in as superadmin — via URL param) -->
+    <div id="change-token-box" style="display:none;margin-top:16px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">⚙️ Baguhin ang Token (SuperAdmin only)</div>
+      <div class="form-group" style="margin-bottom:8px">
+        <input type="password" id="gh-token-change" placeholder="Bagong token...">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('change-token-box').style.display='none'">Kanselahin</button>
+        <button class="btn btn-warning btn-sm" onclick="doChangeToken()">I-update ang Token</button>
+      </div>
+    </div>
+
+    <div class="demo-accounts">
+      <p>Demo accounts (password: admin123)</p>
+      <div class="demo-row">
+        <span class="demo-chip" onclick="fillDemo('superadmin','admin123')">superadmin</span>
+        <span class="demo-chip" onclick="fillDemo('admin_pos','admin123')">admin_pos</span>
+        <span class="demo-chip" onclick="fillDemo('staff01','admin123')">staff01</span>
+        <span class="demo-chip" onclick="fillDemo('ojt01','admin123')">ojt01</span>
+        <span class="demo-chip" onclick="fillDemo('guest01','admin123')">guest01</span>
+      </div>
+    </div>
+  </div>
+  <div class="login-footer">Enterprise System v1.0 &bull; Powered by GitHub Pages</div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="js/config.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script>
+// ============================================================
+//  TOKEN BOOTSTRAP
+//  1. Mag-fetch ng appconfig.txt via raw GitHub URL (no auth needed
+//     dahil public ang repo — or via API kung private)
+//  2. Kung may token sa appconfig.txt → i-load, show login
+//  3. Kung wala → show setup box para sa superadmin
+// ============================================================
+
+const RAW_CONFIG_URL =
+  `https://raw.githubusercontent.com/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/${GITHUB_CONFIG.branch}/${GITHUB_CONFIG.dbPath}/appconfig.txt`;
+
+// Config file URL via GitHub API (works for private repos too)
+const API_CONFIG_URL =
+  `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.dbPath}/appconfig.txt`;
+
+let configSha = ''; // needed to update the file
+
+async function bootstrap() {
+  // Redirect if already have a valid session
+  const existing = Auth.getSession();
+  if (existing && GITHUB_CONFIG.token) {
+    window.location.href = Auth.getHomeUrl(existing);
+    return;
+  }
+
+  // Try to load token from localStorage first (fast path for same device)
+  const localToken = localStorage.getItem('ent_gh_token');
+
+  // Always try to fetch appconfig from GitHub
+  // First try raw URL (fast, no auth) — works for public repos
+  let fetchedToken = null;
+  try {
+    const res = await fetch(RAW_CONFIG_URL + '?t=' + Date.now());
+    if (res.ok) {
+      const text = await res.text();
+      fetchedToken = parseAppConfig(text).token || '';
+      // Also get SHA for updating later — fetch via API with token if available
+      if (localToken || fetchedToken) {
+        await loadConfigSha(localToken || fetchedToken);
+      }
+    }
+  } catch(e) {
+    // Network error or private repo — will use local token
+  }
+
+  // Determine final token to use
+  // Priority: fetched from GitHub > localStorage
+  const finalToken = (fetchedToken && fetchedToken.trim()) ? fetchedToken.trim()
+                   : (localToken && localToken.trim())    ? localToken.trim()
+                   : '';
+
+  if (finalToken) {
+    // Token found — set it and show normal login
+    GITHUB_CONFIG.token = finalToken;
+    localStorage.setItem('ent_gh_token', finalToken);
+    showLogin(false);
+  } else {
+    // No token anywhere — show setup box
+    showLogin(true);
+  }
+
+  // Show change token link in URL if ?admin=1
+  if (location.search.includes('admin=1')) {
+    document.getElementById('change-token-box').style.display = '';
+  }
+}
+
+function parseAppConfig(text) {
+  const result = {};
+  const lines  = text.trim().split('\n');
+  lines.slice(1).forEach(line => {
+    const parts = line.split('|');
+    if (parts.length >= 2) result[parts[0].trim()] = parts[1].trim();
+  });
+  return result;
+}
+
+async function loadConfigSha(token) {
+  try {
+    const res = await fetch(API_CONFIG_URL, {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (res.ok) {
+      const json = await res.json();
+      configSha = json.sha;
+    }
+  } catch(e) {}
+}
+
+function showLogin(needsSetup) {
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('main-login').style.display     = '';
+  document.getElementById('setup-box').style.display      = needsSetup ? '' : 'none';
+}
+
+// ============================================================
+//  FIRST TIME SETUP — superadmin inputs token, save to GitHub
+// ============================================================
+async function doFirstTimeSetup() {
+  const token = document.getElementById('gh-token-input').value.trim();
+  if (!token) { UI.toast('Walang token na nilagay.','warning'); return; }
+  if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
+    UI.toast('Mukhang hindi valid ang token format.','warning'); return;
+  }
+
+  // Temporarily set token so we can write to GitHub
+  GITHUB_CONFIG.token = token;
+
+  UI.loading(true, 'Nagse-save ng token sa GitHub...');
+  try {
+    const ok = await saveTokenToGitHub(token);
+    if (!ok) throw new Error('Hindi na-save sa GitHub. Siguraduhing tama ang token at repo settings.');
+    localStorage.setItem('ent_gh_token', token);
+    UI.toast('Setup complete! ✅ Lahat ng devices ay magagamit na ang system.','success',4000);
+    setTimeout(() => showLogin(false), 1500);
+  } catch(e) {
+    GITHUB_CONFIG.token = '';
+    UI.toast('Error: ' + e.message,'error', 5000);
+  }
+  UI.loading(false);
+}
+
+// Change token (for superadmin via ?admin=1)
+async function doChangeToken() {
+  const token = document.getElementById('gh-token-change').value.trim();
+  if (!token) { UI.toast('Walang token','warning'); return; }
+  GITHUB_CONFIG.token = token;
+  UI.loading(true,'Nag-a-update...');
+  try {
+    // Need SHA first
+    await loadConfigSha(token);
+    const ok = await saveTokenToGitHub(token);
+    if (!ok) throw new Error('Hindi na-save.');
+    localStorage.setItem('ent_gh_token', token);
+    UI.toast('Token updated! ✅','success');
+    document.getElementById('change-token-box').style.display='none';
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+
+// Write token to appconfig.txt in GitHub repo
+async function saveTokenToGitHub(token) {
+  // Need SHA if file already exists
+  if (!configSha) await loadConfigSha(token);
+
+  const content = `key|value\ntoken|${token}\nsetup_done|true\napp_name|Enterprise System\n`;
+  const encoded = btoa(unescape(encodeURIComponent(content)));
+
+  const body = {
+    message: 'System setup - save app token',
+    content:  encoded,
+    branch:   GITHUB_CONFIG.branch
+  };
+  if (configSha) body.sha = configSha;
+
+  const res = await fetch(API_CONFIG_URL, {
+    method:  'PUT',
+    headers: {
+      'Authorization': `token ${token}`,
+      'Accept':        'application/vnd.github.v3+json',
+      'Content-Type':  'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (res.ok) {
+    const json = await res.json();
+    configSha = json.content.sha;
+    return true;
+  }
+  const err = await res.json().catch(()=>({}));
+  throw new Error(err.message || `HTTP ${res.status}`);
+}
+
+// ============================================================
+//  LOGIN
+// ============================================================
+async function doLogin() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const btn      = document.getElementById('login-btn');
+
+  if (!username || !password) { showError('Punan ang lahat ng fields.'); return; }
+  if (!GITHUB_CONFIG.token)   { showError('Hindi pa na-setup ang system. Makipag-ugnayan sa SuperAdmin.'); return; }
+
+  btn.disabled    = true;
+  btn.textContent = '⏳ Nag-lo-login...';
+  document.getElementById('login-error').style.display = 'none';
+
+  const result = await Auth.login(username, password);
+  btn.disabled   = false;
+  btn.innerHTML  = '🚀 Mag-login';
+
+  if (result.success) {
+    UI.toast(`Maligayang pagdating, ${result.user.full_name}! 👋`, 'success');
+    setTimeout(() => { window.location.href = Auth.getHomeUrl(result.user); }, 700);
+  } else {
+    showError(result.message);
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function fillDemo(u, p) {
+  document.getElementById('username').value = u;
+  document.getElementById('password').value = p;
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// Start bootstrap
+bootstrap();
+</script>
+</body>
+</html>

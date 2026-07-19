@@ -1,0 +1,12 @@
+id|name|date|day|type|description
+HOL001|New Year's Day|2025-01-01|Wednesday|Regular|National Holiday
+HOL002|EDSA Revolution|2025-02-25|Tuesday|Special|Anniversary of EDSA
+HOL003|Araw ng Kagitingan|2025-04-09|Wednesday|Regular|Day of Valor
+HOL004|Labor Day|2025-05-01|Thursday|Regular|International Labor Day
+HOL005|Independence Day|2025-06-12|Thursday|Regular|Philippine Independence Day
+HOL006|Buwan ng Wika|2025-08-26|Tuesday|Special|National Language Month
+HOL007|National Heroes Day|2025-08-25|Monday|Regular|National Heroes Day
+HOL008|All Saints Day|2025-11-01|Saturday|Regular|All Saints Day
+HOL009|Bonifacio Day|2025-11-30|Sunday|Regular|Andres Bonifacio Day
+HOL010|Christmas Day|2025-12-25|Thursday|Regular|Christmas Day
+HOL011|Rizal Day|2025-12-30|Tuesday|Regular|Jose Rizal Day

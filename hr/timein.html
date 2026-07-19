@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fil">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Time In / Out — HR System</title>
+  <link rel="stylesheet" href="css/hr.css">
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--bg); }
+    .timein-wrap { width:100%; max-width:420px; padding:20px; }
+    .timein-logo { text-align:center; margin-bottom:32px; }
+    .timein-logo .logo-box {
+      width:64px; height:64px; border-radius:18px;
+      background:linear-gradient(135deg,var(--accent),var(--purple));
+      display:flex; align-items:center; justify-content:center;
+      font-size:26px; font-weight:800; color:white;
+      margin:0 auto 12px;
+    }
+    .timein-logo h1 { font-size:22px; font-weight:800; color:var(--white); }
+    .timein-logo p  { color:var(--text2); font-size:13px; margin-top:4px; }
+    .timein-card {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius-xl); padding:32px;
+    }
+    .clock-display {
+      text-align:center; margin-bottom:24px;
+      padding:16px; background:var(--surface2);
+      border-radius:var(--radius-lg); border:1px solid var(--border);
+    }
+    .clock-time {
+      font-size:40px; font-weight:800; color:var(--white);
+      font-family:var(--mono); letter-spacing:2px;
+    }
+    .clock-date { font-size:13px; color:var(--text2); margin-top:4px; }
+    .emp-result {
+      background:var(--surface2); border:1px solid var(--border);
+      border-radius:var(--radius-lg); padding:16px;
+      margin-bottom:20px; display:none;
+    }
+    .emp-result.show { display:flex; align-items:center; gap:14px; }
+    .emp-result .emp-av {
+      width:52px; height:52px; border-radius:50%;
+      background:linear-gradient(135deg,var(--accent),var(--purple));
+      display:flex; align-items:center; justify-content:center;
+      font-size:20px; font-weight:700; color:white; flex-shrink:0;
+    }
+    .emp-result .emp-info h3 { font-size:15px; font-weight:700; color:var(--white); }
+    .emp-result .emp-info p  { font-size:12px; color:var(--text2); }
+    .status-row {
+      display:flex; gap:8px; margin-top:6px;
+    }
+    .btn-timein  { background:var(--success); color:white; flex:1; justify-content:center; padding:14px; font-size:15px; }
+    .btn-timeout { background:var(--danger);  color:white; flex:1; justify-content:center; padding:14px; font-size:15px; }
+    .btn-timein:hover  { background:#16a34a; }
+    .btn-timeout:hover { background:#dc2626; }
+    .success-card {
+      display:none; text-align:center; padding:24px;
+      background:rgba(34,197,94,.1); border:1px solid rgba(34,197,94,.3);
+      border-radius:var(--radius-lg); margin-top:16px;
+    }
+    .success-card.show { display:block; }
+    .success-card .big-icon { font-size:48px; margin-bottom:8px; }
+    .success-card h3 { color:var(--success); font-size:18px; font-weight:700; }
+    .success-card p  { color:var(--text2); font-size:13px; margin-top:4px; }
+    .back-link { text-align:center; margin-top:20px; }
+    .back-link a { color:var(--accent2); font-size:13px; text-decoration:none; }
+    .back-link a:hover { text-decoration:underline; }
+    .att-today {
+      margin-top:16px; padding:12px;
+      background:var(--surface2); border:1px solid var(--border);
+      border-radius:var(--radius); display:none;
+    }
+    .att-today.show { display:block; }
+    .att-today-label { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+    .att-today-row { display:flex; justify-content:space-between; font-size:13px; padding:4px 0; border-bottom:1px solid var(--border); }
+    .att-today-row:last-child { border-bottom:none; }
+  </style>
+</head>
+<body>
+<div class="timein-wrap">
+  <div class="timein-logo">
+    <div class="logo-box">HR</div>
+    <h1>Time In / Out</h1>
+    <p>Employee Attendance Terminal</p>
+  </div>
+
+  <div class="timein-card">
+    <!-- Clock -->
+    <div class="clock-display">
+      <div class="clock-time" id="clock">00:00:00</div>
+      <div class="clock-date" id="clock-date"></div>
+    </div>
+
+    <!-- Input -->
+    <div class="form-group">
+      <label>Employee ID *</label>
+      <input type="text" id="emp-id-input" placeholder="e.g. KH-0001" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+    </div>
+    <div class="form-group">
+      <label>Password *</label>
+      <input type="password" id="emp-pass-input" placeholder="Enter your password">
+    </div>
+    <button class="btn btn-primary w-full" style="padding:12px;font-size:14px;margin-bottom:12px" onclick="verifyEmployee()">🔍 Verify Employee</button>
+
+    <!-- Employee info after verify -->
+    <div class="emp-result" id="emp-result">
+      <div class="emp-av" id="emp-av">?</div>
+      <div class="emp-info">
+        <h3 id="emp-rname">—</h3>
+        <p id="emp-rpos">—</p>
+        <div class="status-row" id="emp-status-row"></div>
+      </div>
+    </div>
+
+    <!-- Today's record -->
+    <div class="att-today" id="att-today">
+      <div class="att-today-label">Today's Record</div>
+      <div class="att-today-row"><span>Time In</span><span id="today-in" style="font-family:var(--mono)">—</span></div>
+      <div class="att-today-row"><span>Time Out</span><span id="today-out" style="font-family:var(--mono)">—</span></div>
+      <div class="att-today-row"><span>Hours Worked</span><span id="today-hrs">—</span></div>
+      <div class="att-today-row"><span>Status</span><span id="today-status">—</span></div>
+    </div>
+
+    <!-- Success message -->
+    <div class="success-card" id="success-card">
+      <div class="big-icon" id="success-icon">✅</div>
+      <h3 id="success-title">Time In Recorded!</h3>
+      <p id="success-msg">Your attendance has been recorded.</p>
+    </div>
+  </div>
+
+  <div class="back-link">
+    <a href="attendance.html">← Back to HR System</a>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<div id="global-loading" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
+
+<script src="js/hr-config.js"></script>
+<script src="js/hr-core.js"></script>
+<script>
+// ---- Clock ----
+function tick() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+  document.getElementById('clock-date').textContent = now.toLocaleDateString('en-PH', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+}
+tick(); setInterval(tick, 1000);
+
+// Load token
+const savedToken = localStorage.getItem('ent_gh_token');
+if (savedToken) GITHUB_CONFIG.token = savedToken;
+
+let verifiedEmp = null, todayRecord = null;
+
+// ---- Verify Employee ----
+async function verifyEmployee() {
+  const empId = document.getElementById('emp-id-input').value.trim();
+  const pass  = document.getElementById('emp-pass-input').value;
+
+  if (!empId || !pass) { Toast.show('Punan ang lahat ng fields','warning'); return; }
+
+  Loading.show('Verifying...');
+  try {
+    const [emps, accounts, atts] = await Promise.all([
+      HRDB.read('employeesDB'),
+      HRDB.read('hraccountsDB'),
+      HRDB.read('attendanceDB')
+    ]);
+
+    // Find employee by employee_id
+    const emp = emps.find(e => e.employee_id === empId && e.status === 'active');
+    if (!emp) { Toast.show('Employee ID not found','error'); Loading.hide(); return; }
+
+    // Verify password via linked account
+    const hashed = await hashPw(pass);
+    const acct = accounts.find(a => a.employee_id === emp.id && a.password_hash === hashed && a.status === 'active');
+    if (!acct) { Toast.show('Mali ang password','error'); Loading.hide(); return; }
+
+    verifiedEmp = emp;
+
+    // Show employee card
+    document.getElementById('emp-av').textContent    = emp.name.charAt(0);
+    document.getElementById('emp-rname').textContent = emp.name;
+    document.getElementById('emp-rpos').textContent  = emp.position + ' — ' + emp.department;
+    document.getElementById('emp-result').classList.add('show');
+
+    // Check today's record
+    const today = new Date().toISOString().split('T')[0];
+    todayRecord = atts.find(a => a.employee_id === emp.id && a.date === today);
+
+    if (todayRecord) {
+      document.getElementById('att-today').classList.add('show');
+      document.getElementById('today-in').textContent     = todayRecord.time_in  || '—';
+      document.getElementById('today-out').textContent    = todayRecord.time_out || '—';
+      document.getElementById('today-hrs').textContent    = todayRecord.work_hours ? parseFloat(todayRecord.work_hours).toFixed(2) + ' hrs' : '—';
+      document.getElementById('today-status').textContent = todayRecord.status || '—';
+    }
+
+    // Show action buttons
+    const btnRow = document.getElementById('emp-status-row');
+    if (!todayRecord || !todayRecord.time_in) {
+      btnRow.innerHTML = `<button class="btn btn-timein" onclick="doTimeIn()">🟢 Time In</button>`;
+    } else if (!todayRecord.time_out) {
+      btnRow.innerHTML = `<button class="btn btn-timeout" onclick="doTimeOut()">🔴 Time Out</button>`;
+    } else {
+      btnRow.innerHTML = `<span class="badge badge-success" style="margin-top:4px">✅ Kumpleto ang attendance ngayon</span>`;
+    }
+
+  } catch(e) { Toast.show('Error: ' + e.message, 'error'); }
+  Loading.hide();
+}
+
+async function doTimeIn() {
+  if (!verifiedEmp) return;
+  const now    = new Date();
+  const today  = now.toISOString().split('T')[0];
+  const timeIn = now.toTimeString().substring(0, 5);
+
+  // Get shift to check if late
+  const schedules = await HRDB.read('schedulesDB');
+  const shifts    = await HRDB.read('shiftsDB');
+  const sched = schedules.find(s => s.employee_id === verifiedEmp.id);
+  const shift = sched ? shifts.find(sh => sh.id === sched.shift_id) : null;
+  let status = 'present';
+  if (shift && shift.start_time) {
+    const [sh, sm] = shift.start_time.split(':').map(Number);
+    const grace    = parseInt(shift.grace_period || 15);
+    const [h, m]   = timeIn.split(':').map(Number);
+    if (h * 60 + m > sh * 60 + sm + grace) status = 'late';
+  }
+
+  Loading.show('Recording Time In...');
+  try {
+    const atts = await HRDB.read('attendanceDB', true);
+    const id   = HRDB.nextId(atts, 'id', 'ATT');
+    await HRDB.insert('attendanceDB', {
+      id, employee_id: verifiedEmp.id, date: today,
+      time_in: timeIn, time_out: '', break_minutes: shift?.break_minutes || '60',
+      work_hours: '0', overtime_hours: '0', undertime: '0',
+      status, notes: status === 'late' ? `Late by ${lateMin(timeIn, shift?.start_time)} min` : '', shift_id: sched?.shift_id || ''
+    });
+    showSuccess('🟢', 'Time In Recorded!', `${verifiedEmp.name} — ${timeIn}${status === 'late' ? ' (Late)' : ''}`);
+    Toast.show(`Time In: ${timeIn} ✅`, 'success');
+  } catch(e) { Toast.show('Error: ' + e.message, 'error'); }
+  Loading.hide();
+}
+
+async function doTimeOut() {
+  if (!verifiedEmp || !todayRecord) return;
+  const now     = new Date();
+  const timeOut = now.toTimeString().substring(0, 5);
+  const timeIn  = todayRecord.time_in;
+  const date    = todayRecord.date;
+
+  // Compute work hours
+  const inDate  = new Date(`${date}T${timeIn}:00`);
+  const outDate = new Date(`${date}T${timeOut}:00`);
+  let workHrs   = (outDate - inDate) / 3600000;
+  const brk     = parseFloat(todayRecord.break_minutes || 60) / 60;
+
+  // Get shift
+  const schedules = await HRDB.read('schedulesDB');
+  const shifts    = await HRDB.read('shiftsDB');
+  const sched  = schedules.find(s => s.employee_id === verifiedEmp.id);
+  const shift  = sched ? shifts.find(sh => sh.id === sched.shift_id) : null;
+  const reqHrs = shift ? (parseFloat(shift.end_time.replace(':','.'))-parseFloat(shift.start_time.replace(':','.'))) : 8;
+
+  workHrs = Math.max(0, workHrs - brk);
+  const otHrs  = Math.max(0, workHrs - (shift ? parseInt(shift.ot_after||480)/60 : 8));
+  const utHrs  = Math.max(0, (shift ? parseInt(shift.ot_after||480)/60 : 8) - workHrs);
+
+  Loading.show('Recording Time Out...');
+  try {
+    await HRDB.update('attendanceDB', r => r.id === todayRecord.id, {
+      time_out:       timeOut,
+      work_hours:     workHrs.toFixed(2),
+      overtime_hours: otHrs.toFixed(2),
+      undertime:      utHrs.toFixed(2),
+      status:         todayRecord.status
+    });
+    showSuccess('🔴', 'Time Out Recorded!', `${verifiedEmp.name} — ${timeOut} | ${workHrs.toFixed(2)} hrs worked${otHrs > 0 ? ` | OT: ${otHrs.toFixed(2)} hrs` : ''}${utHrs > 0 ? ` | UT: ${utHrs.toFixed(2)} hrs` : ''}`);
+    Toast.show(`Time Out: ${timeOut} ✅`, 'success');
+  } catch(e) { Toast.show('Error: ' + e.message, 'error'); }
+  Loading.hide();
+}
+
+function showSuccess(icon, title, msg) {
+  document.getElementById('success-icon').textContent  = icon;
+  document.getElementById('success-title').textContent = title;
+  document.getElementById('success-msg').textContent   = msg;
+  document.getElementById('success-card').classList.add('show');
+  // Reset after 8 seconds
+  setTimeout(resetForm, 8000);
+}
+
+function resetForm() {
+  document.getElementById('emp-id-input').value = '';
+  document.getElementById('emp-pass-input').value = '';
+  document.getElementById('emp-result').classList.remove('show');
+  document.getElementById('att-today').classList.remove('show');
+  document.getElementById('success-card').classList.remove('show');
+  document.getElementById('emp-status-row').innerHTML = '';
+  verifiedEmp = null; todayRecord = null;
+  HRDB.clearCache('attendanceDB');
+}
+
+function lateMin(actual, expected) {
+  if (!expected) return 0;
+  const [ah,am] = actual.split(':').map(Number);
+  const [eh,em] = expected.split(':').map(Number);
+  return Math.max(0, (ah*60+am) - (eh*60+em));
+}
+
+async function hashPw(password) {
+  const data = new TextEncoder().encode(password);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// Enter key
+document.addEventListener('keydown', e => { if (e.key === 'Enter') verifyEmployee(); });
+</script>
+</body>
+</html>

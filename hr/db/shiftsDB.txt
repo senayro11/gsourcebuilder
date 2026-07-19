@@ -1,0 +1,7 @@
+id|name|type|start_time|end_time|break_minutes|grace_period|ot_after|night_diff_start|night_diff_end|status
+SH001|Day Shift|regular|08:00|17:00|60|15|480|22:00|06:00|active
+SH002|Night Shift|regular|22:00|06:00|60|15|480|22:00|06:00|active
+SH003|Mid Shift|regular|14:00|23:00|60|15|480|22:00|06:00|active
+SH004|Split Shift|split|07:00|11:00|0|15|480|22:00|06:00|active
+SH005|On Call|oncall|00:00|00:00|0|0|0|22:00|06:00|active
+SH006|Skeletal|skeletal|08:00|17:00|30|15|480|22:00|06:00|active

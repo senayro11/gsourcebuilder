@@ -1,0 +1,9 @@
+id|name|category|price|cost|stock|unit|barcode|status|created_at
+P001|White Rice (1kg)|Groceries|55.00|42.00|499|kg|8901234560001|active|2024-01-01
+P002|Cooking Oil (1L)|Groceries|89.00|70.00|197|bottle|8901234560002|active|2024-01-01
+P003|Sugar (1kg)|Groceries|65.00|50.00|299|kg|8901234560003|active|2024-01-01
+P004|Instant Noodles|Groceries|13.00|9.00|1000|pack|8901234560004|active|2024-01-01
+P005|Canned Sardines|Canned Goods|22.00|16.00|400|can|8901234560005|active|2024-01-01
+P006|Shampoo (Sachet)|Personal Care|8.00|5.00|799|piece|8901234560006|active|2024-01-01
+P007|Detergent Powder|Cleaning|55.00|40.00|150|pack|8901234560007|active|2024-01-01
+P008|Mineral Water (500ml)|Beverages|15.00|10.00|599|bottle|8901234560008|active|2024-01-01

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="fil">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Budget & Finance — Enterprise</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-layout">
+  <nav class="navbar">
+    <div class="navbar-brand" id="navbar-brand">🏢 Enterprise System</div>
+    <div class="navbar-right">
+      <div class="user-chip">
+        <div class="avatar" id="user-avatar">A</div>
+        <div class="user-info"><span class="name" id="user-name"></span><span class="role" id="user-role"></span></div>
+      </div>
+      <a href="dashboard.html" class="btn btn-ghost btn-sm">🏠</a>
+      <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">🚪</button>
+    </div>
+  </nav>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main">
+    <div class="stats-grid" id="budget-stats"></div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="tab-overview">📊 Overview</div>
+      <div class="tab" data-tab="tab-expenses">💸 Expenses</div>
+      <div class="tab" data-tab="tab-income">📈 Income</div>
+      <div class="tab" data-tab="tab-debts">📝 Debts/Payables</div>
+    </div>
+
+    <!-- Overview -->
+    <div class="tab-pane active" id="tab-overview">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div style="display:flex;gap:8px">
+          <input type="month" id="ov-month" style="padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)" onchange="loadOverview()">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openAddEntry()" data-perm="create">+ Bagong Entry</button>
+      </div>
+      <div class="grid-2" style="margin-bottom:20px">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:16px;color:var(--success)">📈 Income Summary</div>
+          <div id="income-breakdown"></div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:16px;color:var(--danger)">💸 Expense Summary</div>
+          <div id="expense-breakdown"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📋 Recent Transactions</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Description</th><th>Amount</th><th>Ref</th><th>Status</th><th></th></tr></thead>
+            <tbody id="ov-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expenses -->
+    <div class="tab-pane" id="tab-expenses">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div class="search-bar" style="max-width:280px">
+          <span>🔍</span>
+          <input type="text" id="exp-search" placeholder="Hanapin..." oninput="filterExpenses()">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openAddEntry('expense')" data-perm="create">+ Expense</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Reference</th><th>By</th><th>Status</th><th></th></tr></thead>
+            <tbody id="exp-tbody"></tbody>
+          </table>
+        </div>
+        <div id="exp-pagination"></div>
+      </div>
+    </div>
+
+    <!-- Income -->
+    <div class="tab-pane" id="tab-income">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div class="search-bar" style="max-width:280px">
+          <span>🔍</span>
+          <input type="text" id="inc-search" placeholder="Hanapin..." oninput="filterIncome()">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openAddEntry('income')" data-perm="create">+ Income</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Reference</th><th>By</th><th>Status</th><th></th></tr></thead>
+            <tbody id="inc-tbody"></tbody>
+          </table>
+        </div>
+        <div id="inc-pagination"></div>
+      </div>
+    </div>
+
+    <!-- Debts/Payables -->
+    <div class="tab-pane" id="tab-debts">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div class="search-bar" style="max-width:280px">
+          <span>🔍</span>
+          <input type="text" id="debt-search" placeholder="Hanapin..." oninput="filterDebts()">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openAddEntry('debt')" data-perm="create">+ Debt/Payable</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Reference</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="debt-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Add/Edit Entry Modal -->
+<div class="modal-backdrop" id="entry-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="entry-modal-title">+ Bagong Entry</span>
+      <button class="modal-close" onclick="UI.closeModal('entry-modal')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Type *</label>
+        <select id="ef-type">
+          <option value="expense">💸 Expense</option>
+          <option value="income">📈 Income</option>
+          <option value="debt">📝 Debt/Payable</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Date *</label><input type="date" id="ef-date"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Category *</label><input type="text" id="ef-cat" placeholder="e.g. Utilities, Sales, Supplier..."></div>
+      <div class="form-group"><label>Amount (₱) *</label><input type="number" id="ef-amount" step="0.01"></div>
+    </div>
+    <div class="form-group"><label>Description *</label><input type="text" id="ef-desc" placeholder="Detalye ng entry..."></div>
+    <div class="form-row">
+      <div class="form-group"><label>Reference No.</label><input type="text" id="ef-ref" placeholder="OR, Invoice, Receipt #..."></div>
+      <div class="form-group"><label>Status</label>
+        <select id="ef-status">
+          <option value="approved">Approved</option>
+          <option value="pending">Pending</option>
+          <option value="rejected">Rejected</option>
+          <option value="paid">Paid</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('entry-modal')">Kanselahin</button>
+      <button class="btn btn-primary" onclick="saveEntry()">I-save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<div id="loading-overlay" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
+
+<script src="js/config.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/usermgmt.js"></script>
+<script>
+  Auth.loadToken();
+  const user = Auth.guard('budget');
+  if (!user) throw 0;
+  UI.buildNavbar(user,'Budget & Finance');
+  UI.buildSidebar(user,'budget');
+  Auth.applyUIPermissions(user,'budget');
+  UI.initTabs();
+  UserMgmt.init(user, 'budget');
+
+  let allEntries=[], editEntryId=null;
+
+  async function loadAll() {
+    UI.loading(true,'Loading financial data...');
+    try {
+      allEntries = await DB.read('budgetDB',true);
+      allEntries.sort((a,b)=>b.date.localeCompare(a.date));
+      renderStats();
+      loadOverview();
+    } catch(e){UI.toast('Error: '+e.message,'error');}
+    UI.loading(false);
+  }
+
+  function renderStats() {
+    const approved = allEntries.filter(e=>e.status==='approved'||e.status==='paid');
+    const income   = approved.filter(e=>e.type==='income').reduce((s,e)=>s+parseFloat(e.amount||0),0);
+    const expenses = approved.filter(e=>e.type==='expense').reduce((s,e)=>s+parseFloat(e.amount||0),0);
+    const debts    = allEntries.filter(e=>e.type==='debt'&&e.status==='pending').reduce((s,e)=>s+parseFloat(e.amount||0),0);
+    const net      = income - expenses;
+    document.getElementById('budget-stats').innerHTML = `
+      <div class="stat-card green"><div class="stat-label">Total Income</div><div class="stat-value" style="font-size:20px">${UI.peso(income)}</div></div>
+      <div class="stat-card red"><div class="stat-label">Total Expenses</div><div class="stat-value" style="font-size:20px">${UI.peso(expenses)}</div></div>
+      <div class="stat-card ${net>=0?'green':'red'}"><div class="stat-label">Net Balance</div><div class="stat-value" style="font-size:20px">${UI.peso(net)}</div></div>
+      <div class="stat-card yellow"><div class="stat-label">Pending Debts</div><div class="stat-value" style="font-size:20px">${UI.peso(debts)}</div></div>`;
+  }
+
+  function loadOverview() {
+    const month = document.getElementById('ov-month').value;
+    let filtered = allEntries;
+    if (month) filtered = filtered.filter(e=>e.date.startsWith(month));
+    // Income breakdown
+    const incRows = filtered.filter(e=>e.type==='income');
+    const expRows = filtered.filter(e=>e.type==='expense');
+    const incByCat={}, expByCat={};
+    incRows.forEach(e=>{incByCat[e.category]=(incByCat[e.category]||0)+parseFloat(e.amount||0);});
+    expRows.forEach(e=>{expByCat[e.category]=(expByCat[e.category]||0)+parseFloat(e.amount||0);});
+    document.getElementById('income-breakdown').innerHTML=Object.keys(incByCat).length?Object.entries(incByCat).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><span>${k}</span><strong style="color:var(--success)">${UI.peso(v)}</strong></div>`).join(''):'<div style="color:var(--text3);text-align:center;padding:20px">Walang income records</div>';
+    document.getElementById('expense-breakdown').innerHTML=Object.keys(expByCat).length?Object.entries(expByCat).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><span>${k}</span><strong style="color:var(--danger)">${UI.peso(v)}</strong></div>`).join(''):'<div style="color:var(--text3);text-align:center;padding:20px">Walang expense records</div>';
+    // Recent table (last 10)
+    document.getElementById('ov-tbody').innerHTML=filtered.slice(0,10).map(e=>entryRow(e)).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang records</td></tr>';
+    Auth.applyUIPermissions(user,'budget');
+  }
+
+  function entryRow(e){
+    const typeColors={expense:'badge-danger',income:'badge-success',debt:'badge-warning'};
+    return `<tr>
+      <td>${e.date}</td>
+      <td><span class="badge ${typeColors[e.type]||'badge-gray'}">${e.type}</span></td>
+      <td>${e.category}</td>
+      <td>${e.description}</td>
+      <td><strong style="color:${e.type==='income'?'var(--success)':'var(--danger)'}">${UI.peso(e.amount)}</strong></td>
+      <td class="mono" style="font-size:11px">${e.reference||'—'}</td>
+      <td>${UI.statusBadge(e.status)}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="editEntry('${e.id}')" data-perm="edit">✏️</button>
+        ${e.type==='debt'&&e.status==='pending'?`<button class="btn btn-success btn-sm" onclick="markPaid('${e.id}')" data-perm="approve">✅ Paid</button>`:''}
+        <button class="btn btn-danger btn-sm" onclick="deleteEntry('${e.id}')" data-perm="delete">🗑</button>
+      </td>
+    </tr>`;
+  }
+
+  function filterExpenses(){const q=document.getElementById('exp-search').value.toLowerCase();const filtered=allEntries.filter(e=>e.type==='expense'&&(e.description.toLowerCase().includes(q)||e.category.toLowerCase().includes(q)));renderTypeTable('exp-tbody',filtered,'exp-pagination');}
+  function filterIncome(){const q=document.getElementById('inc-search').value.toLowerCase();const filtered=allEntries.filter(e=>e.type==='income'&&(e.description.toLowerCase().includes(q)||e.category.toLowerCase().includes(q)));renderTypeTable('inc-tbody',filtered,'inc-pagination');}
+  function filterDebts(){const q=document.getElementById('debt-search').value.toLowerCase();const filtered=allEntries.filter(e=>e.type==='debt'&&(e.description.toLowerCase().includes(q)||e.category.toLowerCase().includes(q)));renderTypeTable('debt-tbody',filtered,null);}
+
+  function renderTypeTable(tbodyId,rows,pagId,page=1){
+    const paged=UI.paginate(rows,page);
+    document.getElementById(tbodyId).innerHTML=paged.rows.map(e=>entryRow(e)).join('')||`<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang records</td></tr>`;
+    if(pagId)UI.renderPagination(pagId,paged,p=>renderTypeTable(tbodyId,rows,pagId,p));
+    Auth.applyUIPermissions(user,'budget');
+  }
+
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.addEventListener('click',()=>{
+      const tab=t.dataset.tab;
+      if(tab==='tab-expenses')filterExpenses();
+      if(tab==='tab-income')filterIncome();
+      if(tab==='tab-debts')filterDebts();
+    });
+  });
+
+  function openAddEntry(type='expense'){
+    editEntryId=null;
+    document.getElementById('ef-type').value=type||'expense';
+    document.getElementById('ef-date').value=new Date().toISOString().split('T')[0];
+    ['ef-cat','ef-amount','ef-desc','ef-ref'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('ef-status').value='approved';
+    document.getElementById('entry-modal-title').textContent='+ Bagong Entry';
+    UI.openModal('entry-modal');
+  }
+
+  function editEntry(id){
+    const e=allEntries.find(x=>x.id===id);if(!e)return;
+    editEntryId=id;
+    document.getElementById('ef-type').value=e.type;
+    document.getElementById('ef-date').value=e.date;
+    document.getElementById('ef-cat').value=e.category;
+    document.getElementById('ef-amount').value=e.amount;
+    document.getElementById('ef-desc').value=e.description;
+    document.getElementById('ef-ref').value=e.reference||'';
+    document.getElementById('ef-status').value=e.status;
+    document.getElementById('entry-modal-title').textContent='✏️ I-edit ang Entry';
+    UI.openModal('entry-modal');
+  }
+
+  async function saveEntry(){
+    const type=document.getElementById('ef-type').value,date=document.getElementById('ef-date').value,cat=document.getElementById('ef-cat').value.trim(),amount=document.getElementById('ef-amount').value,desc=document.getElementById('ef-desc').value.trim();
+    if(!date||!cat||!amount||!desc){UI.toast('Punan ang required fields','warning');return;}
+    UI.loading(true,'Nagse-save...');
+    try{
+      const data={type,date,category:cat,description:desc,amount,reference:document.getElementById('ef-ref').value,recorded_by:user.username,status:document.getElementById('ef-status').value};
+      if(editEntryId){await DB.update('budgetDB',r=>r.id===editEntryId,data);UI.toast('Na-update ✅','success');}
+      else{const all=await DB.read('budgetDB',true);await DB.insert('budgetDB',{id:DB.nextId(all,'id','BUD'),...data});UI.toast('Naidagdag ✅','success');}
+      UI.closeModal('entry-modal');await loadAll();
+    }catch(e){UI.toast('Error: '+e.message,'error');}
+    UI.loading(false);
+  }
+
+  async function markPaid(id){
+    UI.confirm('I-mark as paid ang debt na ito?',async()=>{
+      UI.loading(true);
+      try{await DB.update('budgetDB',r=>r.id===id,{status:'paid'});UI.toast('Marked as paid ✅','success');await loadAll();}
+      catch(e){UI.toast('Error: '+e.message,'error');}
+      UI.loading(false);
+    });
+  }
+
+  async function deleteEntry(id){
+    UI.confirm('I-delete ang entry na ito?',async()=>{
+      UI.loading(true);
+      try{await DB.remove('budgetDB',r=>r.id===id);UI.toast('Na-delete','success');await loadAll();}
+      catch(e){UI.toast('Error: '+e.message,'error');}
+      UI.loading(false);
+    });
+  }
+
+  // Set default month to current
+  document.getElementById('ov-month').value=new Date().toISOString().substring(0,7);
+  loadAll();
+</script>
+</body>
+</html>

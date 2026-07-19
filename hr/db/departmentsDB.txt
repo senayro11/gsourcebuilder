@@ -1,0 +1,8 @@
+id|name|head|phone|email|employee_count|status
+DEPT001|Human Resources|HR Admin|09171234567|hr@company.com|3|active
+DEPT002|Sales|Juan dela Cruz|09187654321|sales@company.com|5|active
+DEPT003|Inventory|Maria Santos|09194561234|inventory@company.com|4|active
+DEPT004|Finance|Ana Garcia|09201234568|finance@company.com|3|active
+DEPT005|Operations|Pedro Reyes|09213456789|ops@company.com|6|active
+DEPT006|Logistics|Jose Reyes|09220987654|logistics@company.com|2|active
+DEPT007|Manpower|Hhhh|09462407551|v.ryane59@gmail.com|0|active

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="fil">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance & Payroll — Enterprise</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .timein-card { background: linear-gradient(135deg,rgba(16,185,129,0.15),rgba(16,185,129,0.05)); border:1px solid rgba(16,185,129,0.3); border-radius:var(--radius-lg); padding:24px; text-align:center; margin-bottom:24px; }
+    .timein-clock { font-size:42px; font-weight:800; color:var(--white); font-family:var(--mono); }
+    .timein-date  { color:var(--text2); margin:4px 0 20px; }
+    .timein-status { font-size:14px; font-weight:600; margin-bottom:16px; }
+    .timein-btns { display:flex; gap:10px; justify-content:center; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <nav class="navbar">
+    <div class="navbar-brand" id="navbar-brand">🏢 Enterprise System</div>
+    <div class="navbar-right">
+      <div class="user-chip">
+        <div class="avatar" id="user-avatar">A</div>
+        <div class="user-info"><span class="name" id="user-name"></span><span class="role" id="user-role"></span></div>
+      </div>
+      <a href="dashboard.html" class="btn btn-ghost btn-sm">🏠</a>
+      <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">🚪</button>
+    </div>
+  </nav>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main">
+    <!-- Self-service time in/out card -->
+    <div class="timein-card" id="timein-section" data-perm="timein">
+      <div class="timein-clock" id="att-clock">--:--:--</div>
+      <div class="timein-date" id="att-date"></div>
+      <div class="timein-status" id="att-status">Checking status...</div>
+      <div class="timein-btns">
+        <button class="btn btn-success" id="btn-timein" onclick="doTimeIn()">🟢 Time In</button>
+        <button class="btn btn-warning" id="btn-timeout" onclick="doTimeOut()" style="display:none">🔴 Time Out</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="tab-attendance">📅 Attendance</div>
+      <div class="tab" data-tab="tab-employees" data-perm="edit">👥 Employees</div>
+      <div class="tab" data-tab="tab-payroll" data-perm="payroll">💵 Payroll</div>
+    </div>
+
+    <!-- Attendance Tab -->
+    <div class="tab-pane active" id="tab-attendance">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div style="display:flex;gap:8px">
+          <input type="date" id="att-date-filter" style="padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)">
+          <select id="att-emp-filter" style="padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)" onchange="filterAtt()">
+            <option value="">All Employees</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="loadAttendance()">🔄</button>
+          <button class="btn btn-primary btn-sm" onclick="openManualAtt()" data-perm="create">+ Manual Entry</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Employee</th><th>Date</th><th>Time In</th><th>Time Out</th><th>Hours</th><th>OT</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="att-tbody"></tbody>
+          </table>
+        </div>
+        <div id="att-pagination"></div>
+      </div>
+    </div>
+
+    <!-- Employees Tab -->
+    <div class="tab-pane" id="tab-employees">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div class="search-bar" style="max-width:280px">
+          <span>🔍</span>
+          <input type="text" id="emp-search" placeholder="Hanapin empleyado..." oninput="filterEmps()">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openAddEmp()" data-perm="create">+ Empleyado</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Name</th><th>Position</th><th>Department</th><th>Daily Rate</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="emp-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payroll Tab -->
+    <div class="tab-pane" id="tab-payroll">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div style="display:flex;gap:8px">
+          <input type="date" id="pay-start" style="padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)" placeholder="Period Start">
+          <input type="date" id="pay-end"   style="padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)" placeholder="Period End">
+          <button class="btn btn-primary btn-sm" onclick="generatePayroll()" data-perm="payroll">⚡ Generate Payroll</button>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadPayroll()">🔄</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Employee</th><th>Period</th><th>Days</th><th>Basic</th><th>OT Pay</th><th>Gross</th><th>Deductions</th><th>Net Pay</th><th>Status</th><th></th></tr></thead>
+            <tbody id="pay-tbody"></tbody>
+          </table>
+        </div>
+        <div id="pay-pagination"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Manual Attendance Modal -->
+<div class="modal-backdrop" id="att-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="att-modal-title">+ Manual Attendance Entry</span>
+      <button class="modal-close" onclick="UI.closeModal('att-modal')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Employee *</label><select id="af-emp"></select></div>
+      <div class="form-group"><label>Date *</label><input type="date" id="af-date"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Time In</label><input type="time" id="af-in" value="08:00"></div>
+      <div class="form-group"><label>Time Out</label><input type="time" id="af-out" value="17:00"></div>
+    </div>
+    <div class="form-group"><label>Status</label>
+      <select id="af-status">
+        <option value="present">Present</option>
+        <option value="absent">Absent</option>
+        <option value="late">Late</option>
+        <option value="half-day">Half Day</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Notes</label><input type="text" id="af-notes" placeholder="Optional notes"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('att-modal')">Kanselahin</button>
+      <button class="btn btn-primary" onclick="saveAtt()">I-save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Employee Modal -->
+<div class="modal-backdrop" id="emp-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="emp-modal-title">+ Dagdag Empleyado</span>
+      <button class="modal-close" onclick="UI.closeModal('emp-modal')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Full Name *</label><input type="text" id="ef-name"></div>
+      <div class="form-group"><label>Position *</label><input type="text" id="ef-pos"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Department</label><input type="text" id="ef-dept"></div>
+      <div class="form-group"><label>Daily Rate (₱) *</label><input type="number" id="ef-rate" step="0.01"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>SSS Contribution</label><input type="number" id="ef-sss" step="0.01"></div>
+      <div class="form-group"><label>PhilHealth</label><input type="number" id="ef-ph" step="0.01"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Pag-IBIG</label><input type="number" id="ef-pi" step="0.01"></div>
+      <div class="form-group"><label>TIN</label><input type="text" id="ef-tin"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Hire Date</label><input type="date" id="ef-hire"></div>
+      <div class="form-group"><label>Status</label><select id="ef-status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+    </div>
+    <div class="form-group"><label>System Account Username (optional)</label><input type="text" id="ef-acct" placeholder="Link to user account"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('emp-modal')">Kanselahin</button>
+      <button class="btn btn-primary" onclick="saveEmp()">I-save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<div id="loading-overlay" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
+
+<script src="js/config.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/usermgmt.js"></script>
+<script>
+  Auth.loadToken();
+  const user = Auth.guard('attendance');
+  if (!user) throw 0;
+  UI.buildNavbar(user, 'Attendance & Payroll');
+  UI.buildSidebar(user, 'attendance');
+  Auth.applyUIPermissions(user, 'attendance');
+  UI.initTabs();
+  UserMgmt.init(user, 'attendance');
+
+  let allEmps=[], allAtt=[], allPay=[], editEmpId=null, todayRecord=null;
+
+  // ---- Clock & Self-service time in/out ----
+  function updateClock() {
+    const now=new Date();
+    document.getElementById('att-clock').textContent=now.toLocaleTimeString('en-PH');
+    document.getElementById('att-date').textContent=now.toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  }
+  setInterval(updateClock, 1000); updateClock();
+
+  async function checkTodayStatus() {
+    if (!Auth.hasPermission(user,'attendance','timein')) {
+      document.getElementById('timein-section').style.display='none'; return;
+    }
+    try {
+      const emp = allEmps.find(e=>e.account_username===user.username);
+      if (!emp) { document.getElementById('att-status').textContent='No employee record linked to your account.'; return; }
+      const today = new Date().toISOString().split('T')[0];
+      const atts  = await DB.read('attendanceDB');
+      todayRecord = atts.find(a=>a.employee_id===emp.id&&a.date===today);
+      if (!todayRecord) {
+        document.getElementById('att-status').textContent = `Hi ${emp.name.split(' ')[0]}! Hindi ka pa nag-time in ngayon.`;
+        document.getElementById('btn-timein').style.display='';
+        document.getElementById('btn-timeout').style.display='none';
+      } else if (!todayRecord.time_out) {
+        document.getElementById('att-status').innerHTML = `✅ Nag-time in ka ng <strong>${todayRecord.time_in}</strong>. Hindi ka pa nag-time out.`;
+        document.getElementById('btn-timein').style.display='none';
+        document.getElementById('btn-timeout').style.display='';
+      } else {
+        document.getElementById('att-status').innerHTML = `🎉 Kumpleto! Time in: <strong>${todayRecord.time_in}</strong> | Time out: <strong>${todayRecord.time_out}</strong>`;
+        document.getElementById('btn-timein').style.display='none';
+        document.getElementById('btn-timeout').style.display='none';
+      }
+    } catch(e) { console.error(e); }
+  }
+
+  async function doTimeIn() {
+    const emp = allEmps.find(e=>e.account_username===user.username);
+    if (!emp) { UI.toast('Walang employee record na linked sa account mo.','error'); return; }
+    const now  = new Date();
+    const today= now.toISOString().split('T')[0];
+    const timeIn=now.toTimeString().split(' ')[0];
+    UI.loading(true,'Nag-ti-time in...');
+    try {
+      const atts = await DB.read('attendanceDB',true);
+      const id   = DB.nextId(atts,'id','ATT');
+      await DB.insert('attendanceDB',{id,employee_id:emp.id,date:today,time_in:timeIn,time_out:'',hours_worked:'0',overtime:'0',status:'present',notes:''});
+      UI.toast(`Time In recorded: ${timeIn} ✅`,'success');
+      await loadAll();
+    } catch(e){UI.toast('Error: '+e.message,'error');}
+    UI.loading(false);
+  }
+
+  async function doTimeOut() {
+    const emp = allEmps.find(e=>e.account_username===user.username);
+    if (!emp||!todayRecord) return;
+    const now    = new Date();
+    const timeOut= now.toTimeString().split(' ')[0];
+    const timeIn = todayRecord.time_in;
+    const inDate = new Date(`${todayRecord.date} ${timeIn}`);
+    const hrs    = ((now - inDate) / 3600000).toFixed(2);
+    const ot     = Math.max(0, parseFloat(hrs) - 8).toFixed(2);
+    UI.loading(true,'Nag-ti-time out...');
+    try {
+      await DB.update('attendanceDB',r=>r.id===todayRecord.id,{time_out:timeOut,hours_worked:hrs,overtime:ot});
+      UI.toast(`Time Out recorded: ${timeOut} | Hours: ${hrs} ✅`,'success');
+      await loadAll();
+    } catch(e){UI.toast('Error: '+e.message,'error');}
+    UI.loading(false);
+  }
+
+  // ---- Load all ----
+  async function loadAll() {
+    UI.loading(true,'Loading data...');
+    try {
+      allEmps = await DB.read('employeesDB',true);
+      await loadAttendance(); await checkTodayStatus();
+      buildEmpFilter();
+    } catch(e){UI.toast('Error: '+e.message,'error');}
+    UI.loading(false);
+  }
+
+  function buildEmpFilter() {
+    const sel=document.getElementById('att-emp-filter');
+    const active=allEmps.filter(e=>e.status==='active');
+    sel.innerHTML='<option value="">All Employees</option>'+active.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+  }
+
+  // ---- Attendance ----
+  async function loadAttendance() {
+    allAtt = await DB.read('attendanceDB',true);
+    allAtt.sort((a,b)=>b.date.localeCompare(a.date));
+    // Default to today
+    const today=new Date().toISOString().split('T')[0];
+    document.getElementById('att-date-filter').value=today;
+    filterAtt();
+  }
+
+  function filterAtt() {
+    const date = document.getElementById('att-date-filter').value;
+    const empId= document.getElementById('att-emp-filter').value;
+    let filtered=allAtt;
+    if(date) filtered=filtered.filter(a=>a.date===date);
+    if(empId) filtered=filtered.filter(a=>a.employee_id===empId);
+    // If staff/ojt with own_records, only show own
+    if(Auth.hasPermission(user,'attendance','own_records') && !Auth.hasPermission(user,'attendance','edit')) {
+      const myEmp=allEmps.find(e=>e.account_username===user.username);
+      if(myEmp) filtered=filtered.filter(a=>a.employee_id===myEmp.id);
+    }
+    renderAtt(filtered,1);
+  }
+
+  function renderAtt(rows,page) {
+    const paged=UI.paginate(rows,page);
+    document.getElementById('att-tbody').innerHTML=paged.rows.map(a=>{
+      const emp=allEmps.find(e=>e.id===a.employee_id);
+      return `<tr>
+        <td><strong>${emp?emp.name:a.employee_id}</strong></td>
+        <td>${a.date}</td>
+        <td>${a.time_in||'—'}</td>
+        <td>${a.time_out||'—'}</td>
+        <td>${parseFloat(a.hours_worked||0).toFixed(2)}</td>
+        <td>${parseFloat(a.overtime||0)>0?`<span style="color:var(--warning)">${parseFloat(a.overtime).toFixed(2)}</span>`:'—'}</td>
+        <td>${UI.statusBadge(a.status)}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="editAtt('${a.id}')" data-perm="edit">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteAtt('${a.id}')" data-perm="delete">🗑</button>
+        </td>
+      </tr>`;
+    }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang records</td></tr>';
+    UI.renderPagination('att-pagination',paged,p=>renderAtt(rows,p));
+    Auth.applyUIPermissions(user,'attendance');
+  }
+
+  function openManualAtt() {
+    document.getElementById('af-emp').innerHTML=allEmps.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+    document.getElementById('af-date').value=new Date().toISOString().split('T')[0];
+    document.getElementById('att-modal-title').textContent='+ Manual Attendance';
+    UI.openModal('att-modal');
+  }
+
+  function editAtt(id) {
+    const a=allAtt.find(x=>x.id===id); if(!a) return;
+    document.getElementById('af-emp').innerHTML=allEmps.filter(e=>e.status==='active').map(e=>`<option value="${e.id}" ${e.id===a.employee_id?'selected':''}>${e.name}</option>`).join('');
+    document.getElementById('af-date').value=a.date;
+    document.getElementById('af-in').value=a.time_in||'';
+    document.getElementById('af-out').value=a.time_out||'';
+    document.getElementById('af-status').value=a.status;
+    document.getElementById('af-notes').value=a.notes||'';
+    document.getElementById('att-modal-title').textContent='✏️ I-edit ang Attendance';
+    window._editAttId=id;
+    UI.openModal('att-modal');
+  }
+
+  async function saveAtt() {
+    const empId=document.getElementById('af-emp').value;
+    const date =document.getElementById('af-date').value;
+    const timeIn=document.getElementById('af-in').value;
+    const timeOut=document.getElementById('af-out').value;
+    const status=document.getElementById('af-status').value;
+    const notes=document.getElementById('af-notes').value;
+    let hrs=0,ot=0;
+    if(timeIn&&timeOut){const i=new Date(`${date} ${timeIn}`),o=new Date(`${date} ${timeOut}`);hrs=((o-i)/3600000).toFixed(2);ot=Math.max(0,parseFloat(hrs)-8).toFixed(2);}
+    UI.loading(true,'Nagse-save...');
+    try {
+      if(window._editAttId) {
+        await DB.update('attendanceDB',r=>r.id===window._editAttId,{employee_id:empId,date,time_in:timeIn,time_out:timeOut,hours_worked:String(hrs),overtime:String(ot),status,notes});
+        window._editAttId=null;
+        UI.toast('Na-update ✅','success');
+      } else {
+        const all=await DB.read('attendanceDB',true);
+        await DB.insert('attendanceDB',{id:DB.nextId(all,'id','ATT'),employee_id:empId,date,time_in:timeIn,time_out:timeOut,hours_worked:String(hrs),overtime:String(ot),status,notes});
+        UI.toast('Naidagdag ✅','success');
+      }
+      UI.closeModal('att-modal'); await loadAttendance();
+    } catch(e){UI.toast('Error: '+e.message,'error');}
+    UI.loading(false);
+  }
+
+  function deleteAtt(id) {
+    UI.confirm('I-delete ang attendance record na ito?',async()=>{
+      UI.loading(true);
+      try{await DB.remove('attendanceDB',r=>r.id===id);UI.toast('Na-delete','success');await loadAttendance();}
+      catch(e){UI.toast('Error: '+e.message,'error');}
+      UI.loading(false);
+    });
+  }
+
+  // ---- Employees ----
+  async function loadEmployees() {
+    allEmps=await DB.read('employeesDB',true);
+    filterEmps();
+  }
+  function filterEmps() {
+    const q=document.getElementById('emp-search').value.toLowerCase();
+    const filtered=q?allEmps.filter(e=>e.name.toLowerCase().includes(q)||e.position.toLowerCase().includes(q)):allEmps;
+    document.getElementById('emp-tbody').innerHTML=filtered.map(e=>`<tr>
+      <td class="mono">${e.id}</td>
+      <td><strong>${e.name}</strong>${e.account_username?`<br><small style="color:var(--text3)">@${e.account_username}</small>`:''}</td>
+      <td>${e.position}</td>
+      <td>${e.department}</td>
+      <td>${UI.peso(e.daily_rate)}</td>
+      <td>${UI.statusBadge(e.status)}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="editEmp('${e.id}')" data-perm="edit">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="archiveEmp('${e.id}')" data-perm="delete">🗑</button>
+      </td>
+    </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text3)">Walang empleyado</td></tr>';
+    Auth.applyUIPermissions(user,'attendance');
+  }
+
+  function openAddEmp(){editEmpId=null;['ef-name','ef-pos','ef-dept','ef-rate','ef-sss','ef-ph','ef-pi','ef-tin','ef-acct'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});document.getElementById('ef-hire').value='';document.getElementById('ef-status').value='active';document.getElementById('emp-modal-title').textContent='+ Dagdag Empleyado';UI.openModal('emp-modal');}
+  function editEmp(id){const e=allEmps.find(x=>x.id===id);if(!e)return;editEmpId=id;document.getElementById('ef-name').value=e.name;document.getElementById('ef-pos').value=e.position;document.getElementById('ef-dept').value=e.department;document.getElementById('ef-rate').value=e.daily_rate;document.getElementById('ef-sss').value=e.sss;document.getElementById('ef-ph').value=e.philhealth;document.getElementById('ef-pi').value=e.pagibig;document.getElementById('ef-tin').value=e.tin||'';document.getElementById('ef-hire').value=e.hire_date;document.getElementById('ef-status').value=e.status;document.getElementById('ef-acct').value=e.account_username||'';document.getElementById('emp-modal-title').textContent='✏️ I-edit ang Empleyado';UI.openModal('emp-modal');}
+  async function saveEmp(){
+    const name=document.getElementById('ef-name').value.trim(),pos=document.getElementById('ef-pos').value.trim(),rate=document.getElementById('ef-rate').value;
+    if(!name||!pos||!rate){UI.toast('Punan ang required fields','warning');return;}
+    UI.loading(true,'Nagse-save...');
+    try{
+      const data={name,position:pos,department:document.getElementById('ef-dept').value,daily_rate:rate,sss:document.getElementById('ef-sss').value,philhealth:document.getElementById('ef-ph').value,pagibig:document.getElementById('ef-pi').value,tin:document.getElementById('ef-tin').value,hire_date:document.getElementById('ef-hire').value,status:document.getElementById('ef-status').value,account_username:document.getElementById('ef-acct').value};
+      if(editEmpId){await DB.update('employeesDB',r=>r.id===editEmpId,data);UI.toast('Na-update ✅','success');}
+      else{const all=await DB.read('employeesDB',true);await DB.insert('employeesDB',{id:DB.nextId(all,'id','EMP'),...data});UI.toast('Naidagdag ✅','success');}
+      UI.closeModal('emp-modal');await loadEmployees();
+    }catch(e){UI.toast('Error: '+e.message,'error');}
+    UI.loading(false);
+  }
+  function archiveEmp(id){UI.confirm('I-archive ang empleyado?',async()=>{UI.loading(true);try{await DB.update('employeesDB',r=>r.id===id,{status:'inactive'});UI.toast('Na-archive','success');await loadEmployees();}catch(e){UI.toast('Error: '+e.message,'error');}UI.loading(false);});}
+
+  // ---- Payroll ----
+  async function loadPayroll() {
+    allPay=await DB.read('payrollDB',true);
+    allPay.sort((a,b)=>b.period_start.localeCompare(a.period_start));
+    renderPayroll(allPay,1);
+  }
+
+  function renderPayroll(rows,page) {
+    const paged=UI.paginate(rows,page);
+    document.getElementById('pay-tbody').innerHTML=paged.rows.map(p=>{
+      const emp=allEmps.find(e=>e.id===p.employee_id);
+      return `<tr>
+        <td><strong>${emp?emp.name:p.employee_id}</strong></td>
+        <td class="mono" style="font-size:11px">${p.period_start} – ${p.period_end}</td>
+        <td>${p.days_worked}</td>
+        <td>${UI.peso(p.basic_pay)}</td>
+        <td>${UI.peso(p.overtime_pay)}</td>
+        <td><strong>${UI.peso(p.gross_pay)}</strong></td>
+        <td style="color:var(--danger)">${UI.peso(p.total_deductions)}</td>
+        <td><strong style="color:var(--success)">${UI.peso(p.net_pay)}</strong></td>
+        <td>${UI.statusBadge(p.status)}</td>
+        <td>
+          <button class="btn btn-success btn-sm" onclick="releasePayroll('${p.id}')" data-perm="payroll" ${p.status==='released'?'disabled':''}>💵 Release</button>
+        </td>
+      </tr>`;
+    }).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text3)">Walang payroll records</td></tr>';
+    UI.renderPagination('pay-pagination',paged,p=>renderPayroll(rows,p));
+    Auth.applyUIPermissions(user,'attendance');
+  }
+
+  async function generatePayroll() {
+    const start=document.getElementById('pay-start').value;
+    const end  =document.getElementById('pay-end').value;
+    if(!start||!end){UI.toast('Pumili ng payroll period','warning');return;}
+    UI.loading(true,'Nag-ge-generate ng payroll...');
+    try {
+      const emps=allEmps.filter(e=>e.status==='active');
+      const atts=(await DB.read('attendanceDB',true)).filter(a=>a.date>=start&&a.date<=end);
+      const payRows=[];
+      for(const emp of emps){
+        const empAtts=atts.filter(a=>a.employee_id===emp.id&&a.status!=='absent');
+        const days=empAtts.length;
+        const totalOT=empAtts.reduce((s,a)=>s+parseFloat(a.overtime||0),0);
+        const dailyRate=parseFloat(emp.daily_rate||0);
+        const hourlyRate=dailyRate/8;
+        const basicPay=days*dailyRate;
+        const otPay=totalOT*(hourlyRate*1.25);
+        const grossPay=basicPay+otPay;
+        const sss=parseFloat(emp.sss||0),ph=parseFloat(emp.philhealth||0),pi=parseFloat(emp.pagibig||0);
+        const tax=grossPay*0.1;
+        const deductions=sss+ph+pi+tax;
+        const netPay=grossPay-deductions;
+        const existing=allPay.find(p=>p.employee_id===emp.id&&p.period_start===start&&p.period_end===end);
+        if(!existing){
+          payRows.push({employee_id:emp.id,period_start:start,period_end:end,days_worked:String(days),basic_pay:basicPay.toFixed(2),overtime_pay:otPay.toFixed(2),allowance:'0.00',gross_pay:grossPay.toFixed(2),sss:emp.sss,philhealth:emp.philhealth,pagibig:emp.pagibig,tax:tax.toFixed(2),total_deductions:deductions.toFixed(2),net_pay:netPay.toFixed(2),status:'draft',released_date:''});
+        }
+      }
+      if(!payRows.length){UI.toast('Lahat ng empleyado ay may payroll na para sa period na ito.','warning');UI.loading(false);return;}
+      const all=await DB.read('payrollDB',true);
+      for(const row of payRows){
+        await DB.insert('payrollDB',{id:DB.nextId(all,'id','PAY'),...row});
+        all.push(row);
+      }
+      UI.toast(`Generated payroll para sa ${payRows.length} empleyado ✅`,'success');
+      await loadPayroll();
+    }catch(e){UI.toast('Error: '+e.message,'error');}
+    UI.loading(false);
+  }
+
+  async function releasePayroll(id) {
+    UI.confirm('I-release ang payroll na ito?',async()=>{
+      UI.loading(true);
+      try{await DB.update('payrollDB',r=>r.id===id,{status:'released',released_date:new Date().toISOString().split('T')[0]});UI.toast('Released! ✅','success');await loadPayroll();}
+      catch(e){UI.toast('Error: '+e.message,'error');}
+      UI.loading(false);
+    });
+  }
+
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.addEventListener('click',()=>{
+      if(t.dataset.tab==='tab-employees') loadEmployees();
+      if(t.dataset.tab==='tab-payroll') loadPayroll();
+    });
+  });
+
+  document.getElementById('att-date-filter').addEventListener('change',filterAtt);
+
+  loadAll();
+</script>
+</body>
+</html>

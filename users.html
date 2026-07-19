@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="fil">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management — Enterprise</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-layout">
+  <nav class="navbar">
+    <div class="navbar-brand" id="navbar-brand">🏢 Enterprise System</div>
+    <div class="navbar-right">
+      <div class="user-chip">
+        <div class="avatar" id="user-avatar">A</div>
+        <div class="user-info"><span class="name" id="user-name"></span><span class="role" id="user-role"></span></div>
+      </div>
+      <a href="dashboard.html" class="btn btn-ghost btn-sm">🏠</a>
+      <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">🚪</button>
+    </div>
+  </nav>
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main">
+    <div class="page-header-row" style="margin-bottom:24px">
+      <div>
+        <h1 style="font-size:22px;font-weight:700;color:var(--white)">👥 User Management</h1>
+        <p style="color:var(--text2);margin-top:4px">Pamahalaan ang lahat ng user accounts at access rights</p>
+      </div>
+    </div>
+
+    <!-- Role summary stats -->
+    <div class="stats-grid" id="user-stats"></div>
+
+    <div class="card" style="margin-top:24px">
+      <div class="card-header">
+        <span class="card-title">All User Accounts</span>
+        <div style="display:flex;gap:8px">
+          <div class="search-bar">
+            <span>🔍</span>
+            <input type="text" id="user-search" placeholder="Hanapin user..." oninput="filterUsers()">
+          </div>
+          <select id="role-filter" style="padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)" onchange="filterUsers()">
+            <option value="">All Roles</option>
+            <option value="superadmin">SuperAdmin</option>
+            <option value="admin">Admin</option>
+            <option value="staff">Staff</option>
+            <option value="ojt">OJT</option>
+            <option value="guest">Guest</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="openAddUser()">+ Bagong User</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Username</th><th>Full Name</th><th>Email</th><th>Role</th><th>Assigned System</th><th>Status</th><th>Created</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="user-tbody"></tbody>
+        </table>
+      </div>
+      <div id="user-pagination"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Add/Edit User Modal -->
+<div class="modal-backdrop" id="user-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="user-modal-title">+ Bagong User</span>
+      <button class="modal-close" onclick="UI.closeModal('user-modal')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Username *</label><input type="text" id="uf-username" placeholder="lowercase, walang spaces"></div>
+      <div class="form-group"><label>Full Name *</label><input type="text" id="uf-fullname"></div>
+    </div>
+    <div class="form-group"><label>Email</label><input type="email" id="uf-email"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Role *</label>
+        <select id="uf-role" onchange="toggleSystemField()">
+          <option value="staff">Staff</option>
+          <option value="ojt">OJT</option>
+          <option value="admin">Admin</option>
+          <option value="guest">Guest</option>
+          <option value="superadmin">SuperAdmin</option>
+        </select>
+      </div>
+      <div class="form-group" id="system-field">
+        <label>Assigned System *</label>
+        <select id="uf-system">
+          <option value="pos">POS System</option>
+          <option value="inventory">Inventory</option>
+          <option value="attendance">Attendance & Payroll</option>
+          <option value="budget">Budget & Finance</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label id="pw-label">Password *</label>
+        <input type="password" id="uf-password" placeholder="Min 6 characters">
+      </div>
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <input type="password" id="uf-password2" placeholder="Ulitin ang password">
+      </div>
+    </div>
+    <div id="edit-pw-note" style="display:none;font-size:12px;color:var(--text3);margin-top:-8px;margin-bottom:12px">
+      ℹ️ Iwanang blangko ang password kung ayaw mong palitan.
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="uf-status">
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+        <option value="suspended">Suspended</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('user-modal')">Kanselahin</button>
+      <button class="btn btn-primary" onclick="saveUser()">I-save</button>
+    </div>
+  </div>
+</div>
+
+<!-- View User Modal -->
+<div class="modal-backdrop" id="view-user-modal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <span class="modal-title">👤 User Details</span>
+      <button class="modal-close" onclick="UI.closeModal('view-user-modal')">✕</button>
+    </div>
+    <div id="view-user-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('view-user-modal')">Isara</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<div id="loading-overlay" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
+
+<script src="js/config.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script>
+  Auth.loadToken();
+  const user = Auth.guard('users');
+  // 'users' system only accessible to superadmin
+  if (!user || user.role !== 'superadmin') {
+    alert('SuperAdmin access lang ang puwede dito.');
+    window.location.href = 'dashboard.html';
+    throw 0;
+  }
+  UI.buildNavbar(user, 'User Management');
+  UI.buildSidebar(user, 'users');
+
+  let allUsers=[], editUserId=null;
+
+  async function loadUsers() {
+    UI.loading(true,'Loading users...');
+    try {
+      allUsers = await DB.read('accountsDB',true);
+      renderStats();
+      filterUsers();
+    } catch(e){UI.toast('Error: '+e.message,'error');}
+    UI.loading(false);
+  }
+
+  function renderStats(){
+    const roles=['superadmin','admin','staff','ojt','guest'];
+    const colors=['badge-purple','badge-info','badge-success','badge-warning','badge-gray'];
+    document.getElementById('user-stats').innerHTML=roles.map((r,i)=>{
+      const count=allUsers.filter(u=>u.role===r).length;
+      return `<div class="stat-card"><div class="stat-label">${r.toUpperCase()}</div><div class="stat-value">${count}</div></div>`;
+    }).join('');
+  }
+
+  function filterUsers(){
+    const q=document.getElementById('user-search').value.toLowerCase();
+    const role=document.getElementById('role-filter').value;
+    let filtered=allUsers;
+    if(q) filtered=filtered.filter(u=>u.username.toLowerCase().includes(q)||u.full_name.toLowerCase().includes(q)||u.email.toLowerCase().includes(q));
+    if(role) filtered=filtered.filter(u=>u.role===role);
+    renderUsers(filtered,1);
+  }
+
+  function renderUsers(rows,page){
+    const paged=UI.paginate(rows,page);
+    document.getElementById('user-tbody').innerHTML=paged.rows.map(u=>`<tr>
+      <td><strong class="mono">${u.username}</strong></td>
+      <td>${u.full_name}</td>
+      <td style="font-size:12px;color:var(--text2)">${u.email||'—'}</td>
+      <td>${UI.roleBadge(u.role)}</td>
+      <td>${u.assigned_system==='all'?'<span class="badge badge-purple">ALL SYSTEMS</span>':(SYSTEMS[u.assigned_system]?.name||u.assigned_system)}</td>
+      <td>${UI.statusBadge(u.status)}</td>
+      <td style="font-size:11px;color:var(--text3)">${u.created_at}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="viewUser('${u.username}')" title="View">👁</button>
+        <button class="btn btn-ghost btn-sm" onclick="editUser('${u.username}')" title="Edit">✏️</button>
+        <button class="btn btn-${u.status==='active'?'warning':'success'} btn-sm" onclick="toggleStatus('${u.username}')" title="${u.status==='active'?'Suspend':'Activate'}">
+          ${u.status==='active'?'🔒':'🔓'}
+        </button>
+        ${u.username!=='superadmin'?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.username}')" title="Delete">🗑</button>`:''}
+      </td>
+    </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang users</td></tr>';
+    UI.renderPagination('user-pagination',paged,p=>renderUsers(rows,p));
+  }
+
+  function toggleSystemField(){
+    const role=document.getElementById('uf-role').value;
+    const sf=document.getElementById('system-field');
+    if(role==='superadmin'){sf.style.display='none'; document.getElementById('uf-system').value='all';}
+    else{sf.style.display=''; if(document.getElementById('uf-system').value==='all') document.getElementById('uf-system').value='pos';}
+  }
+
+  function openAddUser(){
+    editUserId=null;
+    ['uf-username','uf-fullname','uf-email','uf-password','uf-password2'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('uf-role').value='staff';
+    document.getElementById('uf-status').value='active';
+    document.getElementById('user-modal-title').textContent='+ Bagong User';
+    document.getElementById('pw-label').textContent='Password *';
+    document.getElementById('uf-username').disabled=false;
+    document.getElementById('edit-pw-note').style.display='none';
+    toggleSystemField();
+    UI.openModal('user-modal');
+  }
+
+  function editUser(username){
+    const u=allUsers.find(x=>x.username===username); if(!u) return;
+    editUserId=username;
+    document.getElementById('uf-username').value=u.username; document.getElementById('uf-username').disabled=true;
+    document.getElementById('uf-fullname').value=u.full_name;
+    document.getElementById('uf-email').value=u.email||'';
+    document.getElementById('uf-role').value=u.role;
+    document.getElementById('uf-system').value=u.assigned_system;
+    document.getElementById('uf-password').value=''; document.getElementById('uf-password2').value='';
+    document.getElementById('uf-status').value=u.status;
+    document.getElementById('user-modal-title').textContent='✏️ I-edit ang User';
+    document.getElementById('pw-label').textContent='Password (optional)';
+    document.getElementById('edit-pw-note').style.display='';
+    toggleSystemField();
+    UI.openModal('user-modal');
+  }
+
+  async function saveUser(){
+    const username=document.getElementById('uf-username').value.trim().toLowerCase();
+    const fullName=document.getElementById('uf-fullname').value.trim();
+    const email   =document.getElementById('uf-email').value.trim();
+    const role    =document.getElementById('uf-role').value;
+    const system  =role==='superadmin'?'all':document.getElementById('uf-system').value;
+    const pw      =document.getElementById('uf-password').value;
+    const pw2     =document.getElementById('uf-password2').value;
+    const status  =document.getElementById('uf-status').value;
+    if(!username||!fullName){UI.toast('Punan ang required fields','warning');return;}
+    if(!editUserId&&!pw){UI.toast('Kailangan ng password para sa bagong user','warning');return;}
+    if(pw&&pw!==pw2){UI.toast('Hindi match ang password!','error');return;}
+    if(pw&&pw.length<6){UI.toast('Minimum 6 characters ang password','warning');return;}
+    UI.loading(true,'Nagse-save...');
+    try{
+      let hashedPw='';
+      if(pw) hashedPw=await Auth.hashPassword(pw);
+      if(editUserId){
+        const updates={full_name:fullName,email,role,assigned_system:system,status};
+        if(hashedPw) updates.password_hash=hashedPw;
+        await DB.update('accountsDB',r=>r.username===editUserId,updates);
+        UI.toast('Na-update ang user ✅','success');
+      } else {
+        if(allUsers.find(u=>u.username===username)){UI.toast('May existing user na na may ganitong username!','error');UI.loading(false);return;}
+        await DB.insert('accountsDB',{username,password_hash:hashedPw,role,assigned_system:system,full_name:fullName,email,status,created_at:new Date().toISOString().split('T')[0]});
+        UI.toast('Naidagdag ang user ✅','success');
+      }
+      UI.closeModal('user-modal'); await loadUsers();
+    }catch(e){UI.toast('Error: '+e.message,'error');}
+    UI.loading(false);
+  }
+
+  async function toggleStatus(username){
+    const u=allUsers.find(x=>x.username===username); if(!u) return;
+    if(username==='superadmin'){UI.toast('Hindi pwedeng i-deactivate ang superadmin account.','warning');return;}
+    const newStatus=u.status==='active'?'suspended':'active';
+    const action=newStatus==='suspended'?'i-suspend':'i-activate';
+    UI.confirm(`Gusto mong ${action} ang account ni ${u.full_name}?`,async()=>{
+      UI.loading(true);
+      try{await DB.update('accountsDB',r=>r.username===username,{status:newStatus});UI.toast(`Account ${newStatus} na ✅`,'success');await loadUsers();}
+      catch(e){UI.toast('Error: '+e.message,'error');}
+      UI.loading(false);
+    });
+  }
+
+  function deleteUser(username){
+    if(username==='superadmin'){UI.toast('Hindi pwedeng i-delete ang superadmin.','warning');return;}
+    UI.confirm(`Sigurado ka bang gusto mong I-DELETE ang account ni ${username}? Hindi ito mababawi.`,async()=>{
+      UI.loading(true);
+      try{await DB.remove('accountsDB',r=>r.username===username);UI.toast('Na-delete ang user','success');await loadUsers();}
+      catch(e){UI.toast('Error: '+e.message,'error');}
+      UI.loading(false);
+    });
+  }
+
+  function viewUser(username){
+    const u=allUsers.find(x=>x.username===username); if(!u) return;
+    document.getElementById('view-user-content').innerHTML=`
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+        <div style="width:60px;height:60px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:white">${u.full_name.charAt(0)}</div>
+        <div><div style="font-size:18px;font-weight:700;color:var(--white)">${u.full_name}</div><div style="color:var(--text2)">@${u.username}</div></div>
+      </div>
+      <div style="display:grid;gap:10px">
+        ${[['Email',u.email||'—'],['Role',UI.roleBadge(u.role)],['Assigned System',SYSTEMS[u.assigned_system]?.name||u.assigned_system],['Status',UI.statusBadge(u.status)],['Member Since',u.created_at]].map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2);font-size:13px">${k}</span><span style="font-size:13px">${v}</span></div>`).join('')}
+      </div>`;
+    UI.openModal('view-user-modal');
+  }
+
+  loadUsers();
+</script>
+</body>
+</html>
