@@ -1,6 +1,0 @@
-id|date|type|category|description|amount|reference|recorded_by|status
-BUD001|2024-01-10|expense|Utilities|Electricity bill January|8500.00|OR-20240110|admin_bud|approved
-BUD002|2024-01-12|expense|Supplies|Office supplies|1200.00|OR-20240112|admin_bud|approved
-BUD003|2024-01-14|income|Sales|POS Sales January 1-15|45000.00|RPT-20240115|admin_bud|approved
-BUD004|2024-01-15|debt|Supplier|Payment to supplier - ABC Trading|25000.00|INV-2024001|admin_bud|pending
-BUD005|2024-01-15|expense|Payroll|Payroll January 1-15 release|50000.00|PR-20240115|admin_bud|approved
