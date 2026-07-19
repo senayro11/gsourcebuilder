@@ -1,4 +1,4 @@
 key|value
 token|
-setup_done|false
+setup_done|true
 app_name|Enterprise System
