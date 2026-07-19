@@ -1,5 +1,0 @@
-id|user_username|type|title|message|reference_id|is_read|date
-NOTIF001|hradmin|leave_request|New Leave Request|Maria Santos applied for Sick Leave on June 3|LV002|false|2025-06-03
-NOTIF002|hradmin|leave_request|New Leave Request|Pedro Reyes applied for Casual Leave|LV003|false|2025-06-05
-NOTIF003|hradmin|attendance|Late Arrival|Ana Garcia arrived late today|ATT004|true|2025-06-02
-NOTIF004|hradmin|announcement|Announcement Posted|Company Picnic announcement has been posted|ANN001|true|2025-06-10
