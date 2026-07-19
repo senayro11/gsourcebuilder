@@ -1,3 +1,0 @@
-id|employee_id|year|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|total_basic|thirteenth_month|bonus|status|released_date
-13M001|EMP001|2025|14300|14300|14300|14300|14300|14300|0|0|0|0|0|0|85800.00|7150.00|5000.00|released|2026-06-14
-13M002|EMP002|2025|12100|12100|12100|12100|12100|12100|0|0|0|0|0|0|72600.00|6050.00|3000.00|pending|
