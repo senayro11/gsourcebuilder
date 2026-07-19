@@ -1,4 +1,0 @@
-id|name|position|department|daily_rate|sss|philhealth|pagibig|tin|hire_date|status|account_username
-EMP001|Juan dela Cruz|Cashier|Sales|650.00|200.00|150.00|100.00|123-456-789|2023-06-01|active|staff01
-EMP002|Maria Santos|Stock Clerk|Inventory|550.00|150.00|100.00|100.00|987-654-321|2024-01-10|active|ojt01
-EMP003|Pedro Reyes|Supervisor|Operations|850.00|250.00|175.00|100.00|456-789-123|2022-03-15|active|
