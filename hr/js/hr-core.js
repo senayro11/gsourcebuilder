@@ -280,6 +280,18 @@ const HRDB = (() => {
     };
   }
 
+  // Ilang beses subukan bago mag-give up — flaky mobile data ay maraming
+  // transient na fetch failures na gumagana naman kapag sinubukan ulit agad.
+  async function fetchRetry(url, opts, attempts = 3, delayMs = 400) {
+    for (let i = 0; i < attempts; i++) {
+      try { return await fetch(url, opts); }
+      catch (e) {
+        if (i === attempts - 1) throw e;
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+  }
+
   function parse(raw) {
     const lines = raw.trim().split('\n').filter(l => l.trim() && !l.startsWith('#'));
     if (!lines.length) return [];
@@ -298,50 +310,91 @@ const HRDB = (() => {
     return [header, ...rows.map(r => keys.map(k => r[k] ?? '').join('|'))].join('\n') + '\n';
   }
 
+  // 'hr_' prefix sa Sync cache/queue keys para hindi mag-collide sa mga
+  // parehong-pangalang dbName ng root app (hal. root's db/employeesDB.txt
+  // vs hr/db/employeesDB.txt — magkaiba ang laman kahit parehong pangalan).
+  function syncKey(name) { return 'hr_' + name; }
+
   async function read(name, force = false) {
     if (cache[name] && !force) return cache[name];
-    const res = await fetch(apiUrl(name), { headers: hdrs() });
-    if (!res.ok) {
-      if (res.status === 404) { cache[name] = []; return []; }
-      throw new Error(`DB read error ${res.status}: ${name}`);
+    try {
+      const res = await fetchRetry(apiUrl(name), { headers: hdrs() });
+      if (!res.ok) {
+        if (res.status === 404) {
+          cache[name] = []; cache[`${name}_header`] = '';
+          if (typeof Sync !== 'undefined') Sync.cacheSet(syncKey(name), [], '');
+          return [];
+        }
+        throw new Error(`DB read error ${res.status}: ${name}`);
+      }
+      const json = await res.json();
+      shas[name] = json.sha;
+      const content = atob(json.content.replace(/\n/g, ''));
+      cache[name] = parse(content);
+      cache[`${name}_header`] = content.split('\n')[0];
+      if (typeof Sync !== 'undefined') Sync.cacheSet(syncKey(name), cache[name], cache[`${name}_header`]);
+      return cache[name];
+    } catch (e) {
+      if (typeof Sync !== 'undefined' && Sync.isConnectivityError(e)) {
+        const local = Sync.cacheGet(syncKey(name));
+        if (local) {
+          cache[name] = local.rows;
+          cache[`${name}_header`] = local.header;
+          return cache[name];
+        }
+      }
+      throw e;
     }
-    const json = await res.json();
-    shas[name] = json.sha;
-    const content = atob(json.content.replace(/\n/g, ''));
-    cache[name] = parse(content);
-    cache[`${name}_header`] = content.split('\n')[0];
-    return cache[name];
   }
 
-  async function write(name, rows) {
-    const header = cache[`${name}_header`] || Object.keys(rows[0]).join('|');
-    const content = serialize(rows, header);
-    const encoded = btoa(unescape(encodeURIComponent(content)));
-    const body = {
-      message: `Update ${name} - ${new Date().toISOString()}`,
-      content: encoded,
-      sha: shas[name],
-      branch: GITHUB_CONFIG.branch
-    };
-    const res = await fetch(apiUrl(name), {
-      method: 'PUT',
-      headers: hdrs(),
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) {
-      const e = await res.json();
-      throw new Error(`DB write: ${e.message}`);
+  async function write(name, rows, description) {
+    const header = cache[`${name}_header`] || Object.keys(rows[0] || {}).join('|');
+    try {
+      const content = serialize(rows, header);
+      const encoded = btoa(unescape(encodeURIComponent(content)));
+      const body = {
+        message: `Update ${name} - ${new Date().toISOString()}`,
+        content: encoded,
+        sha: shas[name],
+        branch: GITHUB_CONFIG.branch
+      };
+      const res = await fetchRetry(apiUrl(name), {
+        method: 'PUT',
+        headers: hdrs(),
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.message || `DB write error ${res.status}`);
+      }
+      const json = await res.json();
+      shas[name] = json.content.sha;
+      cache[name] = rows;
+      if (typeof Sync !== 'undefined') Sync.cacheSet(syncKey(name), rows, header);
+      return { ok: true, queued: false };
+    } catch (e) {
+      if (typeof Sync !== 'undefined' && Sync.isConnectivityError(e)) {
+        cache[name] = rows;
+        Sync.cacheSet(syncKey(name), rows, header);
+        Sync.queueWrite(syncKey(name), rows, header, description || `Update sa ${name}`);
+        return { ok: true, queued: true };
+      }
+      throw e;
     }
-    const json = await res.json();
-    shas[name] = json.content.sha;
-    cache[name] = rows;
-    return true;
+  }
+
+  // Ginagamit ni Sync.flush() lang para i-commit ang isang naka-queue na
+  // pagbabago gamit ang fresh sha mula sa GitHub.
+  async function forceCommit(name, rows, header) {
+    await read(name, true);
+    cache[`${name}_header`] = header || cache[`${name}_header`];
+    return write(name, rows, '(sync)');
   }
 
   async function insert(name, row) {
     const rows = await read(name, true);
     rows.push(row);
-    return write(name, rows);
+    return write(name, rows, 'Bagong record');
   }
 
   async function update(name, cond, updates) {
@@ -352,7 +405,7 @@ const HRDB = (() => {
       return r;
     });
     if (!n) return 0;
-    await write(name, newRows);
+    await write(name, newRows, 'Pag-update ng record');
     return n;
   }
 
@@ -360,7 +413,7 @@ const HRDB = (() => {
     const rows = await read(name, true);
     const newRows = rows.filter(r => !cond(r));
     if (newRows.length === rows.length) return 0;
-    await write(name, newRows);
+    await write(name, newRows, 'Pagtanggal ng record');
     return rows.length - newRows.length;
   }
 
@@ -375,5 +428,5 @@ const HRDB = (() => {
     else { Object.keys(cache).forEach(k => delete cache[k]); }
   }
 
-  return { read, write, insert, update, remove, nextId, clearCache };
+  return { read, write, insert, update, remove, forceCommit, nextId, clearCache };
 })();
