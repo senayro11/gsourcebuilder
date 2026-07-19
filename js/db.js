@@ -21,18 +21,30 @@ const DB = (() => {
     };
   }
 
-  // Ilang beses subukan bago mag-give up — flaky mobile data (LTE/weak
-  // signal) ay maraming transient na fetch failures na gumagana naman
-  // kapag sinubukan ulit agad. Hindi ito naka-retry sa tunay na HTTP error
-  // responses (401/404/etc.), fetch()-level na network failure lang.
-  async function fetchRetry(url, opts, attempts = 3, delayMs = 400) {
+  // Ilang beses subukan bago mag-give up. Dalawang klase ng transient
+  // failure ang hina-handle dito: (1) flaky mobile data (LTE/weak signal) —
+  // fetch() mismo ang nag-tha-throw; (2) GitHub secondary rate limit (403)
+  // o 429 — hindi ito totoong "invalid" na error, sandaling paghinto lang
+  // bago tuloy ulit. Hindi ito naka-retry sa tunay na HTTP error responses
+  // gaya ng 401/404/422.
+  async function fetchRetry(url, opts, attempts = 3, delayMs = 500) {
+    let lastRes;
     for (let i = 0; i < attempts; i++) {
-      try { return await fetch(url, opts); }
-      catch (e) {
+      try {
+        const res = await fetch(url, opts);
+        if ((res.status === 403 || res.status === 429) && i < attempts - 1) {
+          lastRes = res;
+          const retryAfter = parseInt(res.headers?.get?.('retry-after')) || 0;
+          await new Promise(r => setTimeout(r, Math.max(delayMs, retryAfter * 1000)));
+          continue;
+        }
+        return res;
+      } catch (e) {
         if (i === attempts - 1) throw e;
         await new Promise(r => setTimeout(r, delayMs));
       }
     }
+    return lastRes;
   }
 
   // Parse TXT (pipe-delimited) → array of objects
