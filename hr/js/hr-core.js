@@ -2,6 +2,16 @@
 //  HR-CORE.JS — Shared utilities for HR system
 // ============================================================
 
+// Safety net — kung may na-miss na try/catch kahit saan sa page (hal. isang
+// init function na walang error handling), ipapakita pa rin ito bilang toast
+// sa halip na tahimik lang na mananatiling naka-"Loading..." ang section.
+window.addEventListener('error', e => {
+  Toast.show('JS Error: ' + (e.error?.message || e.message || 'unknown'), 'error', 8000);
+});
+window.addEventListener('unhandledrejection', e => {
+  Toast.show('Error: ' + (e.reason?.message || e.reason || 'unknown'), 'error', 8000);
+});
+
 // ---- Toast ----
 const Toast = {
   show(msg, type = 'info', dur = 3500) {
@@ -280,16 +290,28 @@ const HRDB = (() => {
     };
   }
 
-  // Ilang beses subukan bago mag-give up — flaky mobile data ay maraming
-  // transient na fetch failures na gumagana naman kapag sinubukan ulit agad.
-  async function fetchRetry(url, opts, attempts = 3, delayMs = 400) {
+  // Ilang beses subukan bago mag-give up. Dalawang klase ng transient
+  // failure ang hina-handle dito: (1) flaky mobile data — fetch() mismo ang
+  // nag-tha-throw; (2) GitHub secondary rate limit (403) o 429 — hindi ito
+  // totoong "invalid" na error, sandaling paghinto lang bago tuloy ulit.
+  async function fetchRetry(url, opts, attempts = 3, delayMs = 500) {
+    let lastRes;
     for (let i = 0; i < attempts; i++) {
-      try { return await fetch(url, opts); }
-      catch (e) {
+      try {
+        const res = await fetch(url, opts);
+        if ((res.status === 403 || res.status === 429) && i < attempts - 1) {
+          lastRes = res;
+          const retryAfter = parseInt(res.headers?.get?.('retry-after')) || 0;
+          await new Promise(r => setTimeout(r, Math.max(delayMs, retryAfter * 1000)));
+          continue;
+        }
+        return res;
+      } catch (e) {
         if (i === attempts - 1) throw e;
         await new Promise(r => setTimeout(r, delayMs));
       }
     }
+    return lastRes;
   }
 
   function parse(raw) {
