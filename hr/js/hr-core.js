@@ -5,11 +5,28 @@
 // Safety net — kung may na-miss na try/catch kahit saan sa page (hal. isang
 // init function na walang error handling), ipapakita pa rin ito bilang toast
 // sa halip na tahimik lang na mananatiling naka-"Loading..." ang section.
+// Naka-guard ito (errorHandlerBusy) para hindi ito ang gumawa ng sarili
+// nitong infinite loop kung sakaling mag-error din ang Toast.show() mismo.
+let errorHandlerBusy = false;
+function reportUncaught(prefix, message, stack) {
+  if (errorHandlerBusy) return;
+  errorHandlerBusy = true;
+  try {
+    // Kunin ang unang stack frame na may pangalan ng function — dito
+    // pinaka-madalas makikita kung saang function nag-uumpisa ang paulit-ulit
+    // na tawag kapag "Maximum call stack size exceeded".
+    const frames = (stack || '').split('\n').slice(0, 4).map(l => l.trim()).filter(Boolean);
+    const detail = frames.length ? ' | ' + frames.join(' < ') : '';
+    Toast.show(prefix + ': ' + message + detail, 'error', 12000);
+  } finally {
+    setTimeout(() => { errorHandlerBusy = false; }, 500);
+  }
+}
 window.addEventListener('error', e => {
-  Toast.show('JS Error: ' + (e.error?.message || e.message || 'unknown'), 'error', 8000);
+  reportUncaught('JS Error', e.error?.message || e.message || 'unknown', e.error?.stack);
 });
 window.addEventListener('unhandledrejection', e => {
-  Toast.show('Error: ' + (e.reason?.message || e.reason || 'unknown'), 'error', 8000);
+  reportUncaught('Promise Error', e.reason?.message || e.reason || 'unknown', e.reason?.stack);
 });
 
 // ---- Toast ----
