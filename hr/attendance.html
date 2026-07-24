@@ -1317,14 +1317,20 @@ function updateBreadcrumb(pageId) {
     'leave-by-emp':'By Employee','leave-add-emp':'Add Leave (Employee)',
     'leave-by-hr':'By HR','leave-add-hr':'Add Leave (HR)',
     'att-hr':'Attendance (HR)','att-main':'Main Attendance',
-    'payroll-report':'Payroll Report','payroll-generate':'Generate Payroll','payslip':'Payslip'
+    'payroll-report':'Payroll Report','payroll-generate':'Generate Payroll','payslip':'Payslip',
+    'departments':'Department','shifts':'Shift Types','schedules':'Employee Schedule',
+    'announcements':'Announcements','user-mgmt':'User Management',
+    'thirteenth-month':'13th Month & Bonus','timein-terminal':'Time In/Out Terminal',
+    'edit-profile':'Edit Profile','change-password':'Change Password'
   };
   const parents = {
     'employee-list':'HR Management','holidays':'HR Management',
     'leave-by-emp':'Leave Manage','leave-add-emp':'Leave Manage',
     'leave-by-hr':'Leave Manage','leave-add-hr':'Leave Manage',
     'att-hr':'Attendance','att-main':'Attendance',
-    'payroll-report':'Payroll','payroll-generate':'Payroll','payslip':'Payroll'
+    'payroll-report':'Payroll','payroll-generate':'Payroll','payslip':'Payroll',
+    'departments':'HR Management','shifts':'Scheduling','schedules':'Scheduling',
+    'thirteenth-month':'Payroll','timein-terminal':'Attendance'
   };
   const cur = document.getElementById('breadcrumb-current');
   const par = document.getElementById('breadcrumb-parent');
@@ -1350,6 +1356,15 @@ async function loadPage(pageId) {
     case 'payroll-report':  await loadPayroll(); break;
     case 'payroll-generate':await initGeneratePayroll(); break;
     case 'payslip':         await initPayslip(); break;
+    case 'departments':      await loadDepartments(); break;
+    case 'shifts':           await loadShifts(); break;
+    case 'schedules':        await loadSchedules(); break;
+    case 'announcements':    await loadAnnouncements(); break;
+    case 'user-mgmt':        await loadUsers(); break;
+    case 'thirteenth-month': await load13thMonth(); break;
+    case 'timein-terminal':  break; // static page
+    case 'edit-profile':     loadEditProfile(); break;
+    case 'change-password':  break;
   }
 }
 
@@ -2126,52 +2141,7 @@ function loadEditProfile(){const s=getSession();if(!s)return;document.getElement
 async function saveProfile(){const name=document.getElementById('pf-fullname').value.trim();if(!name){Toast.show('Name required','warning');return;}Loading.show();try{const session=getSession();await HRDB.update('hraccountsDB',r=>r.username===session.username,{full_name:name,email:document.getElementById('pf-email').value});const updSession={...session,full_name:name,email:document.getElementById('pf-email').value};sessionStorage.setItem('ent_session',JSON.stringify(updSession));sessionStorage.setItem('hr_session',JSON.stringify(updSession));document.getElementById('sidebar-name').textContent=name;document.getElementById('topbar-name').textContent=name;Toast.show('Profile updated ✅','success');}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 async function changePassword(){const curr=document.getElementById('cp-current').value,nw=document.getElementById('cp-new').value,conf=document.getElementById('cp-confirm').value;if(!curr||!nw||!conf){Toast.show('Fill all fields','warning');return;}if(nw!==conf){Toast.show('Passwords do not match','error');return;}if(nw.length<6){Toast.show('Minimum 6 characters','warning');return;}Loading.show('Changing password...');try{const session=getSession();const hash=async p=>{const d=new TextEncoder().encode(p);const h=await crypto.subtle.digest('SHA-256',d);return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');};const currHash=await hash(curr);const users=await HRDB.read('hraccountsDB',true);const user=users.find(u=>u.username===session.username&&u.password_hash===currHash);if(!user){Toast.show('Current password is incorrect','error');Loading.hide();return;}const newHash=await hash(nw);await HRDB.update('hraccountsDB',r=>r.username===session.username,{password_hash:newHash});Toast.show('Password changed ✅','success');['cp-current','cp-new','cp-confirm'].forEach(id=>document.getElementById(id).value='');}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 
-// ============================================================
-//  EXTEND navigate() and loadPage() with new pages
-// ============================================================
-const _origLoadPage = loadPage;
-async function loadPage(pageId) {
-  switch(pageId) {
-    case 'departments':      await loadDepartments(); break;
-    case 'shifts':           await loadShifts(); break;
-    case 'schedules':        await loadSchedules(); break;
-    case 'announcements':    await loadAnnouncements(); break;
-    case 'user-mgmt':        await loadUsers(); break;
-    case 'thirteenth-month': await load13thMonth(); break;
-    case 'timein-terminal':  break; // static page
-    case 'edit-profile':     loadEditProfile(); break;
-    case 'change-password':  break;
-    default: await _origLoadPage(pageId);
-  }
-}
-
-// Add new breadcrumbs
-const _origBreadcrumb = updateBreadcrumb;
-function updateBreadcrumb(pageId) {
-  const extra = {
-    'departments':'Department','shifts':'Shift Types','schedules':'Employee Schedule',
-    'announcements':'Announcements','user-mgmt':'User Management',
-    'thirteenth-month':'13th Month & Bonus','timein-terminal':'Time In/Out Terminal',
-    'edit-profile':'Edit Profile','change-password':'Change Password'
-  };
-  const extraParents = {
-    'departments':'HR Management','shifts':'Scheduling','schedules':'Scheduling',
-    'thirteenth-month':'Payroll','timein-terminal':'Attendance'
-  };
-  if (extra[pageId]) {
-    const cur=document.getElementById('breadcrumb-current');
-    const par=document.getElementById('breadcrumb-parent');
-    const sep=document.getElementById('breadcrumb-sep');
-    cur.textContent=extra[pageId];
-    if(extraParents[pageId]){par.textContent=extraParents[pageId];par.style.display='';sep.style.display='';}
-    else{par.style.display='none';sep.style.display='none';}
-  } else {
-    _origBreadcrumb(pageId);
-  }
-}
-
-// Update init to load notifications
-const _origInit = document.addEventListener;
+// Load notifications after main init
 document.addEventListener('DOMContentLoaded', () => {
   // Patch topbar profile from session (called after main init)
   setTimeout(() => {
