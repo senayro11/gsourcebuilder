@@ -2068,18 +2068,13 @@ function renderBreakScheduleRows(schedule) {
     const end   = (schedule && schedule[`${bt.key}_end`]) || bt.defaultEnd;
     return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;flex-wrap:wrap">
       <label style="display:flex;align-items:center;gap:6px;font-weight:600;min-width:140px">
-        <input type="checkbox" id="brk-${bt.key}-enabled" ${enabled?'checked':''} onchange="toggleBreakRow('${bt.key}')"> ${bt.icon} ${bt.label}
+        <input type="checkbox" id="brk-${bt.key}-enabled" ${enabled?'checked':''}> ${bt.icon} ${bt.label}
       </label>
-      <input type="time" id="brk-${bt.key}-start" value="${start}" style="width:110px" ${enabled?'':'disabled'}>
+      <input type="time" id="brk-${bt.key}-start" value="${start}" style="width:110px">
       <span style="color:var(--text3)">–</span>
-      <input type="time" id="brk-${bt.key}-end" value="${end}" style="width:110px" ${enabled?'':'disabled'}>
+      <input type="time" id="brk-${bt.key}-end" value="${end}" style="width:110px">
     </div>`;
   }).join('');
-}
-function toggleBreakRow(key) {
-  const enabled = document.getElementById(`brk-${key}-enabled`).checked;
-  document.getElementById(`brk-${key}-start`).disabled = !enabled;
-  document.getElementById(`brk-${key}-end`).disabled = !enabled;
 }
 
 function editSched(id){const s=allSchedules.find(x=>x.id===id);if(!s)return;editSchedId=id;openAddSchedule().then(()=>{document.getElementById('sch-emp').value=s.employee_id;document.getElementById('sch-shift').value=s.shift_id;document.getElementById('sch-from').value=s.effective_date;document.getElementById('sch-to').value=s.end_date||'';document.getElementById('sch-notes').value=s.notes||'';const days=(s.work_days||'').split(',');document.querySelectorAll('#workday-picker input').forEach(cb=>{cb.checked=days.includes(cb.value);});document.getElementById('sched-modal-title').textContent='✏️ Edit Schedule';updateShiftPreview();renderBreakScheduleRows(s);});}
