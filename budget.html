@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fil">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -36,7 +36,7 @@
         <div style="display:flex;gap:8px">
           <input type="month" id="ov-month" style="padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)" onchange="loadOverview()">
         </div>
-        <button class="btn btn-primary btn-sm" onclick="openAddEntry()" data-perm="create">+ Bagong Entry</button>
+        <button class="btn btn-primary btn-sm" onclick="openAddEntry()" data-perm="create">+ New Entry</button>
       </div>
       <div class="grid-2" style="margin-bottom:20px">
         <div class="card">
@@ -66,7 +66,7 @@
       <div class="page-header-row" style="margin-bottom:16px">
         <div class="search-bar" style="max-width:280px">
           <span>🔍</span>
-          <input type="text" id="exp-search" placeholder="Hanapin..." oninput="filterExpenses()">
+          <input type="text" id="exp-search" placeholder="Search..." oninput="filterExpenses()">
         </div>
         <button class="btn btn-primary btn-sm" onclick="openAddEntry('expense')" data-perm="create">+ Expense</button>
       </div>
@@ -86,7 +86,7 @@
       <div class="page-header-row" style="margin-bottom:16px">
         <div class="search-bar" style="max-width:280px">
           <span>🔍</span>
-          <input type="text" id="inc-search" placeholder="Hanapin..." oninput="filterIncome()">
+          <input type="text" id="inc-search" placeholder="Search..." oninput="filterIncome()">
         </div>
         <button class="btn btn-primary btn-sm" onclick="openAddEntry('income')" data-perm="create">+ Income</button>
       </div>
@@ -106,7 +106,7 @@
       <div class="page-header-row" style="margin-bottom:16px">
         <div class="search-bar" style="max-width:280px">
           <span>🔍</span>
-          <input type="text" id="debt-search" placeholder="Hanapin..." oninput="filterDebts()">
+          <input type="text" id="debt-search" placeholder="Search..." oninput="filterDebts()">
         </div>
         <button class="btn btn-primary btn-sm" onclick="openAddEntry('debt')" data-perm="create">+ Debt/Payable</button>
       </div>
@@ -126,7 +126,7 @@
 <div class="modal-backdrop" id="entry-modal">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title" id="entry-modal-title">+ Bagong Entry</span>
+      <span class="modal-title" id="entry-modal-title">+ New Entry</span>
       <button class="modal-close" onclick="UI.closeModal('entry-modal')">✕</button>
     </div>
     <div class="form-row">
@@ -143,7 +143,7 @@
       <div class="form-group"><label>Category *</label><input type="text" id="ef-cat" placeholder="e.g. Utilities, Sales, Supplier..."></div>
       <div class="form-group"><label>Amount (₱) *</label><input type="number" id="ef-amount" step="0.01"></div>
     </div>
-    <div class="form-group"><label>Description *</label><input type="text" id="ef-desc" placeholder="Detalye ng entry..."></div>
+    <div class="form-group"><label>Description *</label><input type="text" id="ef-desc" placeholder="Entry details..."></div>
     <div class="form-row">
       <div class="form-group"><label>Reference No.</label><input type="text" id="ef-ref" placeholder="OR, Invoice, Receipt #..."></div>
       <div class="form-group"><label>Status</label>
@@ -156,8 +156,8 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="UI.closeModal('entry-modal')">Kanselahin</button>
-      <button class="btn btn-primary" onclick="saveEntry()">I-save</button>
+      <button class="btn btn-ghost" onclick="UI.closeModal('entry-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEntry()">Save</button>
     </div>
   </div>
 </div>
@@ -217,10 +217,10 @@
     const incByCat={}, expByCat={};
     incRows.forEach(e=>{incByCat[e.category]=(incByCat[e.category]||0)+parseFloat(e.amount||0);});
     expRows.forEach(e=>{expByCat[e.category]=(expByCat[e.category]||0)+parseFloat(e.amount||0);});
-    document.getElementById('income-breakdown').innerHTML=Object.keys(incByCat).length?Object.entries(incByCat).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><span>${k}</span><strong style="color:var(--success)">${UI.peso(v)}</strong></div>`).join(''):'<div style="color:var(--text3);text-align:center;padding:20px">Walang income records</div>';
-    document.getElementById('expense-breakdown').innerHTML=Object.keys(expByCat).length?Object.entries(expByCat).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><span>${k}</span><strong style="color:var(--danger)">${UI.peso(v)}</strong></div>`).join(''):'<div style="color:var(--text3);text-align:center;padding:20px">Walang expense records</div>';
+    document.getElementById('income-breakdown').innerHTML=Object.keys(incByCat).length?Object.entries(incByCat).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><span>${k}</span><strong style="color:var(--success)">${UI.peso(v)}</strong></div>`).join(''):'<div style="color:var(--text3);text-align:center;padding:20px">No income records</div>';
+    document.getElementById('expense-breakdown').innerHTML=Object.keys(expByCat).length?Object.entries(expByCat).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><span>${k}</span><strong style="color:var(--danger)">${UI.peso(v)}</strong></div>`).join(''):'<div style="color:var(--text3);text-align:center;padding:20px">No expense records</div>';
     // Recent table (last 10)
-    document.getElementById('ov-tbody').innerHTML=filtered.slice(0,10).map(e=>entryRow(e)).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang records</td></tr>';
+    document.getElementById('ov-tbody').innerHTML=filtered.slice(0,10).map(e=>entryRow(e)).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3)">No records</td></tr>';
     Auth.applyUIPermissions(user,'budget');
   }
 
@@ -248,7 +248,7 @@
 
   function renderTypeTable(tbodyId,rows,pagId,page=1){
     const paged=UI.paginate(rows,page);
-    document.getElementById(tbodyId).innerHTML=paged.rows.map(e=>entryRow(e)).join('')||`<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang records</td></tr>`;
+    document.getElementById(tbodyId).innerHTML=paged.rows.map(e=>entryRow(e)).join('')||`<tr><td colspan="8" style="text-align:center;color:var(--text3)">No records</td></tr>`;
     if(pagId)UI.renderPagination(pagId,paged,p=>renderTypeTable(tbodyId,rows,pagId,p));
     Auth.applyUIPermissions(user,'budget');
   }
@@ -268,7 +268,7 @@
     document.getElementById('ef-date').value=new Date().toISOString().split('T')[0];
     ['ef-cat','ef-amount','ef-desc','ef-ref'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('ef-status').value='approved';
-    document.getElementById('entry-modal-title').textContent='+ Bagong Entry';
+    document.getElementById('entry-modal-title').textContent='+ New Entry';
     UI.openModal('entry-modal');
   }
 
@@ -282,25 +282,25 @@
     document.getElementById('ef-desc').value=e.description;
     document.getElementById('ef-ref').value=e.reference||'';
     document.getElementById('ef-status').value=e.status;
-    document.getElementById('entry-modal-title').textContent='✏️ I-edit ang Entry';
+    document.getElementById('entry-modal-title').textContent='✏️ Edit Entry';
     UI.openModal('entry-modal');
   }
 
   async function saveEntry(){
     const type=document.getElementById('ef-type').value,date=document.getElementById('ef-date').value,cat=document.getElementById('ef-cat').value.trim(),amount=document.getElementById('ef-amount').value,desc=document.getElementById('ef-desc').value.trim();
-    if(!date||!cat||!amount||!desc){UI.toast('Punan ang required fields','warning');return;}
-    UI.loading(true,'Nagse-save...');
+    if(!date||!cat||!amount||!desc){UI.toast('Fill in the required fields','warning');return;}
+    UI.loading(true,'Saving...');
     try{
       const data={type,date,category:cat,description:desc,amount,reference:document.getElementById('ef-ref').value,recorded_by:user.username,status:document.getElementById('ef-status').value};
-      if(editEntryId){await DB.update('budgetDB',r=>r.id===editEntryId,data);UI.toast('Na-update ✅','success');}
-      else{const all=await DB.read('budgetDB',true);await DB.insert('budgetDB',{id:DB.nextId(all,'id','BUD'),...data});UI.toast('Naidagdag ✅','success');}
+      if(editEntryId){await DB.update('budgetDB',r=>r.id===editEntryId,data);UI.toast('Updated ✅','success');}
+      else{const all=await DB.read('budgetDB',true);await DB.insert('budgetDB',{id:DB.nextId(all,'id','BUD'),...data});UI.toast('Added ✅','success');}
       UI.closeModal('entry-modal');await loadAll();
     }catch(e){UI.toast('Error: '+e.message,'error');}
     UI.loading(false);
   }
 
   async function markPaid(id){
-    UI.confirm('I-mark as paid ang debt na ito?',async()=>{
+    UI.confirm('Mark this debt as paid?',async()=>{
       UI.loading(true);
       try{await DB.update('budgetDB',r=>r.id===id,{status:'paid'});UI.toast('Marked as paid ✅','success');await loadAll();}
       catch(e){UI.toast('Error: '+e.message,'error');}
@@ -309,9 +309,9 @@
   }
 
   async function deleteEntry(id){
-    UI.confirm('I-delete ang entry na ito?',async()=>{
+    UI.confirm('Delete this entry?',async()=>{
       UI.loading(true);
-      try{await DB.remove('budgetDB',r=>r.id===id);UI.toast('Na-delete','success');await loadAll();}
+      try{await DB.remove('budgetDB',r=>r.id===id);UI.toast('Deleted','success');await loadAll();}
       catch(e){UI.toast('Error: '+e.message,'error');}
       UI.loading(false);
     });

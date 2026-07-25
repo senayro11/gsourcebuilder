@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fil">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -168,7 +168,7 @@ async function verifyEmployee() {
   const empId = document.getElementById('emp-id-input').value.trim();
   const pass  = document.getElementById('emp-pass-input').value;
 
-  if (!empId || !pass) { Toast.show('Punan ang lahat ng fields','warning'); return; }
+  if (!empId || !pass) { Toast.show('Fill in all fields','warning'); return; }
 
   Loading.show('Verifying...');
   try {
@@ -186,7 +186,7 @@ async function verifyEmployee() {
     // Verify password via linked account
     const hashed = await hashPw(pass);
     const acct = accounts.find(a => a.employee_id === emp.id && a.password_hash === hashed && a.status === 'active');
-    if (!acct) { Toast.show('Mali ang password','error'); Loading.hide(); return; }
+    if (!acct) { Toast.show('Incorrect password','error'); Loading.hide(); return; }
 
     verifiedEmp = emp;
     activeSchedule = getActiveSchedule(schedules, emp.id);
@@ -223,7 +223,7 @@ function renderActionButtons(schedule, rec) {
     return;
   }
   if (rec.time_out) {
-    btnRow.innerHTML = `<span class="badge badge-success" style="margin-top:4px">✅ Kumpleto ang attendance ngayon</span>`;
+    btnRow.innerHTML = `<span class="badge badge-success" style="margin-top:4px">✅ Attendance complete for today</span>`;
     return;
   }
   let html = '<div class="break-actions">';
@@ -233,9 +233,9 @@ function renderActionButtons(schedule, rec) {
     const windowLabel = schedule ? `${schedule[bt.key + '_start'] || ''}–${schedule[bt.key + '_end'] || ''}` : '';
     const paidLabel = isBreakPaid(schedule, bt.key) ? ' · Paid' : ' · Unpaid';
     let action;
-    if (status === 'pending') action = `<button class="btn btn-ghost btn-sm" onclick="doBreakOut('${bt.key}')">${bt.icon} Simulan</button>`;
-    else if (status === 'ongoing') action = `<button class="btn btn-warning btn-sm" onclick="doBreakIn('${bt.key}')">🔙 Bumalik</button>`;
-    else action = `<span class="badge badge-success">✅ Tapos na</span>`;
+    if (status === 'pending') action = `<button class="btn btn-ghost btn-sm" onclick="doBreakOut('${bt.key}')">${bt.icon} Start</button>`;
+    else if (status === 'ongoing') action = `<button class="btn btn-warning btn-sm" onclick="doBreakIn('${bt.key}')">🔙 Return</button>`;
+    else action = `<span class="badge badge-success">✅ Done</span>`;
     html += `<div class="break-row"><span class="break-label">${bt.icon} ${bt.label}<br><span class="break-window">${windowLabel}${paidLabel}</span></span>${action}</div>`;
   });
   html += '</div>';
@@ -289,7 +289,7 @@ async function doBreakOut(key) {
   if (!verifiedEmp || !todayRecord) return;
   const now = new Date().toTimeString().substring(0, 5);
   const label = (BREAK_TYPES.find(b => b.key === key) || {}).label || key;
-  Loading.show(`Sinisimulan ang ${label}...`);
+  Loading.show(`Starting ${label}...`);
   try {
     await HRDB.update('attendanceDB', r => r.id === todayRecord.id, { [`${key}_out`]: now });
     todayRecord = { ...todayRecord, [`${key}_out`]: now };
@@ -302,12 +302,12 @@ async function doBreakIn(key) {
   if (!verifiedEmp || !todayRecord) return;
   const now = new Date().toTimeString().substring(0, 5);
   const label = (BREAK_TYPES.find(b => b.key === key) || {}).label || key;
-  Loading.show(`Nire-record ang pagbalik...`);
+  Loading.show(`Recording return...`);
   try {
     await HRDB.update('attendanceDB', r => r.id === todayRecord.id, { [`${key}_in`]: now });
     todayRecord = { ...todayRecord, [`${key}_in`]: now };
-    showSuccess('🔙', `Bumalik mula sa ${label}!`, `${verifiedEmp.name} — ${now}`);
-    Toast.show(`Bumalik mula sa ${label}: ${now} 🔙`, 'success');
+    showSuccess('🔙', `Returned from ${label}!`, `${verifiedEmp.name} — ${now}`);
+    Toast.show(`Returned from ${label}: ${now} 🔙`, 'success');
   } catch(e) { Toast.show('Error: ' + e.message, 'error'); }
   Loading.hide();
 }
@@ -324,9 +324,9 @@ async function doTimeOut() {
   const outDate = new Date(`${date}T${timeOut}:00`);
   let workHrs   = (outDate - inDate) / 3600000;
 
-  // Get shift + compute actual break deduction (punches kung meron,
-  // configured window kung wala, o legacy flat minutes kung walang
-  // schedule/break config talaga)
+  // Get shift + compute actual break deduction (from punches if present,
+  // else configured window, else legacy flat minutes if no
+  // schedule/break config exists at all)
   const shifts = await HRDB.read('shiftsDB');
   const shift  = activeSchedule ? shifts.find(sh => sh.id === activeSchedule.shift_id) : null;
   const brk    = computeBreakMinutes(activeSchedule, todayRecord, shift?.break_minutes || 60) / 60;

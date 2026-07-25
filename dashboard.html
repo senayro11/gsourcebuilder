@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fil">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -68,7 +68,7 @@
     <div class="welcome-banner">
       <div class="avatar-lg" id="avatar-big">A</div>
       <div>
-        <h2>Magandang <span id="greeting-time">araw</span>, <span id="greet-name"></span>! 👋</h2>
+        <h2>Good <span id="greeting-time">morning</span>, <span id="greet-name"></span>! 👋</h2>
         <p id="greet-role"></p>
       </div>
       <div class="time-display">
@@ -83,7 +83,7 @@
 
     <div class="page-header">
       <h1>Accessible Systems</h1>
-      <p>I-click ang system na gusto mong gamitin</p>
+      <p>Click the system you want to use</p>
     </div>
 
     <div class="system-grid" id="system-grid">
@@ -118,7 +118,7 @@
   // Greeting
   const hour = new Date().getHours();
   document.getElementById('greeting-time').textContent =
-    hour < 12 ? 'umaga' : hour < 18 ? 'hapon' : 'gabi';
+    hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
   document.getElementById('greet-name').textContent = _session.full_name.split(' ')[0];
   document.getElementById('avatar-big').textContent = _session.full_name.charAt(0);
   document.getElementById('greet-role').textContent =
@@ -138,11 +138,11 @@
   const grid = document.getElementById('system-grid');
   const accessible = Auth.getAccessibleSystems(_session);
   const descriptions = {
-    pos:       'Mag-transact, mag-receive ng bayad, at mag-generate ng resibo.',
-    inventory: 'Pamahalaan ang mga produkto, stock levels, at movements.',
-    attendance:'I-manage ang HR, attendance, leave requests, at payroll ng mga empleyado.',
-    budget:    'I-monitor ang expenses, income, utang, at budget ng negosyo.',
-    users:     'Pamahalaan ang lahat ng user accounts at access rights.'
+    pos:       'Process transactions, receive payments, and generate receipts.',
+    inventory: 'Manage products, stock levels, and movements.',
+    attendance:'Manage HR, attendance, leave requests, and employee payroll.',
+    budget:    'Monitor business expenses, income, debts, and budget.',
+    users:     'Manage all user accounts and access rights.'
   };
   grid.innerHTML = accessible.map(s => {
     const sys = SYSTEMS[s];
@@ -165,12 +165,12 @@
         const today = new Date().toISOString().split('T')[0];
         const todayTxns = txns.filter(t => t.date && t.date.startsWith(today));
         const todaySales = todayTxns.reduce((s,t) => s + parseFloat(t.total||0), 0);
-        stats.push(`<div class="stat-card blue"><div class="stat-label">Sales Ngayon</div><div class="stat-value">${UI.peso(todaySales)}</div><div class="stat-sub">${todayTxns.length} transactions</div></div>`);
+        stats.push(`<div class="stat-card blue"><div class="stat-label">Today's Sales</div><div class="stat-value">${UI.peso(todaySales)}</div><div class="stat-sub">${todayTxns.length} transactions</div></div>`);
       }
       if (Auth.canAccessSystem(_session, 'inventory')) {
         const prods = await DB.read('productsDB');
         const lowStock = prods.filter(p => parseInt(p.stock) < 50 && p.status === 'active');
-        stats.push(`<div class="stat-card ${lowStock.length>0?'yellow':'green'}"><div class="stat-label">Low Stock Items</div><div class="stat-value">${lowStock.length}</div><div class="stat-sub">sa ${prods.length} produkto</div></div>`);
+        stats.push(`<div class="stat-card ${lowStock.length>0?'yellow':'green'}"><div class="stat-label">Low Stock Items</div><div class="stat-value">${lowStock.length}</div><div class="stat-sub">of ${prods.length} products</div></div>`);
       }
       if (Auth.canAccessSystem(_session, 'attendance')) {
         const emps = await DB.read('employeesDB');
@@ -190,7 +190,7 @@
       }
       statsEl.innerHTML = stats.length ? stats.join('') : '<div class="stat-card"><div class="stat-label">No data available</div></div>';
     } catch(e) {
-      statsEl.innerHTML = `<div class="stat-card"><div class="stat-label">⚠️ Hindi ma-load ang stats</div><div class="stat-sub">${e.message}</div></div>`;
+      statsEl.innerHTML = `<div class="stat-card"><div class="stat-label">⚠️ Could not load stats</div><div class="stat-sub">${e.message}</div></div>`;
     }
   }
   loadStats();

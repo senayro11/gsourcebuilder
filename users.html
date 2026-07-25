@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fil">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,7 +24,7 @@
     <div class="page-header-row" style="margin-bottom:24px">
       <div>
         <h1 style="font-size:22px;font-weight:700;color:var(--white)">👥 User Management</h1>
-        <p style="color:var(--text2);margin-top:4px">Pamahalaan ang lahat ng user accounts at access rights</p>
+        <p style="color:var(--text2);margin-top:4px">Manage all user accounts and access rights</p>
       </div>
     </div>
 
@@ -37,7 +37,7 @@
         <div style="display:flex;gap:8px">
           <div class="search-bar">
             <span>🔍</span>
-            <input type="text" id="user-search" placeholder="Hanapin user..." oninput="filterUsers()">
+            <input type="text" id="user-search" placeholder="Search user..." oninput="filterUsers()">
           </div>
           <select id="role-filter" style="padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)" onchange="filterUsers()">
             <option value="">All Roles</option>
@@ -47,7 +47,7 @@
             <option value="ojt">OJT</option>
             <option value="guest">Guest</option>
           </select>
-          <button class="btn btn-primary btn-sm" onclick="openAddUser()">+ Bagong User</button>
+          <button class="btn btn-primary btn-sm" onclick="openAddUser()">+ New User</button>
         </div>
       </div>
       <div class="table-wrap">
@@ -67,11 +67,11 @@
 <div class="modal-backdrop" id="user-modal">
   <div class="modal modal-lg">
     <div class="modal-header">
-      <span class="modal-title" id="user-modal-title">+ Bagong User</span>
+      <span class="modal-title" id="user-modal-title">+ New User</span>
       <button class="modal-close" onclick="UI.closeModal('user-modal')">✕</button>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Username *</label><input type="text" id="uf-username" placeholder="lowercase, walang spaces"></div>
+      <div class="form-group"><label>Username *</label><input type="text" id="uf-username" placeholder="lowercase, no spaces"></div>
       <div class="form-group"><label>Full Name *</label><input type="text" id="uf-fullname"></div>
     </div>
     <div class="form-group"><label>Email</label><input type="email" id="uf-email"></div>
@@ -103,11 +103,11 @@
       </div>
       <div class="form-group">
         <label>Confirm Password</label>
-        <input type="password" id="uf-password2" placeholder="Ulitin ang password">
+        <input type="password" id="uf-password2" placeholder="Repeat the password">
       </div>
     </div>
     <div id="edit-pw-note" style="display:none;font-size:12px;color:var(--text3);margin-top:-8px;margin-bottom:12px">
-      ℹ️ Iwanang blangko ang password kung ayaw mong palitan.
+      ℹ️ Leave the password blank if you don't want to change it.
     </div>
     <div class="form-group">
       <label>Status</label>
@@ -118,8 +118,8 @@
       </select>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="UI.closeModal('user-modal')">Kanselahin</button>
-      <button class="btn btn-primary" onclick="saveUser()">I-save</button>
+      <button class="btn btn-ghost" onclick="UI.closeModal('user-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUser()">Save</button>
     </div>
   </div>
 </div>
@@ -133,7 +133,7 @@
     </div>
     <div id="view-user-content"></div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="UI.closeModal('view-user-modal')">Isara</button>
+      <button class="btn btn-ghost" onclick="UI.closeModal('view-user-modal')">Close</button>
     </div>
   </div>
 </div>
@@ -151,7 +151,7 @@
   const user = Auth.guard('users');
   // 'users' system only accessible to superadmin
   if (!user || user.role !== 'superadmin') {
-    alert('SuperAdmin access lang ang puwede dito.');
+    alert('SuperAdmin access only.');
     window.location.href = 'dashboard.html';
     throw 0;
   }
@@ -206,7 +206,7 @@
         </button>
         ${u.username!=='superadmin'?`<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.username}')" title="Delete">🗑</button>`:''}
       </td>
-    </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang users</td></tr>';
+    </tr>`).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3)">No users</td></tr>';
     UI.renderPagination('user-pagination',paged,p=>renderUsers(rows,p));
   }
 
@@ -222,7 +222,7 @@
     ['uf-username','uf-fullname','uf-email','uf-password','uf-password2'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('uf-role').value='staff';
     document.getElementById('uf-status').value='active';
-    document.getElementById('user-modal-title').textContent='+ Bagong User';
+    document.getElementById('user-modal-title').textContent='+ New User';
     document.getElementById('pw-label').textContent='Password *';
     document.getElementById('uf-username').disabled=false;
     document.getElementById('edit-pw-note').style.display='none';
@@ -240,7 +240,7 @@
     document.getElementById('uf-system').value=u.assigned_system;
     document.getElementById('uf-password').value=''; document.getElementById('uf-password2').value='';
     document.getElementById('uf-status').value=u.status;
-    document.getElementById('user-modal-title').textContent='✏️ I-edit ang User';
+    document.getElementById('user-modal-title').textContent='✏️ Edit User';
     document.getElementById('pw-label').textContent='Password (optional)';
     document.getElementById('edit-pw-note').style.display='';
     toggleSystemField();
@@ -256,11 +256,11 @@
     const pw      =document.getElementById('uf-password').value;
     const pw2     =document.getElementById('uf-password2').value;
     const status  =document.getElementById('uf-status').value;
-    if(!username||!fullName){UI.toast('Punan ang required fields','warning');return;}
-    if(!editUserId&&!pw){UI.toast('Kailangan ng password para sa bagong user','warning');return;}
-    if(pw&&pw!==pw2){UI.toast('Hindi match ang password!','error');return;}
-    if(pw&&pw.length<6){UI.toast('Minimum 6 characters ang password','warning');return;}
-    UI.loading(true,'Nagse-save...');
+    if(!username||!fullName){UI.toast('Fill in the required fields','warning');return;}
+    if(!editUserId&&!pw){UI.toast('A password is required for a new user','warning');return;}
+    if(pw&&pw!==pw2){UI.toast('Passwords do not match!','error');return;}
+    if(pw&&pw.length<6){UI.toast('Password must be at least 6 characters','warning');return;}
+    UI.loading(true,'Saving...');
     try{
       let hashedPw='';
       if(pw) hashedPw=await Auth.hashPassword(pw);
@@ -268,11 +268,11 @@
         const updates={full_name:fullName,email,role,assigned_system:system,status};
         if(hashedPw) updates.password_hash=hashedPw;
         await DB.update('accountsDB',r=>r.username===editUserId,updates);
-        UI.toast('Na-update ang user ✅','success');
+        UI.toast('User updated ✅','success');
       } else {
-        if(allUsers.find(u=>u.username===username)){UI.toast('May existing user na na may ganitong username!','error');UI.loading(false);return;}
+        if(allUsers.find(u=>u.username===username)){UI.toast('A user with this username already exists!','error');UI.loading(false);return;}
         await DB.insert('accountsDB',{username,password_hash:hashedPw,role,assigned_system:system,full_name:fullName,email,status,created_at:new Date().toISOString().split('T')[0]});
-        UI.toast('Naidagdag ang user ✅','success');
+        UI.toast('User added ✅','success');
       }
       UI.closeModal('user-modal'); await loadUsers();
     }catch(e){UI.toast('Error: '+e.message,'error');}
@@ -281,22 +281,22 @@
 
   async function toggleStatus(username){
     const u=allUsers.find(x=>x.username===username); if(!u) return;
-    if(username==='superadmin'){UI.toast('Hindi pwedeng i-deactivate ang superadmin account.','warning');return;}
+    if(username==='superadmin'){UI.toast('The superadmin account cannot be deactivated.','warning');return;}
     const newStatus=u.status==='active'?'suspended':'active';
-    const action=newStatus==='suspended'?'i-suspend':'i-activate';
-    UI.confirm(`Gusto mong ${action} ang account ni ${u.full_name}?`,async()=>{
+    const action=newStatus==='suspended'?'suspend':'activate';
+    UI.confirm(`${action.charAt(0).toUpperCase()+action.slice(1)} the account of ${u.full_name}?`,async()=>{
       UI.loading(true);
-      try{await DB.update('accountsDB',r=>r.username===username,{status:newStatus});UI.toast(`Account ${newStatus} na ✅`,'success');await loadUsers();}
+      try{await DB.update('accountsDB',r=>r.username===username,{status:newStatus});UI.toast(`Account ${newStatus} ✅`,'success');await loadUsers();}
       catch(e){UI.toast('Error: '+e.message,'error');}
       UI.loading(false);
     });
   }
 
   function deleteUser(username){
-    if(username==='superadmin'){UI.toast('Hindi pwedeng i-delete ang superadmin.','warning');return;}
-    UI.confirm(`Sigurado ka bang gusto mong I-DELETE ang account ni ${username}? Hindi ito mababawi.`,async()=>{
+    if(username==='superadmin'){UI.toast('The superadmin account cannot be deleted.','warning');return;}
+    UI.confirm(`Are you sure you want to DELETE the account of ${username}? This cannot be undone.`,async()=>{
       UI.loading(true);
-      try{await DB.remove('accountsDB',r=>r.username===username);UI.toast('Na-delete ang user','success');await loadUsers();}
+      try{await DB.remove('accountsDB',r=>r.username===username);UI.toast('User deleted','success');await loadUsers();}
       catch(e){UI.toast('Error: '+e.message,'error');}
       UI.loading(false);
     });

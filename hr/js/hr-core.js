@@ -2,19 +2,19 @@
 //  HR-CORE.JS — Shared utilities for HR system
 // ============================================================
 
-// Safety net — kung may na-miss na try/catch kahit saan sa page (hal. isang
-// init function na walang error handling), ipapakita pa rin ito bilang toast
-// sa halip na tahimik lang na mananatiling naka-"Loading..." ang section.
-// Naka-guard ito (errorHandlerBusy) para hindi ito ang gumawa ng sarili
-// nitong infinite loop kung sakaling mag-error din ang Toast.show() mismo.
+// Safety net — if a try/catch is missing anywhere on the page (e.g. an
+// init function with no error handling), this still surfaces it as a toast
+// instead of silently leaving the section stuck on "Loading...".
+// Guarded (errorHandlerBusy) so this can't cause its own infinite loop
+// if Toast.show() itself happens to error.
 let errorHandlerBusy = false;
 function reportUncaught(prefix, message, stack) {
   if (errorHandlerBusy) return;
   errorHandlerBusy = true;
   try {
-    // Kunin ang unang stack frame na may pangalan ng function — dito
-    // pinaka-madalas makikita kung saang function nag-uumpisa ang paulit-ulit
-    // na tawag kapag "Maximum call stack size exceeded".
+    // Grab the first named stack frame — this is usually where you can
+    // see which function the repeated calls originate from when
+    // "Maximum call stack size exceeded" happens.
     const frames = (stack || '').split('\n').slice(0, 4).map(l => l.trim()).filter(Boolean);
     const detail = frames.length ? ' | ' + frames.join(' < ') : '';
     Toast.show(prefix + ': ' + message + detail, 'error', 12000);
@@ -78,11 +78,11 @@ const Modal = {
     d.className = 'modal-backdrop active';
     d.innerHTML = `
       <div class="modal" style="max-width:400px">
-        <div class="modal-header"><span class="modal-title">⚠️ Kumpirmasyon</span></div>
+        <div class="modal-header"><span class="modal-title">⚠️ Confirmation</span></div>
         <div class="modal-body"><p style="color:var(--text)">${msg}</p></div>
         <div class="modal-footer">
-          <button class="btn btn-ghost" id="${id}-no">Kanselahin</button>
-          <button class="btn btn-danger" id="${id}-yes">Oo, ituloy</button>
+          <button class="btn btn-ghost" id="${id}-no">Cancel</button>
+          <button class="btn btn-danger" id="${id}-yes">Yes, continue</button>
         </div>
       </div>`;
     document.body.appendChild(d);
@@ -307,10 +307,10 @@ const HRDB = (() => {
     };
   }
 
-  // Ilang beses subukan bago mag-give up. Dalawang klase ng transient
-  // failure ang hina-handle dito: (1) flaky mobile data — fetch() mismo ang
-  // nag-tha-throw; (2) GitHub secondary rate limit (403) o 429 — hindi ito
-  // totoong "invalid" na error, sandaling paghinto lang bago tuloy ulit.
+  // Retry a few times before giving up. Two classes of transient failure
+  // are handled here: (1) flaky mobile data — fetch() itself throws;
+  // (2) GitHub secondary rate limit (403) or 429 — not a real "invalid"
+  // error, just a brief pause before continuing.
   async function fetchRetry(url, opts, attempts = 3, delayMs = 500) {
     let lastRes;
     for (let i = 0; i < attempts; i++) {
@@ -349,9 +349,9 @@ const HRDB = (() => {
     return [header, ...rows.map(r => keys.map(k => r[k] ?? '').join('|'))].join('\n') + '\n';
   }
 
-  // 'hr_' prefix sa Sync cache/queue keys para hindi mag-collide sa mga
-  // parehong-pangalang dbName ng root app (hal. root's db/employeesDB.txt
-  // vs hr/db/employeesDB.txt — magkaiba ang laman kahit parehong pangalan).
+  // 'hr_' prefix on Sync cache/queue keys so they don't collide with the
+  // root app's same-named dbName (e.g. root's db/employeesDB.txt
+  // vs hr/db/employeesDB.txt — different content despite the same name).
   function syncKey(name) { return 'hr_' + name; }
 
   async function read(name, force = false) {
@@ -415,15 +415,15 @@ const HRDB = (() => {
       if (typeof Sync !== 'undefined' && Sync.isConnectivityError(e)) {
         cache[name] = rows;
         Sync.cacheSet(syncKey(name), rows, header);
-        Sync.queueWrite(syncKey(name), rows, header, description || `Update sa ${name}`);
+        Sync.queueWrite(syncKey(name), rows, header, description || `Update to ${name}`);
         return { ok: true, queued: true };
       }
       throw e;
     }
   }
 
-  // Ginagamit ni Sync.flush() lang para i-commit ang isang naka-queue na
-  // pagbabago gamit ang fresh sha mula sa GitHub.
+  // Used only by Sync.flush() to commit a queued change using a
+  // fresh sha from GitHub.
   async function forceCommit(name, rows, header) {
     await read(name, true);
     cache[`${name}_header`] = header || cache[`${name}_header`];
@@ -433,7 +433,7 @@ const HRDB = (() => {
   async function insert(name, row) {
     const rows = await read(name, true);
     rows.push(row);
-    return write(name, rows, 'Bagong record');
+    return write(name, rows, 'New record');
   }
 
   async function update(name, cond, updates) {
@@ -444,7 +444,7 @@ const HRDB = (() => {
       return r;
     });
     if (!n) return 0;
-    await write(name, newRows, 'Pag-update ng record');
+    await write(name, newRows, 'Record update');
     return n;
   }
 
@@ -452,7 +452,7 @@ const HRDB = (() => {
     const rows = await read(name, true);
     const newRows = rows.filter(r => !cond(r));
     if (newRows.length === rows.length) return 0;
-    await write(name, newRows, 'Pagtanggal ng record');
+    await write(name, newRows, 'Record deletion');
     return rows.length - newRows.length;
   }
 
@@ -471,16 +471,16 @@ const HRDB = (() => {
 })();
 
 // ============================================================
-//  BREAK SCHEDULE — per-employee na configurable break windows
-//  (AM/Lunch/PM), ginagamit ng kiosk (timein.html) at ng Attendance/
-//  Schedule pages (attendance.html). Bawat break ay pwedeng i-on/off,
-//  at ang oras/tagal ay editable per employee sa schedulesDB.
+//  BREAK SCHEDULE — per-employee configurable break windows
+//  (AM/Lunch/PM), used by the kiosk (timein.html) and by the Attendance/
+//  Schedule pages (attendance.html). Each break can be toggled on/off,
+//  and its time/duration is editable per employee in schedulesDB.
 // ============================================================
-// defaultPaid: karaniwang practice — maiikling AM/PM break ay "paid"
-// (hindi ibinabawas sa oras), habang ang lunch break ay "unpaid"
-// (binabawas). Form pre-fill lang ito para sa BAGONG schedule; ang mga
-// existing schedule na wala pang "_paid" value ay unpaid/binabawas pa rin
-// (tugma sa datihang gawi bago idagdag ang paid/unpaid na opsyon).
+// defaultPaid: common practice — short AM/PM breaks are "paid"
+// (not deducted from hours), while lunch break is "unpaid"
+// (deducted). This is only a form pre-fill for NEW schedules; existing
+// schedules with no "_paid" value yet remain unpaid/deducted
+// (matches the prior behavior before the paid/unpaid option was added).
 const BREAK_TYPES = [
   { key: 'am_break',    label: 'AM Break',    icon: '☕', defaultStart: '10:00', defaultEnd: '10:15', defaultPaid: true },
   { key: 'lunch_break', label: 'Lunch Break', icon: '🍽️', defaultStart: '12:00', defaultEnd: '13:00', defaultPaid: false },
@@ -494,9 +494,9 @@ function timeToMin(t) {
   return h * 60 + (m || 0);
 }
 
-// Piliin ang schedule row na applicable sa employee sa ibinigay na petsa —
-// ang pinakabago sa mga schedule na naka-effective na at hindi pa
-// nag-e-expire. Null kung walang assigned schedule.
+// Pick the schedule row applicable to the employee on the given date —
+// the most recent among schedules already in effect and not yet
+// expired. Null if there's no assigned schedule.
 function getActiveSchedule(schedules, employeeId, dateStr) {
   const date = dateStr || new Date().toISOString().split('T')[0];
   const candidates = (schedules || []).filter(s =>
@@ -508,23 +508,23 @@ function getActiveSchedule(schedules, employeeId, dateStr) {
   return candidates.sort((a, b) => b.effective_date.localeCompare(a.effective_date))[0];
 }
 
-// Totoo ba na "paid" ang break na ito (hindi ibinabawas sa oras)? Blangko/
-// hindi pa na-configure = 'false' (unpaid/binabawas), para hindi biglang
-// magbago ang computation ng mga schedule na na-set up bago idagdag ang
-// paid/unpaid na opsyon.
+// Is this break "paid" (not deducted from hours)? Blank/not yet
+// configured = 'false' (unpaid/deducted), so the computation for
+// schedules set up before the paid/unpaid option was added doesn't
+// suddenly change.
 function isBreakPaid(schedule, breakKey) {
   return !!(schedule && schedule[`${breakKey}_paid`] === 'true');
 }
 
-// Ilang minuto ang ibabawas sa work hours dahil sa (unpaid) breaks.
-// Priyoridad: (1) aktwal na break punch (out+in) mula sa attendance record;
-// (2) kung enabled ang break pero walang punch, ang naka-configure na
-// window (end-start) ang default deduction. Kung "paid" ang isang break,
-// hindi ito ibinabawas kahit na-punch/na-configure — nabibilang pa rin
-// itong oras ng trabaho. Kung wala talagang schedule o walang naka-enable
-// na break dito, babalik sa lumang flat na fallbackMinutes (hal.
-// shift.break_minutes) para hindi masira ang computation ng mga employee
-// na hindi pa na-configure ang bagong feature.
+// Minutes to deduct from work hours for (unpaid) breaks.
+// Priority: (1) actual break punch (out+in) from the attendance record;
+// (2) if the break is enabled but has no punch, the configured window
+// (end-start) is the default deduction. If a break is "paid", it's never
+// deducted whether punched or configured — it still counts as work
+// time. If there's no schedule at all, or no break enabled on it, this
+// falls back to the old flat fallbackMinutes (e.g. shift.break_minutes)
+// so the computation for employees who haven't configured the new
+// feature yet isn't broken.
 function computeBreakMinutes(schedule, att, fallbackMinutes) {
   const anyEnabled = schedule && BREAK_TYPES.some(bt => schedule[`${bt.key}_enabled`] === 'true');
   if (!anyEnabled) return parseFloat(fallbackMinutes || 0);
@@ -545,9 +545,9 @@ function computeBreakMinutes(schedule, att, fallbackMinutes) {
   return total;
 }
 
-// Status ng isang partikular na break para sa attendance record ngayong
-// araw: 'disabled' (hindi ginagamit ng schedule na ito), 'pending' (hindi
-// pa sinimulan), 'ongoing' (naka-out, hinihintay bumalik), 'done'.
+// Status of a particular break for today's attendance record:
+// 'disabled' (not used by this schedule), 'pending' (not yet
+// started), 'ongoing' (out, waiting to return), 'done'.
 function breakStatus(schedule, att, breakKey) {
   if (!schedule || schedule[`${breakKey}_enabled`] !== 'true') return 'disabled';
   const outT = att && att[`${breakKey}_out`];
@@ -557,9 +557,9 @@ function breakStatus(schedule, att, breakKey) {
   return 'pending';
 }
 
-// Compact text summary ng mga break na na-punch sa isang attendance record,
-// hal. "☕10:05–10:20  🍽️12:00–13:00". Ginagamit ng kiosk (Today's Record)
-// at ng Attendance HR table para makita agad ang aktwal na break times.
+// Compact text summary of breaks punched on an attendance record,
+// e.g. "☕10:05–10:20  🍽️12:00–13:00". Used by the kiosk (Today's Record)
+// and the Attendance HR table to show actual break times at a glance.
 function breakSummaryText(att) {
   if (!att) return '';
   return BREAK_TYPES.map(bt => {

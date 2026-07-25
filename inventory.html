@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fil">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -39,7 +39,7 @@
         <div style="display:flex;gap:8px;flex:1">
           <div class="search-bar" style="max-width:280px">
             <span>🔍</span>
-            <input type="text" id="prod-search" placeholder="Hanapin produkto..." oninput="filterProds()">
+            <input type="text" id="prod-search" placeholder="Search product..." oninput="filterProds()">
           </div>
           <select id="cat-filter" style="padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)" onchange="filterProds()">
             <option value="">All Categories</option>
@@ -48,7 +48,7 @@
         <div style="display:flex;gap:8px">
           <button class="btn btn-ghost btn-sm" onclick="loadAll()">🔄</button>
           <button class="btn btn-primary btn-sm" onclick="openAdjust(null,'restock')" data-perm="adjust">📥 Restock</button>
-          <button class="btn btn-primary btn-sm" onclick="openAddProd()" data-perm="create">+ Produkto</button>
+          <button class="btn btn-primary btn-sm" onclick="openAddProd()" data-perm="create">+ Product</button>
         </div>
       </div>
       <div class="card">
@@ -67,7 +67,7 @@
       <div class="page-header-row" style="margin-bottom:16px">
         <div class="search-bar" style="max-width:280px">
           <span>🔍</span>
-          <input type="text" id="mov-search" placeholder="Hanapin..." oninput="filterMov()">
+          <input type="text" id="mov-search" placeholder="Search..." oninput="filterMov()">
         </div>
         <button class="btn btn-ghost btn-sm" onclick="loadMovements()">🔄 Refresh</button>
       </div>
@@ -104,7 +104,7 @@
 <div class="modal-backdrop" id="prod-modal">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title" id="prod-modal-title">+ Dagdag Produkto</span>
+      <span class="modal-title" id="prod-modal-title">+ Add Product</span>
       <button class="modal-close" onclick="UI.closeModal('prod-modal')">✕</button>
     </div>
     <div class="form-row">
@@ -124,8 +124,8 @@
       <div class="form-group"><label>Status</label><select id="pf-status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="UI.closeModal('prod-modal')">Kanselahin</button>
-      <button class="btn btn-primary" onclick="saveProd()">I-save</button>
+      <button class="btn btn-ghost" onclick="UI.closeModal('prod-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProd()">Save</button>
     </div>
   </div>
 </div>
@@ -138,7 +138,7 @@
       <button class="modal-close" onclick="UI.closeModal('adjust-modal')">✕</button>
     </div>
     <div class="form-group">
-      <label>Produkto</label>
+      <label>Product</label>
       <select id="adj-product"></select>
     </div>
     <div class="form-group">
@@ -159,8 +159,8 @@
       <input type="text" id="adj-reason" placeholder="e.g. Supplier delivery, Stock count correction...">
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="UI.closeModal('adjust-modal')">Kanselahin</button>
-      <button class="btn btn-primary" onclick="saveAdjust()">I-apply</button>
+      <button class="btn btn-ghost" onclick="UI.closeModal('adjust-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAdjust()">Apply</button>
     </div>
   </div>
 </div>
@@ -250,13 +250,13 @@
           <button class="btn btn-danger btn-sm" onclick="archiveProd('${p.id}')" data-perm="delete" title="Archive">🗑</button>
         </td>
       </tr>`;
-    }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang produkto</td></tr>';
+    }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3)">No products</td></tr>';
     UI.renderPagination('prod-pagination', paged, p => renderProds(rows, p));
     Auth.applyUIPermissions(user, 'inventory');
   }
 
   // Add/Edit product
-  function openAddProd() { editProdId=null; ['pf-name','pf-cat','pf-price','pf-cost','pf-barcode'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''}); document.getElementById('pf-stock').value='0'; document.getElementById('pf-unit').value=''; document.getElementById('pf-status').value='active'; document.getElementById('prod-modal-title').textContent='+ Dagdag Produkto'; UI.openModal('prod-modal'); }
+  function openAddProd() { editProdId=null; ['pf-name','pf-cat','pf-price','pf-cost','pf-barcode'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''}); document.getElementById('pf-stock').value='0'; document.getElementById('pf-unit').value=''; document.getElementById('pf-status').value='active'; document.getElementById('prod-modal-title').textContent='+ Add Product'; UI.openModal('prod-modal'); }
   function editProd(id) {
     const p = allProds.find(x=>x.id===id); if(!p) return;
     editProdId=id;
@@ -264,30 +264,30 @@
     document.getElementById('pf-price').value=p.price; document.getElementById('pf-cost').value=p.cost;
     document.getElementById('pf-stock').value=p.stock; document.getElementById('pf-unit').value=p.unit;
     document.getElementById('pf-barcode').value=p.barcode||''; document.getElementById('pf-status').value=p.status;
-    document.getElementById('prod-modal-title').textContent='✏️ I-edit ang Produkto';
+    document.getElementById('prod-modal-title').textContent='✏️ Edit Product';
     UI.openModal('prod-modal');
   }
   async function saveProd() {
     const name=document.getElementById('pf-name').value.trim(), price=document.getElementById('pf-price').value;
-    if(!name||!price){UI.toast('Punan ang required fields','warning');return;}
-    UI.loading(true,'Nagse-save...');
+    if(!name||!price){UI.toast('Fill in the required fields','warning');return;}
+    UI.loading(true,'Saving...');
     try {
       if(editProdId) {
         await DB.update('productsDB',r=>r.id===editProdId,{name,category:document.getElementById('pf-cat').value,price,cost:document.getElementById('pf-cost').value,stock:document.getElementById('pf-stock').value,unit:document.getElementById('pf-unit').value,barcode:document.getElementById('pf-barcode').value,status:document.getElementById('pf-status').value});
-        UI.toast('Na-update ✅','success');
+        UI.toast('Updated ✅','success');
       } else {
         const all=await DB.read('productsDB',true);
         await DB.insert('productsDB',{id:DB.nextId(all,'id','P'),name,category:document.getElementById('pf-cat').value,price,cost:document.getElementById('pf-cost').value,stock:document.getElementById('pf-stock').value,unit:document.getElementById('pf-unit').value,barcode:document.getElementById('pf-barcode').value,status:document.getElementById('pf-status').value,created_at:new Date().toISOString().split('T')[0]});
-        UI.toast('Naidagdag ✅','success');
+        UI.toast('Added ✅','success');
       }
       UI.closeModal('prod-modal'); await loadAll();
     } catch(e){UI.toast('Error: '+e.message,'error');}
     UI.loading(false);
   }
   function archiveProd(id) {
-    UI.confirm('I-archive ang produktong ito?', async()=>{
+    UI.confirm('Archive this product?', async()=>{
       UI.loading(true);
-      try{await DB.update('productsDB',r=>r.id===id,{status:'inactive'});UI.toast('Na-archive','success');await loadAll();}
+      try{await DB.update('productsDB',r=>r.id===id,{status:'inactive'});UI.toast('Archived','success');await loadAll();}
       catch(e){UI.toast('Error: '+e.message,'error');}
       UI.loading(false);
     });
@@ -314,7 +314,7 @@
     if(type==='restock') after = before + qty;
     else if(type==='adjustment') after = qty; // set exact
     else after = Math.max(0, before - qty);
-    UI.loading(true,'Nag-a-apply ng adjustment...');
+    UI.loading(true,'Applying adjustment...');
     try {
       await DB.update('productsDB',r=>r.id===prodId,{stock:String(after)});
       const movs = await DB.read('inventoryDB',true);
@@ -356,7 +356,7 @@
         <td>${m.reason}</td>
         <td>${m.recorded_by}</td>
       </tr>`;
-    }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang movements</td></tr>';
+    }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3)">No movements</td></tr>';
     UI.renderPagination('mov-pagination',paged,p=>renderMovements(rows,p));
   }
 
@@ -369,7 +369,7 @@
       <td><strong style="color:${parseInt(p.stock)===0?'var(--danger)':'var(--warning)'}">${p.stock}</strong></td>
       <td>${p.unit}</td>
       <td><button class="btn btn-success btn-sm" onclick="openAdjust('${p.id}','restock')" data-perm="adjust">📥 Restock</button></td>
-    </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--success);padding:30px">✅ Lahat ng items ay may sapat na stock!</td></tr>';
+    </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--success);padding:30px">✅ All items have sufficient stock!</td></tr>';
     Auth.applyUIPermissions(user,'inventory');
   }
 

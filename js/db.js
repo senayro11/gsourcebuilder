@@ -4,7 +4,7 @@
 
 const DB = (() => {
 
-  // Cache para hindi paulit-ulit mag-fetch
+  // Cache so we don't fetch repeatedly
   const cache = {};
   const shas  = {};  // file SHAs needed for update
 
@@ -21,12 +21,11 @@ const DB = (() => {
     };
   }
 
-  // Ilang beses subukan bago mag-give up. Dalawang klase ng transient
-  // failure ang hina-handle dito: (1) flaky mobile data (LTE/weak signal) —
-  // fetch() mismo ang nag-tha-throw; (2) GitHub secondary rate limit (403)
-  // o 429 — hindi ito totoong "invalid" na error, sandaling paghinto lang
-  // bago tuloy ulit. Hindi ito naka-retry sa tunay na HTTP error responses
-  // gaya ng 401/404/422.
+  // Retry a few times before giving up. Two classes of transient failure
+  // are handled here: (1) flaky mobile data (LTE/weak signal) — fetch()
+  // itself throws; (2) GitHub secondary rate limit (403) or 429 — not a
+  // real "invalid" error, just needs a short pause before continuing.
+  // Real HTTP error responses like 401/404/422 are not retried.
   async function fetchRetry(url, opts, attempts = 3, delayMs = 500) {
     let lastRes;
     for (let i = 0; i < attempts; i++) {
@@ -69,8 +68,8 @@ const DB = (() => {
   }
 
   // Read a DB file → array of row objects
-  // Kapag walang internet/GitHub access, babalik sa huling naka-cache na
-  // snapshot (localStorage) para tuloy-tuloy pa rin gumana ang app offline.
+  // When there's no internet/GitHub access, falls back to the last cached
+  // snapshot (localStorage) so the app keeps working offline.
   async function read(dbName, forceRefresh = false) {
     if (cache[dbName] && !forceRefresh) return cache[dbName];
     try {
@@ -104,8 +103,8 @@ const DB = (() => {
   }
 
   // Write rows back to GitHub.
-  // Kung walang internet, ise-save muna nang lokal (optimistic) at ipapasok
-  // sa offline sync queue — awtomatikong ise-sync ni Sync.flush() paguwi ng koneksyon.
+  // When offline, saves locally first (optimistic) and queues it for
+  // offline sync — Sync.flush() auto-syncs it once connectivity returns.
   async function write(dbName, rows, description) {
     const headerRow = cache[`${dbName}_header`] || Object.keys(rows[0] || {}).join('|');
     try {
@@ -133,10 +132,10 @@ const DB = (() => {
       return { ok: true, queued: false };
     } catch (e) {
       if (typeof Sync !== 'undefined' && Sync.isConnectivityError(e)) {
-        // Offline — i-save lokal muna, i-queue para sa auto-sync mamaya
+        // Offline — save locally first, queue it for auto-sync later
         cache[dbName] = rows;
         Sync.cacheSet(dbName, rows, headerRow);
-        Sync.queueWrite(dbName, rows, headerRow, description || `Update sa ${dbName}`);
+        Sync.queueWrite(dbName, rows, headerRow, description || `Update to ${dbName}`);
         return { ok: true, queued: true };
       }
       throw e;
@@ -144,9 +143,9 @@ const DB = (() => {
   }
 
   // Force-commit a queue entry straight to GitHub using a fresh sha.
-  // Ginagamit ni Sync.flush() lang — hindi dapat gamitin sa normal flow.
+  // Used only by Sync.flush() — should not be used in normal flow.
   async function forceCommit(dbName, rows, headerRow) {
-    await read(dbName, true); // refresh sha mula sa remote
+    await read(dbName, true); // refresh sha from remote
     cache[`${dbName}_header`] = headerRow || cache[`${dbName}_header`];
     return write(dbName, rows, '(sync)');
   }
@@ -155,7 +154,7 @@ const DB = (() => {
   async function insert(dbName, newRow) {
     const rows = await read(dbName, true);
     rows.push(newRow);
-    return write(dbName, rows, 'Bagong record');
+    return write(dbName, rows, 'New record');
   }
 
   // Update row(s) by condition
@@ -167,7 +166,7 @@ const DB = (() => {
       return row;
     });
     if (changed === 0) return false;
-    await write(dbName, newRows, 'Pag-update ng record');
+    await write(dbName, newRows, 'Record update');
     return changed;
   }
 
@@ -177,7 +176,7 @@ const DB = (() => {
     const newRows = rows.filter(row => !condition(row));
     const deleted = rows.length - newRows.length;
     if (deleted === 0) return 0;
-    await write(dbName, newRows, 'Pagtanggal ng record');
+    await write(dbName, newRows, 'Record deletion');
     return deleted;
   }
 

@@ -15,7 +15,7 @@ const UI = (() => {
     setTimeout(() => { el.style.opacity='0'; el.style.transform='translateX(20px)'; el.style.transition='all 0.3s'; setTimeout(()=>el.remove(),300); }, duration);
   }
 
-  function loading(show, msg='Sandali lang...') {
+  function loading(show, msg='Loading...') {
     let o = document.getElementById('loading-overlay');
     if (!o) { o=document.createElement('div'); o.id='loading-overlay'; o.className='loading-overlay'; o.innerHTML=`<div class="spinner"></div><div style="color:#94a3b8;font-size:14px">${msg}</div>`; document.body.appendChild(o); }
     o.querySelector('div:last-child').textContent = msg;
@@ -49,7 +49,7 @@ const UI = (() => {
     const id = 'cfm-'+Date.now();
     const div = document.createElement('div');
     div.id=id; div.className='modal-backdrop active';
-    div.innerHTML=`<div class="modal" style="max-width:400px"><div class="modal-header"><span class="modal-title">⚠️ Kumpirmasyon</span></div><p style="color:#e2e8f0;margin-bottom:24px">${message}</p><div class="modal-footer"><button class="btn btn-ghost" id="${id}-no">Kanselahin</button><button class="btn btn-danger" id="${id}-yes">Oo, ituloy</button></div></div>`;
+    div.innerHTML=`<div class="modal" style="max-width:400px"><div class="modal-header"><span class="modal-title">⚠️ Confirmation</span></div><p style="color:#e2e8f0;margin-bottom:24px">${message}</p><div class="modal-footer"><button class="btn btn-ghost" id="${id}-no">Cancel</button><button class="btn btn-danger" id="${id}-yes">Yes, continue</button></div></div>`;
     document.body.appendChild(div);
     document.getElementById(`${id}-yes`).onclick=()=>{div.remove();onConfirm?.();};
     document.getElementById(`${id}-no`).onclick=()=>{div.remove();onCancel?.();};
@@ -123,8 +123,8 @@ const UI = (() => {
     mountSyncPill();
   }
 
-  // Online/offline + pending-sync indicator sa navbar. Live-updated via
-  // ang 'ent:sync-status' event na dinidispatch ng sync.js.
+  // Online/offline + pending-sync indicator in the navbar. Live-updated
+  // via the 'ent:sync-status' event dispatched by sync.js.
   function mountSyncPill() {
     if (typeof Sync === 'undefined') return;
     const right = document.querySelector('.navbar-right');
@@ -132,11 +132,11 @@ const UI = (() => {
     const pill = document.createElement('div');
     pill.id = 'sync-pill';
     pill.className = 'sync-pill';
-    pill.title = 'I-click para i-sync ngayon';
+    pill.title = 'Click to sync now';
     pill.onclick = () => Sync.flush().then(r => {
-      if (r.synced) toast(`Na-sync ang ${r.synced} pagbabago ✅`, 'success');
-      else if (!Sync.status().online) toast('Offline — ise-save muna lokal.', 'warning');
-      else toast('Walang bagong pagbabago na i-sy-sync.', 'info');
+      if (r.synced) toast(`Synced ${r.synced} change(s) ✅`, 'success');
+      else if (!Sync.status().online) toast('Offline — will save locally first.', 'warning');
+      else toast('No new changes to sync.', 'info');
     });
     right.insertBefore(pill, right.firstChild);
     renderSyncPill(Sync.status());
@@ -151,7 +151,7 @@ const UI = (() => {
       pill.innerHTML = `🔴 Offline${s.pending ? ` <span class="sync-count">${s.pending}</span>` : ''}`;
     } else if (s.pending) {
       pill.className = 'sync-pill pending';
-      pill.innerHTML = `🟡 Sinisync... <span class="sync-count">${s.pending}</span>`;
+      pill.innerHTML = `🟡 Syncing... <span class="sync-count">${s.pending}</span>`;
     } else {
       pill.className = 'sync-pill online';
       pill.innerHTML = `🟢 Online`;

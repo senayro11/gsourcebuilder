@@ -27,7 +27,7 @@ const Auth = (() => {
         r.password_hash === hashed &&
         r.status === 'active'
       );
-      if (!user) return { success: false, message: 'Mali ang username o password.' };
+      if (!user) return { success: false, message: 'Wrong username or password.' };
       const sessionUser = {
         username: user.username, full_name: user.full_name,
         role: user.role, assigned_system: user.assigned_system,
@@ -36,7 +36,7 @@ const Auth = (() => {
       setSession(sessionUser);
       return { success: true, user: sessionUser };
     } catch(e) {
-      return { success: false, message: 'Hindi mabasa ang database: ' + e.message };
+      return { success: false, message: 'Could not read the database: ' + e.message };
     }
   }
 
@@ -55,7 +55,7 @@ const Auth = (() => {
     }
 
     if (!canAccessSystem(user, requiredSystem)) {
-      alert('Wala kang access sa system na ito.');
+      alert('You don\'t have access to this system.');
       window.location.href = 'dashboard.html';
       return null;
     }
