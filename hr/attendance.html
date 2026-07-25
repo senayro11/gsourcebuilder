@@ -48,6 +48,7 @@
         <div class="nav-sub">
           <a class="nav-sub-item" data-page="shifts"         href="#" onclick="navigate('shifts');return false">Shift Types</a>
           <a class="nav-sub-item" data-page="schedules"      href="#" onclick="navigate('schedules');return false">Employee Schedule</a>
+          <a class="nav-sub-item" data-page="break-schedule" href="#" onclick="navigate('break-schedule');return false">Break Schedule</a>
         </div>
       </div>
 
@@ -765,6 +766,30 @@
     </div>
 
     <!-- =========================================
+         PAGE: BREAK SCHEDULE
+    ========================================= -->
+    <div id="page-break-schedule" class="page-section" style="display:none">
+      <div class="page-header">
+        <h1>☕ Break Schedule</h1>
+        <p class="subtitle">Manage each employee's AM/Lunch/PM break windows</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="search-bar" style="width:260px">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="brksched-search" placeholder="Search employee..." oninput="filterBreakSchedule()">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Employee</th><th>☕ AM Break</th><th>🍽️ Lunch Break</th><th>☕ PM Break</th><th>Actions</th></tr></thead>
+            <tbody id="brksched-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text3);padding:32px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================
          PAGE: ANNOUNCEMENTS
     ========================================= -->
     <div id="page-announcements" class="page-section" style="display:none">
@@ -1010,14 +1035,35 @@
         <div class="form-group"><label>End Date (blank = indefinite)</label><input type="date" id="sch-to"></div>
       </div>
       <div class="form-group"><label>Notes</label><input type="text" id="sch-notes" placeholder="Optional notes..."></div>
-      <div class="form-group">
-        <label>Break Schedule</label>
-        <div id="break-schedule-rows" style="display:flex;flex-direction:column;gap:8px;margin-top:6px"></div>
-      </div>
+      <div style="font-size:12px;color:var(--text3);background:var(--surface2);border-radius:8px;padding:10px 12px">☕ Break windows (AM/Lunch/PM) are managed separately under <strong>Scheduling → Break Schedule</strong>.</div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="Modal.close('schedule-modal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveSchedule()">💾 Save Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Break Schedule Modal -->
+<div class="modal-backdrop" id="break-schedule-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">☕ Edit Break Schedule</span>
+      <button class="modal-close" onclick="Modal.close('break-schedule-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Employee</label>
+        <input type="text" id="brksched-emp-name" readonly style="background:var(--surface3)">
+      </div>
+      <div class="form-group">
+        <label>Break Windows</label>
+        <div id="brksched-rows" style="display:flex;flex-direction:column;gap:8px;margin-top:6px"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="Modal.close('break-schedule-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveBreakSchedule()">💾 Save Break Schedule</button>
     </div>
   </div>
 </div>
@@ -1322,7 +1368,7 @@ function updateBreadcrumb(pageId) {
     'leave-by-hr':'By HR','leave-add-hr':'Add Leave (HR)',
     'att-hr':'Attendance (HR)','att-main':'Main Attendance',
     'payroll-report':'Payroll Report','payroll-generate':'Generate Payroll','payslip':'Payslip',
-    'departments':'Department','shifts':'Shift Types','schedules':'Employee Schedule',
+    'departments':'Department','shifts':'Shift Types','schedules':'Employee Schedule','break-schedule':'Break Schedule',
     'announcements':'Announcements','user-mgmt':'User Management',
     'thirteenth-month':'13th Month & Bonus','timein-terminal':'Time In/Out Terminal',
     'edit-profile':'Edit Profile','change-password':'Change Password'
@@ -1333,7 +1379,7 @@ function updateBreadcrumb(pageId) {
     'leave-by-hr':'Leave Manage','leave-add-hr':'Leave Manage',
     'att-hr':'Attendance','att-main':'Attendance',
     'payroll-report':'Payroll','payroll-generate':'Payroll','payslip':'Payroll',
-    'departments':'HR Management','shifts':'Scheduling','schedules':'Scheduling',
+    'departments':'HR Management','shifts':'Scheduling','schedules':'Scheduling','break-schedule':'Scheduling',
     'thirteenth-month':'Payroll','timein-terminal':'Attendance'
   };
   const cur = document.getElementById('breadcrumb-current');
@@ -1363,6 +1409,7 @@ async function loadPage(pageId) {
     case 'departments':      await loadDepartments(); break;
     case 'shifts':           await loadShifts(); break;
     case 'schedules':        await loadSchedules(); break;
+    case 'break-schedule':   await loadBreakSchedulePage(); break;
     case 'announcements':    await loadAnnouncements(); break;
     case 'user-mgmt':        await loadUsers(); break;
     case 'thirteenth-month': await load13thMonth(); break;
@@ -2045,7 +2092,6 @@ async function openAddSchedule() {
   document.querySelectorAll('#workday-picker input').forEach(cb=>{cb.checked=['Mon','Tue','Wed','Thu','Fri'].includes(cb.value);});
   document.getElementById('sched-modal-title').textContent='+ Assign Schedule';
   updateShiftPreview();
-  renderBreakScheduleRows(null);
   Modal.open('schedule-modal');
 }
 function updateShiftPreview() {
@@ -2061,7 +2107,7 @@ function updateShiftPreview() {
 // before, so the computation for existing employees doesn't suddenly
 // change until this is deliberately enabled).
 function renderBreakScheduleRows(schedule) {
-  const container = document.getElementById('break-schedule-rows');
+  const container = document.getElementById('brksched-rows');
   container.innerHTML = BREAK_TYPES.map(bt => {
     const enabled = schedule ? schedule[`${bt.key}_enabled`] === 'true' : true;
     const start = (schedule && schedule[`${bt.key}_start`]) || bt.defaultStart;
@@ -2081,9 +2127,80 @@ function renderBreakScheduleRows(schedule) {
   }).join('');
 }
 
-function editSched(id){const s=allSchedules.find(x=>x.id===id);if(!s)return;editSchedId=id;openAddSchedule().then(()=>{document.getElementById('sch-emp').value=s.employee_id;document.getElementById('sch-shift').value=s.shift_id;document.getElementById('sch-from').value=s.effective_date;document.getElementById('sch-to').value=s.end_date||'';document.getElementById('sch-notes').value=s.notes||'';const days=(s.work_days||'').split(',');document.querySelectorAll('#workday-picker input').forEach(cb=>{cb.checked=days.includes(cb.value);});document.getElementById('sched-modal-title').textContent='✏️ Edit Schedule';updateShiftPreview();renderBreakScheduleRows(s);});}
-async function saveSchedule(){const empId=document.getElementById('sch-emp').value,shiftId=document.getElementById('sch-shift').value,from=document.getElementById('sch-from').value;if(!empId||!shiftId||!from){Toast.show('Fill required fields','warning');return;}const days=[...document.querySelectorAll('#workday-picker input:checked')].map(cb=>cb.value).join(',');const breakData={};BREAK_TYPES.forEach(bt=>{breakData[`${bt.key}_enabled`]=document.getElementById(`brk-${bt.key}-enabled`).checked?'true':'false';breakData[`${bt.key}_start`]=document.getElementById(`brk-${bt.key}-start`).value;breakData[`${bt.key}_end`]=document.getElementById(`brk-${bt.key}-end`).value;breakData[`${bt.key}_paid`]=document.getElementById(`brk-${bt.key}-paid`).checked?'true':'false';});Loading.show();try{const data={employee_id:empId,shift_id:shiftId,effective_date:from,end_date:document.getElementById('sch-to').value,work_days:days,notes:document.getElementById('sch-notes').value,created_by:getSession()?.username||'admin',...breakData};if(editSchedId){await HRDB.update('schedulesDB',r=>r.id===editSchedId,data);Toast.show('Schedule updated ✅','success');}else{const all=await HRDB.read('schedulesDB',true);await HRDB.insert('schedulesDB',{id:HRDB.nextId(all,'id','SCH'),...data});Toast.show('Schedule assigned ✅','success');}Modal.close('schedule-modal');await loadSchedules();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+function editSched(id){const s=allSchedules.find(x=>x.id===id);if(!s)return;editSchedId=id;openAddSchedule().then(()=>{document.getElementById('sch-emp').value=s.employee_id;document.getElementById('sch-shift').value=s.shift_id;document.getElementById('sch-from').value=s.effective_date;document.getElementById('sch-to').value=s.end_date||'';document.getElementById('sch-notes').value=s.notes||'';const days=(s.work_days||'').split(',');document.querySelectorAll('#workday-picker input').forEach(cb=>{cb.checked=days.includes(cb.value);});document.getElementById('sched-modal-title').textContent='✏️ Edit Schedule';updateShiftPreview();});}
+async function saveSchedule(){const empId=document.getElementById('sch-emp').value,shiftId=document.getElementById('sch-shift').value,from=document.getElementById('sch-from').value;if(!empId||!shiftId||!from){Toast.show('Fill required fields','warning');return;}const days=[...document.querySelectorAll('#workday-picker input:checked')].map(cb=>cb.value).join(',');Loading.show();try{const data={employee_id:empId,shift_id:shiftId,effective_date:from,end_date:document.getElementById('sch-to').value,work_days:days,notes:document.getElementById('sch-notes').value,created_by:getSession()?.username||'admin'};if(editSchedId){await HRDB.update('schedulesDB',r=>r.id===editSchedId,data);Toast.show('Schedule updated ✅','success');}else{const all=await HRDB.read('schedulesDB',true);await HRDB.insert('schedulesDB',{id:HRDB.nextId(all,'id','SCH'),...data});Toast.show('Schedule assigned ✅','success');}Modal.close('schedule-modal');await loadSchedules();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 function deleteSched(id){Modal.confirm('Delete this schedule?',async()=>{Loading.show();try{await HRDB.remove('schedulesDB',r=>r.id===id);Toast.show('Deleted','success');await loadSchedules();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
+
+// ============================================================
+//  BREAK SCHEDULE — dedicated page, separate from Employee Schedule.
+//  Break windows still live on the employee's active schedulesDB row
+//  (so getActiveSchedule/computeBreakMinutes keep working unchanged);
+//  this page just gives them their own list + edit modal instead of
+//  bundling break config into the shift/work-days form.
+// ============================================================
+let brkSchedEmpId = null, brkSchedRowId = null;
+function breakCellHtml(schedule, key) {
+  if (!schedule || schedule[`${key}_enabled`] !== 'true') return '<span style="color:var(--text3)">Off</span>';
+  const paid = schedule[`${key}_paid`] === 'true';
+  return `${schedule[`${key}_start`] || '—'}–${schedule[`${key}_end`] || '—'}<br><span style="font-size:11px;color:var(--text3)">${paid ? 'Paid' : 'Unpaid'}</span>`;
+}
+async function loadBreakSchedulePage() {
+  Loading.show();
+  try {
+    [allEmployees, allSchedules] = await Promise.all([HRDB.read('employeesDB'), HRDB.read('schedulesDB', true)]);
+    renderBreakScheduleTable(allEmployees.filter(e => e.status === 'active'));
+  } catch(e) { Toast.show('Error: ' + e.message, 'error'); }
+  Loading.hide();
+}
+function renderBreakScheduleTable(emps) {
+  document.getElementById('brksched-tbody').innerHTML = emps.map(emp => {
+    const schedule = getActiveSchedule(allSchedules, emp.id);
+    return `<tr>
+      <td><div class="emp-card">${Fmt.avatarHtml(emp.name, '28')}<div><div class="emp-name">${emp.name}</div><div class="emp-pos">${emp.position || ''}</div></div></div></td>
+      <td style="font-size:12px">${breakCellHtml(schedule, 'am_break')}</td>
+      <td style="font-size:12px">${breakCellHtml(schedule, 'lunch_break')}</td>
+      <td style="font-size:12px">${breakCellHtml(schedule, 'pm_break')}</td>
+      <td><button class="btn btn-ghost btn-xs" onclick="openEditBreakSchedule('${emp.id}')">✏️ Edit</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:32px">No employees</td></tr>';
+}
+function filterBreakSchedule() {
+  const q = (document.getElementById('brksched-search')?.value || '').toLowerCase();
+  const emps = allEmployees.filter(e => e.status === 'active' && e.name.toLowerCase().includes(q));
+  renderBreakScheduleTable(emps);
+}
+function openEditBreakSchedule(employeeId) {
+  const emp = allEmployees.find(e => e.id === employeeId);
+  if (!emp) return;
+  const schedule = getActiveSchedule(allSchedules, employeeId);
+  if (!schedule) {
+    Toast.show('This employee has no shift schedule assigned yet. Assign one first under Employee Schedule.', 'warning');
+    return;
+  }
+  brkSchedEmpId = employeeId;
+  brkSchedRowId = schedule.id;
+  document.getElementById('brksched-emp-name').value = `${emp.name} (${emp.employee_id})`;
+  renderBreakScheduleRows(schedule);
+  Modal.open('break-schedule-modal');
+}
+async function saveBreakSchedule() {
+  if (!brkSchedRowId) return;
+  const breakData = {};
+  BREAK_TYPES.forEach(bt => {
+    breakData[`${bt.key}_enabled`] = document.getElementById(`brk-${bt.key}-enabled`).checked ? 'true' : 'false';
+    breakData[`${bt.key}_start`]   = document.getElementById(`brk-${bt.key}-start`).value;
+    breakData[`${bt.key}_end`]     = document.getElementById(`brk-${bt.key}-end`).value;
+    breakData[`${bt.key}_paid`]    = document.getElementById(`brk-${bt.key}-paid`).checked ? 'true' : 'false';
+  });
+  Loading.show();
+  try {
+    await HRDB.update('schedulesDB', r => r.id === brkSchedRowId, breakData);
+    Toast.show('Break schedule updated ✅', 'success');
+    Modal.close('break-schedule-modal');
+    await loadBreakSchedulePage();
+  } catch(e) { Toast.show('Error: ' + e.message, 'error'); }
+  Loading.hide();
+}
 
 // ============================================================
 //  ANNOUNCEMENTS
