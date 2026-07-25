@@ -107,9 +107,9 @@ const DB = (() => {
   // offline sync — Sync.flush() auto-syncs it once connectivity returns.
   async function write(dbName, rows, description) {
     const headerRow = cache[`${dbName}_header`] || Object.keys(rows[0] || {}).join('|');
-    try {
-      const content = serializeTxt(rows, headerRow);
-      const encoded = btoa(unescape(encodeURIComponent(content)));
+    const content = serializeTxt(rows, headerRow);
+    const encoded = btoa(unescape(encodeURIComponent(content)));
+    async function attempt() {
       const body = {
         message: `Update ${dbName} - ${new Date().toISOString()}`,
         content: encoded,
@@ -123,13 +123,31 @@ const DB = (() => {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || `DB write error ${res.status}`);
+        const e = new Error(err.message || `DB write error ${res.status}`);
+        e.status = res.status;
+        throw e;
       }
       const json = await res.json();
       shas[dbName]  = json.content.sha;
       cache[dbName] = rows;
       if (typeof Sync !== 'undefined') Sync.cacheSet(dbName, rows, headerRow);
       return { ok: true, queued: false };
+    }
+    try {
+      try {
+        return await attempt();
+      } catch (e) {
+        // Someone else committed a newer version of this file between our
+        // last read and this write (stale sha) -- e.g. a fast double-tap
+        // on Save, or another tab/device writing at the same time. Re-fetch
+        // the current sha and retry once with the same payload (last-write-
+        // wins, the same semantics this app already documents for offline
+        // sync) instead of surfacing a raw GitHub API error to the user.
+        const isShaConflict = e.status === 409 || /does not match/i.test(e.message || '');
+        if (!isShaConflict) throw e;
+        await read(dbName, true);
+        return await attempt();
+      }
     } catch (e) {
       if (typeof Sync !== 'undefined' && Sync.isConnectivityError(e)) {
         // Offline — save locally first, queue it for auto-sync later

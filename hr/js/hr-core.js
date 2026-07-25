@@ -388,9 +388,9 @@ const HRDB = (() => {
 
   async function write(name, rows, description) {
     const header = cache[`${name}_header`] || Object.keys(rows[0] || {}).join('|');
-    try {
-      const content = serialize(rows, header);
-      const encoded = btoa(unescape(encodeURIComponent(content)));
+    const content = serialize(rows, header);
+    const encoded = btoa(unescape(encodeURIComponent(content)));
+    async function attempt() {
       const body = {
         message: `Update ${name} - ${new Date().toISOString()}`,
         content: encoded,
@@ -404,13 +404,31 @@ const HRDB = (() => {
       });
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
-        throw new Error(e.message || `DB write error ${res.status}`);
+        const err = new Error(e.message || `DB write error ${res.status}`);
+        err.status = res.status;
+        throw err;
       }
       const json = await res.json();
       shas[name] = json.content.sha;
       cache[name] = rows;
       if (typeof Sync !== 'undefined') Sync.cacheSet(syncKey(name), rows, header);
       return { ok: true, queued: false };
+    }
+    try {
+      try {
+        return await attempt();
+      } catch (e) {
+        // Someone else committed a newer version of this file between our
+        // last read and this write (stale sha) -- e.g. a fast double-tap
+        // on Save, or another tab/device writing at the same time. Re-fetch
+        // the current sha and retry once with the same payload (last-write-
+        // wins, the same semantics this app already documents for offline
+        // sync) instead of surfacing a raw GitHub API error to the user.
+        const isShaConflict = e.status === 409 || /does not match/i.test(e.message || '');
+        if (!isShaConflict) throw e;
+        await read(name, true);
+        return await attempt();
+      }
     } catch (e) {
       if (typeof Sync !== 'undefined' && Sync.isConnectivityError(e)) {
         cache[name] = rows;
