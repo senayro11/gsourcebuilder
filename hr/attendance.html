@@ -756,8 +756,10 @@
       </div>
       <div class="card">
         <div class="card-header">
-          <input type="date" id="sched-date-filter" style="padding:7px 10px" onchange="filterSchedulesByDate()">
-          <button class="btn btn-ghost btn-sm" onclick="loadSchedules()">🔄</button>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-ghost btn-sm" onclick="loadSchedules()">🔄</button>
+            <input type="date" id="sched-date-filter" style="padding:7px 10px;width:160px" onchange="filterSchedulesByDate()">
+          </div>
         </div>
         <div class="table-wrap">
           <table>
