@@ -750,13 +750,17 @@
          PAGE: SCHEDULES
     ========================================= -->
     <div id="page-schedules" class="page-section" style="display:none">
-      <div class="page-header-row">
-        <div class="page-header"><h1>📆 Employee Schedule</h1><p class="subtitle">Daily work assignments per employee</p></div>
-        <button class="btn btn-primary" style="margin-left:auto" onclick="openAddSchedule()">+ Assign Schedule</button>
+      <div class="page-header">
+        <h1>📆 Employee Schedule</h1><p class="subtitle">Daily work assignments per employee</p>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:16px;margin-bottom:12px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
         <button class="btn btn-ghost btn-sm" onclick="loadSchedules()">🔄</button>
         <input type="date" id="sched-date-filter" style="padding:7px 10px;width:160px" onchange="filterSchedulesByDate()">
+        <button class="btn btn-primary" onclick="openAddSchedule()">+ Assign Schedule</button>
+      </div>
+      <div class="search-bar" style="max-width:280px;margin-bottom:12px">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="sched-search" placeholder="Search employee..." oninput="filterSchedulesByDate()">
       </div>
       <div class="card">
         <div class="table-wrap">
@@ -2026,7 +2030,13 @@ async function loadSchedules() {
 }
 function filterSchedulesByDate() {
   const date = document.getElementById('sched-date-filter').value || todayStr();
-  const rows = allSchedules.filter(s => s.effective_date <= date && (!s.end_date || s.end_date >= date));
+  const q = (document.getElementById('sched-search')?.value || '').toLowerCase();
+  const rows = allSchedules.filter(s => {
+    if (!(s.effective_date <= date && (!s.end_date || s.end_date >= date))) return false;
+    if (!q) return true;
+    const emp = allEmployees.find(e => e.id === s.employee_id);
+    return (emp?.name || '').toLowerCase().includes(q);
+  });
   renderSchedulesTable(rows);
 }
 function renderSchedulesTable(rows) {
