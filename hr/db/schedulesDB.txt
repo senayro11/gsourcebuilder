@@ -2,7 +2,6 @@ id|employee_id|shift_id|effective_date|end_date|work_days|notes|created_by|am_br
 SCH008|EMP002|SH001|2027-01-01||Mon,Tue,Wed,Thu,Fri|Regular weekday schedule|admin_att|||||||||||||
 SCH010|EMP005|SH001|2027-01-01||Mon,Tue,Wed,Thu,Fri||admin_att|false|10:00|10:15|true|12:00|13:00|false|15:00|15:15||||
 SCH011|EMP004|SH001|2027-01-01||Mon,Tue,Wed,Thu,Fri||admin_att|false|10:00|10:15|true|12:00|13:00|false|15:00|15:15||||
-SCH012|EMP006|SH002|2025-06-01||Mon,Tue,Wed,Thu,Fri,Sat|Night shift June|admin_att|false|10:00|10:15|false|12:00|13:00|false|15:00|15:15||||
 SCH013|EMP001|SH001|2027-01-01||Mon,Tue,Thu,Fri|Regular weekday schedule|admin_att|false|10:00|10:15|false|12:00|13:00|false|15:00|15:15||||
 SCH014|EMP001|SH001|2027-01-01||Mon,Tue,Thu,Fri|Regular weekday schedule|admin_att|false|10:00|10:15|false|12:00|13:00|false|15:00|15:15|false|false|false|
 SCH015|EMP001|SH002|2026-06-01|2026-06-01||Nigh shift june|admin_att|true|10:00|10:15|true|12:00|13:00|true|15:00|15:15|true|false|true|
