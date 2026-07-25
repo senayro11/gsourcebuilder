@@ -537,6 +537,7 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 }
 @media (min-width: 901px) {
   .only-mobile { display: none !important; }
+  .sched-search-bar { width: 240px; margin-left: auto; }
 }
 @media (max-width: 640px) {
   .stats-grid { grid-template-columns: 1fr; }
