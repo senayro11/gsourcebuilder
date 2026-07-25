@@ -527,9 +527,15 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
   .main-content { padding: 16px; }
   .form-row, .form-row-3, .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
+}
+/* Separate, lower breakpoint for .only-desktop/.only-mobile: Chrome's
+   "Request Desktop Site" mode reports a viewport around 980px, which is
+   still under the 1024px breakpoint above -- use 900px here so desktop-site
+   mode reliably counts as desktop. */
+@media (max-width: 900px) {
   .only-desktop { display: none !important; }
 }
-@media (min-width: 1025px) {
+@media (min-width: 901px) {
   .only-mobile { display: none !important; }
 }
 @media (max-width: 640px) {
