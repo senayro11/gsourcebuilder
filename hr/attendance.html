@@ -48,7 +48,6 @@
         <div class="nav-sub">
           <a class="nav-sub-item" data-page="shifts"         href="#" onclick="navigate('shifts');return false">Shift Types</a>
           <a class="nav-sub-item" data-page="schedules"      href="#" onclick="navigate('schedules');return false">Employee Schedule</a>
-          <a class="nav-sub-item" data-page="break-schedule" href="#" onclick="navigate('break-schedule');return false">Break Schedule</a>
         </div>
       </div>
 
@@ -752,38 +751,18 @@
     ========================================= -->
     <div id="page-schedules" class="page-section" style="display:none">
       <div class="page-header-row">
-        <div class="page-header"><h1>📆 Employee Schedule</h1><p class="subtitle">Assign shifts to employees</p></div>
+        <div class="page-header"><h1>📆 Employee Schedule</h1><p class="subtitle">Daily work assignments per employee</p></div>
         <button class="btn btn-primary" onclick="openAddSchedule()">+ Assign Schedule</button>
       </div>
       <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Employee</th><th>Shift</th><th>Type</th><th>Work Days</th><th>Effective Date</th><th>End Date</th><th>Notes</th><th>Actions</th></tr></thead>
-            <tbody id="schedules-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- =========================================
-         PAGE: BREAK SCHEDULE
-    ========================================= -->
-    <div id="page-break-schedule" class="page-section" style="display:none">
-      <div class="page-header">
-        <h1>☕ Break Schedule</h1>
-        <p class="subtitle">Manage each employee's AM/Lunch/PM break windows</p>
-      </div>
-      <div class="card">
         <div class="card-header">
-          <div class="search-bar" style="width:260px">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="brksched-search" placeholder="Search employee..." oninput="filterBreakSchedule()">
-          </div>
+          <input type="date" id="sched-date-filter" style="padding:7px 10px" onchange="filterSchedulesByDate()">
+          <button class="btn btn-ghost btn-sm" onclick="loadSchedules()">🔄</button>
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Employee</th><th>☕ AM Break</th><th>🍽️ Lunch Break</th><th>☕ PM Break</th><th>Actions</th></tr></thead>
-            <tbody id="brksched-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text3);padding:32px">Loading...</td></tr></tbody>
+            <thead><tr><th>Employee</th><th>Date</th><th>Time Sched</th><th>Shift</th><th>Work Assign</th><th>Notes</th><th>Action</th></tr></thead>
+            <tbody id="schedules-tbody"></tbody>
           </table>
         </div>
       </div>
@@ -1018,52 +997,17 @@
         <div class="form-group"><label>Shift *</label><select id="sch-shift" onchange="updateShiftPreview()"></select></div>
       </div>
       <div id="shift-preview" style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:12px;display:none;font-size:12px;color:var(--text2)"></div>
+      <div class="form-group"><label>Date *</label><input type="date" id="sch-date"></div>
+      <div class="form-group"><label>Work Assignment</label><textarea id="sch-assignment" rows="2" placeholder="e.g. Diamond Hotel — repair pipe leak"></textarea></div>
+      <div class="form-group"><label>Notes</label><textarea id="sch-notes" rows="2" placeholder="e.g. Get a permit first before starting"></textarea></div>
       <div class="form-group">
-        <label>Work Days *</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="workday-picker">
-          <label style="display:flex;align-items:center;gap:4px;font-weight:400"><input type="checkbox" value="Mon" checked> Mon</label>
-          <label style="display:flex;align-items:center;gap:4px;font-weight:400"><input type="checkbox" value="Tue" checked> Tue</label>
-          <label style="display:flex;align-items:center;gap:4px;font-weight:400"><input type="checkbox" value="Wed" checked> Wed</label>
-          <label style="display:flex;align-items:center;gap:4px;font-weight:400"><input type="checkbox" value="Thu" checked> Thu</label>
-          <label style="display:flex;align-items:center;gap:4px;font-weight:400"><input type="checkbox" value="Fri" checked> Fri</label>
-          <label style="display:flex;align-items:center;gap:4px;font-weight:400"><input type="checkbox" value="Sat"> Sat</label>
-          <label style="display:flex;align-items:center;gap:4px;font-weight:400"><input type="checkbox" value="Sun"> Sun</label>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Effective Date *</label><input type="date" id="sch-from"></div>
-        <div class="form-group"><label>End Date (blank = indefinite)</label><input type="date" id="sch-to"></div>
-      </div>
-      <div class="form-group"><label>Notes</label><input type="text" id="sch-notes" placeholder="Optional notes..."></div>
-      <div style="font-size:12px;color:var(--text3);background:var(--surface2);border-radius:8px;padding:10px 12px">☕ Break windows (AM/Lunch/PM) are managed separately under <strong>Scheduling → Break Schedule</strong>.</div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="Modal.close('schedule-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveSchedule()">💾 Save Schedule</button>
-    </div>
-  </div>
-</div>
-
-<!-- Break Schedule Modal -->
-<div class="modal-backdrop" id="break-schedule-modal">
-  <div class="modal modal-lg">
-    <div class="modal-header">
-      <span class="modal-title">☕ Edit Break Schedule</span>
-      <button class="modal-close" onclick="Modal.close('break-schedule-modal')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Employee</label>
-        <input type="text" id="brksched-emp-name" readonly style="background:var(--surface3)">
-      </div>
-      <div class="form-group">
-        <label>Break Windows</label>
+        <label>Break Schedule</label>
         <div id="brksched-rows" style="display:flex;flex-direction:column;gap:8px;margin-top:6px"></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="Modal.close('break-schedule-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveBreakSchedule()">💾 Save Break Schedule</button>
+      <button class="btn btn-ghost" onclick="Modal.close('schedule-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSchedule()">💾 Save Schedule</button>
     </div>
   </div>
 </div>
@@ -1368,7 +1312,7 @@ function updateBreadcrumb(pageId) {
     'leave-by-hr':'By HR','leave-add-hr':'Add Leave (HR)',
     'att-hr':'Attendance (HR)','att-main':'Main Attendance',
     'payroll-report':'Payroll Report','payroll-generate':'Generate Payroll','payslip':'Payslip',
-    'departments':'Department','shifts':'Shift Types','schedules':'Employee Schedule','break-schedule':'Break Schedule',
+    'departments':'Department','shifts':'Shift Types','schedules':'Employee Schedule',
     'announcements':'Announcements','user-mgmt':'User Management',
     'thirteenth-month':'13th Month & Bonus','timein-terminal':'Time In/Out Terminal',
     'edit-profile':'Edit Profile','change-password':'Change Password'
@@ -1379,7 +1323,7 @@ function updateBreadcrumb(pageId) {
     'leave-by-hr':'Leave Manage','leave-add-hr':'Leave Manage',
     'att-hr':'Attendance','att-main':'Attendance',
     'payroll-report':'Payroll','payroll-generate':'Payroll','payslip':'Payroll',
-    'departments':'HR Management','shifts':'Scheduling','schedules':'Scheduling','break-schedule':'Scheduling',
+    'departments':'HR Management','shifts':'Scheduling','schedules':'Scheduling',
     'thirteenth-month':'Payroll','timein-terminal':'Attendance'
   };
   const cur = document.getElementById('breadcrumb-current');
@@ -1409,7 +1353,6 @@ async function loadPage(pageId) {
     case 'departments':      await loadDepartments(); break;
     case 'shifts':           await loadShifts(); break;
     case 'schedules':        await loadSchedules(); break;
-    case 'break-schedule':   await loadBreakSchedulePage(); break;
     case 'announcements':    await loadAnnouncements(); break;
     case 'user-mgmt':        await loadUsers(); break;
     case 'thirteenth-month': await load13thMonth(); break;
@@ -2048,9 +1991,26 @@ async function saveShift() {
 function deleteShift(id){Modal.confirm('Delete this shift?',async()=>{Loading.show();try{await HRDB.remove('shiftsDB',r=>r.id===id);Toast.show('Deleted','success');await loadShifts();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
 
 // ============================================================
-//  SCHEDULES
+//  SCHEDULES — one row = one employee's work assignment for one
+//  specific date (Time Sched/Shift come from the assigned shift;
+//  Work Assign/Notes describe that day's task). effective_date and
+//  end_date are both set to that same date, so getActiveSchedule()/
+//  computeBreakMinutes() in hr-core.js keep working unchanged.
 // ============================================================
 let allSchedules=[], editSchedId=null;
+
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function fmtTime12(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2,'0')} ${period}`;
+}
+function fmtTimeRange(shift) {
+  if (!shift || (!shift.start_time && !shift.end_time)) return 'Flexible';
+  return `${fmtTime12(shift.start_time) || 'Flexible'}–${fmtTime12(shift.end_time) || 'Flexible'}`;
+}
 
 async function loadSchedules() {
   Loading.show();
@@ -2058,25 +2018,34 @@ async function loadSchedules() {
     [allSchedules, allEmployees, allShifts] = await Promise.all([
       HRDB.read('schedulesDB',true), HRDB.read('employeesDB'), HRDB.read('shiftsDB')
     ]);
-    document.getElementById('schedules-tbody').innerHTML = allSchedules.map(s=>{
-      const emp=allEmployees.find(e=>e.id===s.employee_id);
-      const shift=allShifts.find(sh=>sh.id===s.shift_id);
-      return `<tr>
-        <td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||s.employee_id}</div><div class="emp-pos">${emp?.position||''}</div></div></div></td>
-        <td><strong>${shift?.name||s.shift_id}</strong></td>
-        <td><span class="badge ${shift?.type==='oncall'?'badge-purple':shift?.type==='night'?'badge-info':'badge-blue'}">${shift?.type||'—'}</span></td>
-        <td style="font-size:12px">${s.work_days||'—'}</td>
-        <td class="mono" style="font-size:11px">${s.effective_date}</td>
-        <td class="mono" style="font-size:11px">${s.end_date||'Indefinite'}</td>
-        <td style="color:var(--text3);font-size:12px">${s.notes||'—'}</td>
-        <td><div style="display:flex;gap:4px">
-          <button class="btn btn-ghost btn-xs" onclick="editSched('${s.id}')">✏️</button>
-          <button class="btn btn-danger btn-xs" onclick="deleteSched('${s.id}')">🗑</button>
-        </div></td>
-      </tr>`;
-    }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">No schedules assigned</td></tr>';
+    const filterEl = document.getElementById('sched-date-filter');
+    if (!filterEl.value) filterEl.value = todayStr();
+    filterSchedulesByDate();
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
+}
+function filterSchedulesByDate() {
+  const date = document.getElementById('sched-date-filter').value || todayStr();
+  const rows = allSchedules.filter(s => s.effective_date <= date && (!s.end_date || s.end_date >= date));
+  renderSchedulesTable(rows);
+}
+function renderSchedulesTable(rows) {
+  document.getElementById('schedules-tbody').innerHTML = rows.map(s=>{
+    const emp=allEmployees.find(e=>e.id===s.employee_id);
+    const shift=allShifts.find(sh=>sh.id===s.shift_id);
+    return `<tr>
+      <td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||s.employee_id}</div><div class="emp-pos">${emp?.position||''}</div></div></div></td>
+      <td class="mono" style="font-size:11px">${s.effective_date}</td>
+      <td style="font-size:12px">${fmtTimeRange(shift)}</td>
+      <td><strong>${shift?.name||s.shift_id}</strong></td>
+      <td style="color:var(--text2);font-size:12px">${s.work_assignment||'—'}</td>
+      <td style="color:var(--text3);font-size:12px">${s.notes||'—'}</td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-xs" onclick="editSched('${s.id}')">✏️</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteSched('${s.id}')">🗑</button>
+      </div></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:32px">No schedules for this date</td></tr>';
 }
 async function openAddSchedule() {
   editSchedId=null;
@@ -2085,13 +2054,12 @@ async function openAddSchedule() {
   empSel.innerHTML=allEmployees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
   const shiftSel=document.getElementById('sch-shift');
   shiftSel.innerHTML=allShifts.filter(s=>s.status==='active').map(s=>`<option value="${s.id}">${s.name} (${s.type})</option>`).join('');
-  document.getElementById('sch-from').value=new Date().toISOString().split('T')[0];
-  document.getElementById('sch-to').value='';
+  document.getElementById('sch-date').value=document.getElementById('sched-date-filter').value||todayStr();
+  document.getElementById('sch-assignment').value='';
   document.getElementById('sch-notes').value='';
-  // Reset checkboxes to Mon-Fri
-  document.querySelectorAll('#workday-picker input').forEach(cb=>{cb.checked=['Mon','Tue','Wed','Thu','Fri'].includes(cb.value);});
   document.getElementById('sched-modal-title').textContent='+ Assign Schedule';
   updateShiftPreview();
+  renderBreakScheduleRows(null);
   Modal.open('schedule-modal');
 }
 function updateShiftPreview() {
@@ -2127,80 +2095,9 @@ function renderBreakScheduleRows(schedule) {
   }).join('');
 }
 
-function editSched(id){const s=allSchedules.find(x=>x.id===id);if(!s)return;editSchedId=id;openAddSchedule().then(()=>{document.getElementById('sch-emp').value=s.employee_id;document.getElementById('sch-shift').value=s.shift_id;document.getElementById('sch-from').value=s.effective_date;document.getElementById('sch-to').value=s.end_date||'';document.getElementById('sch-notes').value=s.notes||'';const days=(s.work_days||'').split(',');document.querySelectorAll('#workday-picker input').forEach(cb=>{cb.checked=days.includes(cb.value);});document.getElementById('sched-modal-title').textContent='✏️ Edit Schedule';updateShiftPreview();});}
-async function saveSchedule(){const empId=document.getElementById('sch-emp').value,shiftId=document.getElementById('sch-shift').value,from=document.getElementById('sch-from').value;if(!empId||!shiftId||!from){Toast.show('Fill required fields','warning');return;}const days=[...document.querySelectorAll('#workday-picker input:checked')].map(cb=>cb.value).join(',');Loading.show();try{const data={employee_id:empId,shift_id:shiftId,effective_date:from,end_date:document.getElementById('sch-to').value,work_days:days,notes:document.getElementById('sch-notes').value,created_by:getSession()?.username||'admin'};if(editSchedId){await HRDB.update('schedulesDB',r=>r.id===editSchedId,data);Toast.show('Schedule updated ✅','success');}else{const all=await HRDB.read('schedulesDB',true);await HRDB.insert('schedulesDB',{id:HRDB.nextId(all,'id','SCH'),...data});Toast.show('Schedule assigned ✅','success');}Modal.close('schedule-modal');await loadSchedules();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+function editSched(id){const s=allSchedules.find(x=>x.id===id);if(!s)return;editSchedId=id;openAddSchedule().then(()=>{document.getElementById('sch-emp').value=s.employee_id;document.getElementById('sch-shift').value=s.shift_id;document.getElementById('sch-date').value=s.effective_date;document.getElementById('sch-assignment').value=s.work_assignment||'';document.getElementById('sch-notes').value=s.notes||'';document.getElementById('sched-modal-title').textContent='✏️ Edit Schedule';updateShiftPreview();renderBreakScheduleRows(s);});}
+async function saveSchedule(){const empId=document.getElementById('sch-emp').value,shiftId=document.getElementById('sch-shift').value,date=document.getElementById('sch-date').value;if(!empId||!shiftId||!date){Toast.show('Fill required fields','warning');return;}const breakData={};BREAK_TYPES.forEach(bt=>{breakData[`${bt.key}_enabled`]=document.getElementById(`brk-${bt.key}-enabled`).checked?'true':'false';breakData[`${bt.key}_start`]=document.getElementById(`brk-${bt.key}-start`).value;breakData[`${bt.key}_end`]=document.getElementById(`brk-${bt.key}-end`).value;breakData[`${bt.key}_paid`]=document.getElementById(`brk-${bt.key}-paid`).checked?'true':'false';});Loading.show();try{const data={employee_id:empId,shift_id:shiftId,effective_date:date,end_date:date,work_assignment:document.getElementById('sch-assignment').value,notes:document.getElementById('sch-notes').value,created_by:getSession()?.username||'admin',...breakData};if(editSchedId){await HRDB.update('schedulesDB',r=>r.id===editSchedId,data);Toast.show('Schedule updated ✅','success');}else{const all=await HRDB.read('schedulesDB',true);await HRDB.insert('schedulesDB',{id:HRDB.nextId(all,'id','SCH'),...data});Toast.show('Schedule assigned ✅','success');}Modal.close('schedule-modal');await loadSchedules();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 function deleteSched(id){Modal.confirm('Delete this schedule?',async()=>{Loading.show();try{await HRDB.remove('schedulesDB',r=>r.id===id);Toast.show('Deleted','success');await loadSchedules();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
-
-// ============================================================
-//  BREAK SCHEDULE — dedicated page, separate from Employee Schedule.
-//  Break windows still live on the employee's active schedulesDB row
-//  (so getActiveSchedule/computeBreakMinutes keep working unchanged);
-//  this page just gives them their own list + edit modal instead of
-//  bundling break config into the shift/work-days form.
-// ============================================================
-let brkSchedEmpId = null, brkSchedRowId = null;
-function breakCellHtml(schedule, key) {
-  if (!schedule || schedule[`${key}_enabled`] !== 'true') return '<span style="color:var(--text3)">Off</span>';
-  const paid = schedule[`${key}_paid`] === 'true';
-  return `${schedule[`${key}_start`] || '—'}–${schedule[`${key}_end`] || '—'}<br><span style="font-size:11px;color:var(--text3)">${paid ? 'Paid' : 'Unpaid'}</span>`;
-}
-async function loadBreakSchedulePage() {
-  Loading.show();
-  try {
-    [allEmployees, allSchedules] = await Promise.all([HRDB.read('employeesDB'), HRDB.read('schedulesDB', true)]);
-    renderBreakScheduleTable(allEmployees.filter(e => e.status === 'active'));
-  } catch(e) { Toast.show('Error: ' + e.message, 'error'); }
-  Loading.hide();
-}
-function renderBreakScheduleTable(emps) {
-  document.getElementById('brksched-tbody').innerHTML = emps.map(emp => {
-    const schedule = getActiveSchedule(allSchedules, emp.id);
-    return `<tr>
-      <td><div class="emp-card">${Fmt.avatarHtml(emp.name, '28')}<div><div class="emp-name">${emp.name}</div><div class="emp-pos">${emp.position || ''}</div></div></div></td>
-      <td style="font-size:12px">${breakCellHtml(schedule, 'am_break')}</td>
-      <td style="font-size:12px">${breakCellHtml(schedule, 'lunch_break')}</td>
-      <td style="font-size:12px">${breakCellHtml(schedule, 'pm_break')}</td>
-      <td><button class="btn btn-ghost btn-xs" onclick="openEditBreakSchedule('${emp.id}')">✏️ Edit</button></td>
-    </tr>`;
-  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:32px">No employees</td></tr>';
-}
-function filterBreakSchedule() {
-  const q = (document.getElementById('brksched-search')?.value || '').toLowerCase();
-  const emps = allEmployees.filter(e => e.status === 'active' && e.name.toLowerCase().includes(q));
-  renderBreakScheduleTable(emps);
-}
-function openEditBreakSchedule(employeeId) {
-  const emp = allEmployees.find(e => e.id === employeeId);
-  if (!emp) return;
-  const schedule = getActiveSchedule(allSchedules, employeeId);
-  if (!schedule) {
-    Toast.show('This employee has no shift schedule assigned yet. Assign one first under Employee Schedule.', 'warning');
-    return;
-  }
-  brkSchedEmpId = employeeId;
-  brkSchedRowId = schedule.id;
-  document.getElementById('brksched-emp-name').value = `${emp.name} (${emp.employee_id})`;
-  renderBreakScheduleRows(schedule);
-  Modal.open('break-schedule-modal');
-}
-async function saveBreakSchedule() {
-  if (!brkSchedRowId) return;
-  const breakData = {};
-  BREAK_TYPES.forEach(bt => {
-    breakData[`${bt.key}_enabled`] = document.getElementById(`brk-${bt.key}-enabled`).checked ? 'true' : 'false';
-    breakData[`${bt.key}_start`]   = document.getElementById(`brk-${bt.key}-start`).value;
-    breakData[`${bt.key}_end`]     = document.getElementById(`brk-${bt.key}-end`).value;
-    breakData[`${bt.key}_paid`]    = document.getElementById(`brk-${bt.key}-paid`).checked ? 'true' : 'false';
-  });
-  Loading.show();
-  try {
-    await HRDB.update('schedulesDB', r => r.id === brkSchedRowId, breakData);
-    Toast.show('Break schedule updated ✅', 'success');
-    Modal.close('break-schedule-modal');
-    await loadBreakSchedulePage();
-  } catch(e) { Toast.show('Error: ' + e.message, 'error'); }
-  Loading.hide();
-}
 
 // ============================================================
 //  ANNOUNCEMENTS
