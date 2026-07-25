@@ -130,6 +130,13 @@ const Fmt = {
     };
     return `<span class="badge ${m[s] || 'badge-gray'}">${s || ''}</span>`;
   },
+  employmentTypeBadge(t) {
+    const m = {
+      'Regular': 'badge-success', 'Probationary': 'badge-warning', 'Casual': 'badge-blue',
+      'Contractual': 'badge-purple', 'Agency-Hired': 'badge-gray'
+    };
+    return `<span class="badge ${m[t] || 'badge-gray'}">${t || 'Regular'}</span>`;
+  },
   avatarHtml(name, size = '32') {
     const initials = (name || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
     return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:linear-gradient(135deg,#4f8ef7,#a855f7);display:inline-flex;align-items:center;justify-content:center;font-size:${Math.round(size / 2.5)}px;font-weight:700;color:white;flex-shrink:0">${initials}</div>`;

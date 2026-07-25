@@ -255,8 +255,8 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Employee ID</th><th>Name</th><th>Position</th><th>Department</th><th>Daily Rate</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="emp-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:32px">Loading...</td></tr></tbody>
+            <thead><tr><th>Employee ID</th><th>Name</th><th>Position</th><th>Department</th><th>Employment Type</th><th>Daily Rate</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="emp-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">Loading...</td></tr></tbody>
           </table>
         </div>
         <div id="emp-pagination"></div>
@@ -1133,7 +1133,18 @@
         <div class="form-group"><label>Department *</label><select id="ef-dept"></select></div>
       </div>
       <div class="form-row">
+        <div class="form-group"><label>Employment Type</label>
+          <select id="ef-emptype">
+            <option value="Regular">Regular</option>
+            <option value="Probationary">Probationary</option>
+            <option value="Casual">Casual</option>
+            <option value="Contractual">Contractual</option>
+            <option value="Agency-Hired">Agency-Hired</option>
+          </select>
+        </div>
         <div class="form-group"><label>Daily Rate (₱) *</label><input type="number" id="ef-rate" step="0.01"></div>
+      </div>
+      <div class="form-row">
         <div class="form-group"><label>Hire Date</label><input type="date" id="ef-hire"></div>
       </div>
       <div style="background:var(--surface2);border-radius:8px;padding:14px;margin-bottom:12px">
@@ -1456,13 +1467,14 @@ function renderEmpTable(rows, page) {
     <td><div class="emp-card">${Fmt.avatarHtml(e.name,'32')}<div><div class="emp-name">${e.name}</div><div class="emp-pos">${e.position}</div></div></div></td>
     <td>${e.position}</td>
     <td>${e.department}</td>
+    <td>${Fmt.employmentTypeBadge(e.employment_type)}</td>
     <td><strong>${Fmt.peso(e.daily_rate)}</strong><span class="text-small text-muted">/day</span></td>
     <td>${Fmt.statusBadge(e.status)}</td>
     <td><div style="display:flex;gap:4px">
       <button class="btn btn-ghost btn-xs" onclick="editEmployee('${e.id}')">✏️</button>
       <button class="btn btn-danger btn-xs" onclick="deleteEmployee('${e.id}')">🗑</button>
     </div></td>
-  </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:32px">No employees found</td></tr>';
+  </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">No employees found</td></tr>';
   renderPager('emp-pagination', paged, p=>renderEmpTable(rows,p));
 }
 
@@ -1473,6 +1485,7 @@ function openAddEmployee() {
   document.getElementById('ef-rate').value='';
   document.getElementById('ef-hire').value='';
   document.getElementById('ef-status').value='active';
+  document.getElementById('ef-emptype').value='Regular';
   // Populate dept
   const df = document.getElementById('ef-dept');
   df.innerHTML = HR_DEPARTMENTS.map(d=>`<option>${d}</option>`).join('');
@@ -1493,6 +1506,7 @@ function editEmployee(id) {
   document.getElementById('ef-ph').value=e.philhealth||'';
   document.getElementById('ef-pi').value=e.pagibig||'';
   document.getElementById('ef-status').value=e.status;
+  document.getElementById('ef-emptype').value=e.employment_type||'Regular';
   const df=document.getElementById('ef-dept');
   df.innerHTML=HR_DEPARTMENTS.map(d=>`<option ${d===e.department?'selected':''}>${d}</option>`).join('');
   document.getElementById('emp-modal-title').textContent='✏️ Edit Employee';
@@ -1507,7 +1521,7 @@ async function saveEmployee() {
   Loading.show('Saving...');
   try {
     const monthly=(parseFloat(rate)*22).toFixed(2);
-    const data={name,employee_id:empid,email:document.getElementById('ef-email').value,phone:document.getElementById('ef-phone').value,position:pos,department:document.getElementById('ef-dept').value,daily_rate:rate,monthly_rate:monthly,sss:document.getElementById('ef-sss').value,philhealth:document.getElementById('ef-ph').value,pagibig:document.getElementById('ef-pi').value,tin:'',hire_date:document.getElementById('ef-hire').value,status:document.getElementById('ef-status').value,photo:''};
+    const data={name,employee_id:empid,email:document.getElementById('ef-email').value,phone:document.getElementById('ef-phone').value,position:pos,department:document.getElementById('ef-dept').value,daily_rate:rate,monthly_rate:monthly,sss:document.getElementById('ef-sss').value,philhealth:document.getElementById('ef-ph').value,pagibig:document.getElementById('ef-pi').value,tin:'',hire_date:document.getElementById('ef-hire').value,status:document.getElementById('ef-status').value,photo:'',employment_type:document.getElementById('ef-emptype').value};
     if(editEmpId){await HRDB.update('employeesDB',r=>r.id===editEmpId,data);Toast.show('Employee updated ✅','success');}
     else{const all=await HRDB.read('employeesDB',true);await HRDB.insert('employeesDB',{id:HRDB.nextId(all,'id','EMP'),...data});Toast.show('Employee added ✅','success');}
     Modal.close('emp-modal'); await loadEmployees();
