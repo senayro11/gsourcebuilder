@@ -476,10 +476,15 @@ const HRDB = (() => {
 //  Schedule pages (attendance.html). Bawat break ay pwedeng i-on/off,
 //  at ang oras/tagal ay editable per employee sa schedulesDB.
 // ============================================================
+// defaultPaid: karaniwang practice — maiikling AM/PM break ay "paid"
+// (hindi ibinabawas sa oras), habang ang lunch break ay "unpaid"
+// (binabawas). Form pre-fill lang ito para sa BAGONG schedule; ang mga
+// existing schedule na wala pang "_paid" value ay unpaid/binabawas pa rin
+// (tugma sa datihang gawi bago idagdag ang paid/unpaid na opsyon).
 const BREAK_TYPES = [
-  { key: 'am_break',    label: 'AM Break',    icon: '☕', defaultStart: '10:00', defaultEnd: '10:15' },
-  { key: 'lunch_break', label: 'Lunch Break', icon: '🍽️', defaultStart: '12:00', defaultEnd: '13:00' },
-  { key: 'pm_break',    label: 'PM Break',    icon: '☕', defaultStart: '15:00', defaultEnd: '15:15' }
+  { key: 'am_break',    label: 'AM Break',    icon: '☕', defaultStart: '10:00', defaultEnd: '10:15', defaultPaid: true },
+  { key: 'lunch_break', label: 'Lunch Break', icon: '🍽️', defaultStart: '12:00', defaultEnd: '13:00', defaultPaid: false },
+  { key: 'pm_break',    label: 'PM Break',    icon: '☕', defaultStart: '15:00', defaultEnd: '15:15', defaultPaid: true }
 ];
 
 function timeToMin(t) {
@@ -503,19 +508,30 @@ function getActiveSchedule(schedules, employeeId, dateStr) {
   return candidates.sort((a, b) => b.effective_date.localeCompare(a.effective_date))[0];
 }
 
-// Ilang minuto ang ibabawas sa work hours dahil sa breaks.
+// Totoo ba na "paid" ang break na ito (hindi ibinabawas sa oras)? Blangko/
+// hindi pa na-configure = 'false' (unpaid/binabawas), para hindi biglang
+// magbago ang computation ng mga schedule na na-set up bago idagdag ang
+// paid/unpaid na opsyon.
+function isBreakPaid(schedule, breakKey) {
+  return !!(schedule && schedule[`${breakKey}_paid`] === 'true');
+}
+
+// Ilang minuto ang ibabawas sa work hours dahil sa (unpaid) breaks.
 // Priyoridad: (1) aktwal na break punch (out+in) mula sa attendance record;
 // (2) kung enabled ang break pero walang punch, ang naka-configure na
-// window (end-start) ang default deduction. Kung wala talagang schedule
-// o walang naka-enable na break dito, babalik sa lumang flat na
-// fallbackMinutes (hal. shift.break_minutes) para hindi masira ang
-// computation ng mga employee na hindi pa na-configure ang bagong feature.
+// window (end-start) ang default deduction. Kung "paid" ang isang break,
+// hindi ito ibinabawas kahit na-punch/na-configure — nabibilang pa rin
+// itong oras ng trabaho. Kung wala talagang schedule o walang naka-enable
+// na break dito, babalik sa lumang flat na fallbackMinutes (hal.
+// shift.break_minutes) para hindi masira ang computation ng mga employee
+// na hindi pa na-configure ang bagong feature.
 function computeBreakMinutes(schedule, att, fallbackMinutes) {
   const anyEnabled = schedule && BREAK_TYPES.some(bt => schedule[`${bt.key}_enabled`] === 'true');
   if (!anyEnabled) return parseFloat(fallbackMinutes || 0);
   let total = 0;
   BREAK_TYPES.forEach(bt => {
     if (schedule[`${bt.key}_enabled`] !== 'true') return;
+    if (isBreakPaid(schedule, bt.key)) return;
     const outT = att && att[`${bt.key}_out`];
     const inT  = att && att[`${bt.key}_in`];
     const outM = timeToMin(outT), inM = timeToMin(inT);
