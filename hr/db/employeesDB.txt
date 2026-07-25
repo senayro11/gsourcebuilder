@@ -1,6 +1,6 @@
 id|employee_id|name|email|phone|position|department|daily_rate|monthly_rate|sss|philhealth|pagibig|tin|hire_date|status|photo
 EMP001|KH-0001|Red Matienzo|juan@company.com|09171234567|Cashier|Sales|650.00|14300.00|200.00|150.00|100.00||2023-06-01|active|
-EMP002|KH-0002|Maria Santos|maria@company.com|09187654321|Stock Clerk|Inventory|550.00|12100.00|150.00|100.00|100.00|987-654-321|2024-01-10|active|
+EMP002|GS-0002|Maria Santos|maria@company.com|09187654321|Stock Clerk|Inventory|550.00|12100.00|150.00|100.00|100.00||2024-01-10|active|
 EMP003|KH-0003|Pedro Reyes|pedro@company.com|09194561234|Supervisor|Operations|850.00|18700.00|250.00|175.00|100.00|456-789-123|2022-03-15|inactive|
 EMP004|KH-0004|Ana Garcia|ana@company.com|09201234568|Accountant|Finance|950.00|20900.00|300.00|200.00|100.00|789-123-456|2021-07-20|active|
 EMP005|KH-0005|Jose Reyes|jose@company.com|09213456789|Driver|Logistics|550.00|12100.00|150.00|100.00|100.00|321-654-987|2023-09-01|active|
