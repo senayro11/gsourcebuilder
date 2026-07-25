@@ -5,3 +5,4 @@ SCH004|EMP004|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri||admin|||||||||
 SCH005|EMP005|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri||admin|||||||||
 SCH006|EMP002|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri,Sat|Regular weekday schedule|admin_att|||||||||
 SCH007|EMP001|SH001|2027-01-01||Mon,Tue,Wed,Thu,Fri|Regular weekday schedule|admin_att|||||||||
+SCH008|EMP002|SH001|2027-01-01||Mon,Tue,Wed,Thu,Fri|Regular weekday schedule|admin_att|||||||||
