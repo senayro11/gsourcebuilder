@@ -1,7 +1,8 @@
 id|employee_id|shift_id|effective_date|end_date|work_days|notes|created_by|am_break_enabled|am_break_start|am_break_end|lunch_break_enabled|lunch_break_start|lunch_break_end|pm_break_enabled|pm_break_start|pm_break_end
-SCH001|EMP001|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri|Regular weekday schedule|admin
-SCH002|EMP002|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri|Regular weekday schedule|admin
-SCH003|EMP003|SH002|2025-06-01||Mon,Tue,Wed,Thu,Fri,Sat|Night shift June|admin
-SCH004|EMP004|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri||admin
-SCH005|EMP005|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri||admin
-SCH006|EMP002|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri,Sat|Regular weekday schedule|admin_att
+SCH001|EMP001|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri|Regular weekday schedule|admin|||||||||
+SCH002|EMP002|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri|Regular weekday schedule|admin|||||||||
+SCH003|EMP003|SH002|2025-06-01||Mon,Tue,Wed,Thu,Fri,Sat|Night shift June|admin|||||||||
+SCH004|EMP004|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri||admin|||||||||
+SCH005|EMP005|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri||admin|||||||||
+SCH006|EMP002|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri,Sat|Regular weekday schedule|admin_att|||||||||
+SCH007|EMP001|SH001|2027-01-01||Mon,Tue,Wed,Thu,Fri|Regular weekday schedule|admin_att|||||||||
