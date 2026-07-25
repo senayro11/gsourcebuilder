@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fil">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -86,7 +86,7 @@
           <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
             <div class="search-bar" style="flex:1;min-width:200px">
               <span>🔍</span>
-              <input type="text" id="prod-search" placeholder="Hanapin o i-scan ang barcode..." oninput="filterProducts()">
+              <input type="text" id="prod-search" placeholder="Search or scan barcode..." oninput="filterProducts()">
             </div>
           </div>
           <div class="cat-tabs" id="cat-tabs"></div>
@@ -105,7 +105,7 @@
             <input type="text" id="customer-name" placeholder="Customer name (optional)" style="margin-top:8px;font-size:12px;padding:5px 10px">
           </div>
           <div class="cart-items" id="cart-items">
-            <div class="empty-state" style="padding:24px"><div class="icon">🛒</div><p>Walang item</p></div>
+            <div class="empty-state" style="padding:24px"><div class="icon">🛒</div><p>No items</p></div>
           </div>
           <div class="cart-footer">
             <div class="totals-row"><span>Subtotal</span><span id="subtotal">₱0.00</span></div>
@@ -128,7 +128,7 @@
               <input type="number" id="amount-tendered" placeholder="0.00" oninput="computeChange()">
               <div id="change-display" style="font-size:12px;margin-top:3px;font-weight:600"></div>
             </div>
-            <button class="btn btn-success w-full" style="padding:12px;font-size:14px" onclick="checkout()" data-perm="create">💳 I-process ang Bayad</button>
+            <button class="btn btn-success w-full" style="padding:12px;font-size:14px" onclick="checkout()" data-perm="create">💳 Process Payment</button>
           </div>
         </div>
       </div>
@@ -137,7 +137,7 @@
     <!-- ===== TRANSACTIONS TAB ===== -->
     <div class="tab-pane" id="tab-transactions">
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-        <div class="search-bar" style="flex:1"><span>🔍</span><input type="text" id="txn-search" placeholder="Hanapin..." oninput="filterTxns()"></div>
+        <div class="search-bar" style="flex:1"><span>🔍</span><input type="text" id="txn-search" placeholder="Search..." oninput="filterTxns()"></div>
         <input type="date" id="txn-date" style="padding:7px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)" onchange="filterTxns()">
         <button class="btn btn-ghost btn-sm" onclick="loadTransactions()">🔄</button>
       </div>
@@ -155,13 +155,13 @@
     <!-- ===== PRODUCTS MANAGEMENT TAB ===== -->
     <div class="tab-pane" id="tab-products">
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-        <div class="search-bar" style="flex:1"><span>🔍</span><input type="text" id="pmgmt-search" placeholder="Hanapin produkto..." oninput="filterProdMgmt()"></div>
-        <button class="btn btn-primary btn-sm" onclick="openAddProduct()" data-perm="create">+ Produkto</button>
+        <div class="search-bar" style="flex:1"><span>🔍</span><input type="text" id="pmgmt-search" placeholder="Search product..." oninput="filterProdMgmt()"></div>
+        <button class="btn btn-primary btn-sm" onclick="openAddProduct()" data-perm="create">+ Product</button>
       </div>
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Larawan</th><th>Pangalan</th><th>Category</th><th>Price</th><th>Stock</th><th>Variations</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Variations</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="pmgmt-tbody"></tbody>
           </table>
         </div>
@@ -194,7 +194,7 @@
 <div class="modal-backdrop" id="var-modal">
   <div class="modal" style="max-width:420px">
     <div class="modal-header">
-      <span class="modal-title" id="var-prod-name">Pumili ng Variation</span>
+      <span class="modal-title" id="var-prod-name">Select Variation</span>
       <button class="modal-close" onclick="UI.closeModal('var-modal')">✕</button>
     </div>
     <div id="var-groups"></div>
@@ -203,8 +203,8 @@
       <input type="number" id="var-qty" value="1" min="1">
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="UI.closeModal('var-modal')">Kanselahin</button>
-      <button class="btn btn-primary" onclick="confirmVariation()">🛒 Idagdag sa Cart</button>
+      <button class="btn btn-ghost" onclick="UI.closeModal('var-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmVariation()">🛒 Add to Cart</button>
     </div>
   </div>
 </div>
@@ -213,28 +213,28 @@
 <div class="modal-backdrop" id="product-modal">
   <div class="modal modal-lg">
     <div class="modal-header">
-      <span class="modal-title" id="prod-modal-title">+ Bagong Produkto</span>
+      <span class="modal-title" id="prod-modal-title">+ New Product</span>
       <button class="modal-close" onclick="UI.closeModal('product-modal')">✕</button>
     </div>
 
     <!-- Image upload -->
     <div class="form-group">
-      <label>Larawan ng Produkto</label>
+      <label>Product Image</label>
       <div id="img-placeholder" class="img-placeholder" onclick="document.getElementById('prod-img-input').click()">
-        📷 I-click para mag-upload ng larawan
+        📷 Click to upload an image
       </div>
       <img id="img-preview" class="img-preview" alt="preview">
       <input type="file" id="prod-img-input" accept="image/*" style="display:none" onchange="previewImage(this)">
-      <button class="btn btn-ghost btn-sm" onclick="removeImage()" id="remove-img-btn" style="display:none;margin-top:4px">🗑 Alisin ang Larawan</button>
+      <button class="btn btn-ghost btn-sm" onclick="removeImage()" id="remove-img-btn" style="display:none;margin-top:4px">🗑 Remove Image</button>
     </div>
 
     <div class="form-row">
-      <div class="form-group"><label>Pangalan *</label><input type="text" id="f-pname"></div>
+      <div class="form-group"><label>Name *</label><input type="text" id="f-pname"></div>
       <div class="form-group"><label>Category *</label><input type="text" id="f-pcat" placeholder="e.g. Groceries, Baby Care..."></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Presyo (₱) *</label><input type="number" id="f-pprice" step="0.01"></div>
-      <div class="form-group"><label>Gastos (₱)</label><input type="number" id="f-pcost" step="0.01"></div>
+      <div class="form-group"><label>Price (₱) *</label><input type="number" id="f-pprice" step="0.01"></div>
+      <div class="form-group"><label>Cost (₱)</label><input type="number" id="f-pcost" step="0.01"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Stock</label><input type="number" id="f-pstock" value="0"></div>
@@ -248,16 +248,16 @@
     <!-- Variations — admin only -->
     <div data-perm="edit" style="margin-top:8px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <label style="margin:0;font-size:13px;font-weight:600;color:var(--text)">📦 Mga Variation Groups</label>
-        <button class="btn btn-ghost btn-sm" onclick="addVarGroup()">+ Dagdag Group</button>
+        <label style="margin:0;font-size:13px;font-weight:600;color:var(--text)">📦 Variation Groups</label>
+        <button class="btn btn-ghost btn-sm" onclick="addVarGroup()">+ Add Group</button>
       </div>
       <div id="var-builder" style="display:flex;flex-direction:column;gap:10px"></div>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px">ℹ️ Halimbawa: Group = "Lasa", Options = "Original, Beef, Chicken"</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px">ℹ️ Example: Group = "Flavor", Options = "Original, Beef, Chicken"</div>
     </div>
 
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="UI.closeModal('product-modal')">Kanselahin</button>
-      <button class="btn btn-primary" onclick="saveProduct()">💾 I-save</button>
+      <button class="btn btn-ghost" onclick="UI.closeModal('product-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProduct()">💾 Save</button>
     </div>
   </div>
 </div>
@@ -266,13 +266,13 @@
 <div class="modal-backdrop" id="receipt-modal">
   <div class="modal" style="max-width:360px">
     <div class="modal-header">
-      <span class="modal-title">🧾 Resibo</span>
+      <span class="modal-title">🧾 Receipt</span>
       <button class="modal-close" onclick="UI.closeModal('receipt-modal')">✕</button>
     </div>
     <div id="receipt-content"></div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="UI.closeModal('receipt-modal')">Isara</button>
-      <button class="btn btn-primary" onclick="window.print()">🖨 I-print</button>
+      <button class="btn btn-ghost" onclick="UI.closeModal('receipt-modal')">Close</button>
+      <button class="btn btn-primary" onclick="window.print()">🖨 Print</button>
     </div>
   </div>
 </div>
@@ -326,7 +326,7 @@ function filterProducts() {
 
 function renderProductGrid(prods) {
   const grid=document.getElementById('product-grid');
-  if(!prods.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="icon">📦</div><p>Walang produkto</p></div>';return;}
+  if(!prods.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="icon">📦</div><p>No products</p></div>';return;}
   grid.innerHTML=prods.map(p=>{
     const hasVar=p.variations_json&&p.variations_json.trim()&&p.variations_json!=='[]'&&p.variations_json!=='';
     const imgHtml=p.image&&p.image.length>10
@@ -354,12 +354,12 @@ function pushToCart(prod,qty,varLabel) {
   const key=prod.id+'|'+varLabel;
   const existing=cart.find(c=>c.key===key);
   if(existing){
-    if(existing.qty+qty>parseInt(prod.stock)){UI.toast('Hindi sapat ang stock!','warning');return;}
+    if(existing.qty+qty>parseInt(prod.stock)){UI.toast('Not enough stock!','warning');return;}
     existing.qty+=qty;
   } else {
     cart.push({key,id:prod.id,name:prod.name,price:parseFloat(prod.price),qty,stock:parseInt(prod.stock),variation:varLabel});
   }
-  renderCart(); UI.toast(`${prod.name} iddinagdag ✅`,'success',1200);
+  renderCart(); UI.toast(`${prod.name} added ✅`,'success',1200);
 }
 
 function openVarPicker(prod) {
@@ -394,7 +394,7 @@ function confirmVariation() {
     if(sel) selected.push(sel.textContent);
     else allSelected=false;
   });
-  if(!allSelected){UI.toast('Pumili ng lahat ng variation','warning');return;}
+  if(!allSelected){UI.toast('Please select all variations','warning');return;}
   const qty=parseInt(document.getElementById('var-qty').value)||1;
   const varLabel=selected.join(' / ');
   pushToCart(varTarget,qty,varLabel);
@@ -413,13 +413,13 @@ function clearCart(){cart=[];renderCart();}
 
 function renderCart() {
   const el=document.getElementById('cart-items');
-  if(!cart.length){el.innerHTML='<div class="empty-state" style="padding:24px"><div class="icon">🛒</div><p>Walang item</p></div>';}
+  if(!cart.length){el.innerHTML='<div class="empty-state" style="padding:24px"><div class="icon">🛒</div><p>No items</p></div>';}
   else{el.innerHTML=cart.map(c=>`
     <div class="cart-item">
       <div class="cart-item-top">
         <div class="item-name">${c.name}</div>
         <div class="qty-ctrl">
-          <button onclick="updateQty('${c.key.replace(/'/g,"\\'")}',−1)".replace('−','-')>−</button>
+          <button onclick="updateQty('${c.key.replace(/'/g,"\\'")}',-1)">−</button>
           <span>${c.qty}</span>
           <button onclick="updateQty('${c.key.replace(/'/g,"\\'")}',1)">+</button>
         </div>
@@ -451,20 +451,20 @@ function computeChange() {
   const el=document.getElementById('change-display');
   if(document.getElementById('pay-method').value==='cash'&&tendered>0){
     const change=tendered-total;
-    el.textContent=change>=0?`Sukli: ${UI.peso(change)}`:`⚠️ Kulang: ${UI.peso(Math.abs(change))}`;
+    el.textContent=change>=0?`Change: ${UI.peso(change)}`:`⚠️ Short: ${UI.peso(Math.abs(change))}`;
     el.style.color=change>=0?'var(--success)':'var(--danger)';
   } else el.textContent='';
 }
 
 async function checkout() {
-  if(!cart.length){UI.toast('Walang laman ang cart!','warning');return;}
+  if(!cart.length){UI.toast('Cart is empty!','warning');return;}
   const sub=cart.reduce((s,c)=>s+c.price*c.qty,0);
   const disc=parseFloat(document.getElementById('discount').value)||0;
   const total=sub*(1-disc/100);
   const method=document.getElementById('pay-method').value;
   const tendered=parseFloat(document.getElementById('amount-tendered').value)||total;
-  if(method==='cash'&&tendered<total){UI.toast('Hindi sapat ang bayad!','error');return;}
-  UI.loading(true,'Nagpo-process...');
+  if(method==='cash'&&tendered<total){UI.toast('Insufficient payment!','error');return;}
+  UI.loading(true,'Processing...');
   try{
     const txns=await DB.read('transactionsDB',true);
     const id=DB.nextId(txns,'id','TXN');
@@ -497,8 +497,8 @@ function showReceipt(t) {
       ${parseFloat(t.discount)>0?`<div class="r-row"><span>Discount</span><span>-₱${parseFloat(t.discount).toFixed(2)}</span></div>`:''}
       <div class="r-row r-total"><span><strong>TOTAL</strong></span><span><strong>₱${parseFloat(t.total).toFixed(2)}</strong></span></div>
       <div class="r-row"><span>Paid (${t.method||t.payment_method})</span><span>₱${parseFloat(t.tendered||t.amount_tendered).toFixed(2)}</span></div>
-      ${parseFloat(t.change)>0?`<div class="r-row"><span>Sukli</span><span>₱${parseFloat(t.change).toFixed(2)}</span></div>`:''}
-      <div style="text-align:center;margin-top:10px;color:#888">Salamat! 😊</div>
+      ${parseFloat(t.change)>0?`<div class="r-row"><span>Change</span><span>₱${parseFloat(t.change).toFixed(2)}</span></div>`:''}
+      <div style="text-align:center;margin-top:10px;color:#888">Thank you! 😊</div>
     </div>`;
   UI.openModal('receipt-modal');
 }
@@ -521,7 +521,7 @@ function renderTxnTable(rows,page){
   document.getElementById('txn-tbody').innerHTML=paged.rows.map(t=>{
     const items=JSON.parse(t.items_json||'[]');
     return `<tr><td class="mono">${t.id}</td><td style="font-size:11px">${t.date}</td><td>${t.cashier}</td><td>${items.length} item(s)</td><td><strong>${UI.peso(t.total)}</strong></td><td>${t.payment_method}</td><td>${UI.statusBadge(t.status)}</td><td><button class="btn btn-ghost btn-sm" onclick="viewTxnReceipt('${t.id}')">🧾</button></td></tr>`;
-  }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang transactions</td></tr>';
+  }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3)">No transactions</td></tr>';
   UI.renderPagination('txn-pagination',paged,p=>renderTxnTable(rows,p));
 }
 function viewTxnReceipt(id){
@@ -559,7 +559,7 @@ function renderProdMgmt(rows,page){
         <button class="btn btn-danger btn-sm" onclick="archiveProduct('${p.id}')" data-perm="delete">🗑</button>
       </td>
     </tr>`;
-  }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang produkto</td></tr>';
+  }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3)">No products</td></tr>';
   UI.renderPagination('pmgmt-pagination',paged,p=>renderProdMgmt(rows,p));
   Auth.applyUIPermissions(user,'pos');
 }
@@ -585,7 +585,7 @@ function renderVarBuilder(){
 // Image handling
 function previewImage(input) {
   const file=input.files[0]; if(!file) return;
-  if(file.size>800*1024){UI.toast('Max 800KB ang larawan','warning');return;}
+  if(file.size>800*1024){UI.toast('Image must be max 800KB','warning');return;}
   const reader=new FileReader();
   reader.onload=e=>{
     imgBase64=e.target.result;
@@ -611,7 +611,7 @@ function openAddProduct(){
   document.getElementById('f-punit').value='';
   document.getElementById('f-pstatus').value='active';
   removeImage(); renderVarBuilder();
-  document.getElementById('prod-modal-title').textContent='+ Bagong Produkto';
+  document.getElementById('prod-modal-title').textContent='+ New Product';
   UI.openModal('product-modal');
 }
 
@@ -634,24 +634,24 @@ function editProduct(id){
   } else removeImage();
   try{varGroups=JSON.parse(p.variations_json||'[]');}catch(e){varGroups=[];}
   renderVarBuilder();
-  document.getElementById('prod-modal-title').textContent='✏️ I-edit ang Produkto';
+  document.getElementById('prod-modal-title').textContent='✏️ Edit Product';
   UI.openModal('product-modal');
 }
 
 async function saveProduct(){
   const name=document.getElementById('f-pname').value.trim();
   const price=document.getElementById('f-pprice').value;
-  if(!name||!price){UI.toast('Punan ang Pangalan at Presyo','warning');return;}
-  UI.loading(true,'Nagse-save...');
+  if(!name||!price){UI.toast('Fill in Name and Price','warning');return;}
+  UI.loading(true,'Saving...');
   try{
     const data={name,category:document.getElementById('f-pcat').value,price,cost:document.getElementById('f-pcost').value,stock:document.getElementById('f-pstock').value,unit:document.getElementById('f-punit').value,barcode:document.getElementById('f-pbarcode').value,status:document.getElementById('f-pstatus').value,image:imgBase64,variations_json:JSON.stringify(varGroups)};
     if(editProdId){
       await DB.update('productsDB',r=>r.id===editProdId,data);
-      UI.toast('Na-update ✅','success');
+      UI.toast('Updated ✅','success');
     }else{
       const all=await DB.read('productsDB',true);
       await DB.insert('productsDB',{id:DB.nextId(all,'id','P'),...data,created_at:new Date().toISOString().split('T')[0]});
-      UI.toast('Naidagdag ✅','success');
+      UI.toast('Added ✅','success');
     }
     UI.closeModal('product-modal');
     await loadProdMgmt(); await loadProducts();
@@ -660,9 +660,9 @@ async function saveProduct(){
 }
 
 function archiveProduct(id){
-  UI.confirm('I-archive ang produktong ito?',async()=>{
+  UI.confirm('Archive this product?',async()=>{
     UI.loading(true);
-    try{await DB.update('productsDB',r=>r.id===id,{status:'inactive'});UI.toast('Na-archive','success');await loadProdMgmt();await loadProducts();}
+    try{await DB.update('productsDB',r=>r.id===id,{status:'inactive'});UI.toast('Archived','success');await loadProdMgmt();await loadProducts();}
     catch(e){UI.toast('Error: '+e.message,'error');}
     UI.loading(false);
   });
@@ -672,7 +672,7 @@ function archiveProduct(id){
 async function generateReport(){
   const from=document.getElementById('rpt-from').value;
   const to=document.getElementById('rpt-to').value;
-  if(!from||!to){UI.toast('Pumili ng date range','warning');return;}
+  if(!from||!to){UI.toast('Select a date range','warning');return;}
   const txns=(await DB.read('transactionsDB',true)).filter(t=>t.date>=from&&t.date<=to+'z'&&t.status==='completed');
   const totalSales=txns.reduce((s,t)=>s+parseFloat(t.total||0),0);
   const totalTxns=txns.length;
@@ -691,7 +691,7 @@ async function generateReport(){
     });}catch(e){}
   });
   const top=Object.entries(prodMap).sort((a,b)=>b[1].rev-a[1].rev).slice(0,10);
-  document.getElementById('rpt-top-tbody').innerHTML=top.map(([name,d])=>`<tr><td>${name}</td><td>${d.qty}</td><td><strong>${UI.peso(d.rev)}</strong></td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--text3)">Walang data</td></tr>';
+  document.getElementById('rpt-top-tbody').innerHTML=top.map(([name,d])=>`<tr><td>${name}</td><td>${d.qty}</td><td><strong>${UI.peso(d.rev)}</strong></td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--text3)">No data</td></tr>';
 }
 
 // Tab listeners

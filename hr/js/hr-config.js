@@ -1,5 +1,5 @@
 // ============================================================
-//  HR-CONFIG.JS — I-edit ang owner at repo
+//  HR-CONFIG.JS — Edit the owner and repo
 // ============================================================
 const GITHUB_CONFIG = {
   owner:  'senayro11',

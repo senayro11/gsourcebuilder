@@ -1,7 +1,7 @@
 // ============================================================
 //  SYNC.JS — Offline Queue & Auto-Sync Engine
-//  Nagpapahintulot sa system na gumana offline (local cache) at
-//  awtomatikong i-sync pabalik sa GitHub paguwi ng internet.
+//  Lets the system work offline (local cache) and automatically
+//  syncs back to GitHub once internet returns.
 // ============================================================
 
 const Sync = (() => {
@@ -40,10 +40,11 @@ const Sync = (() => {
   }
 
   // --- Pending write queue ---
-  // Keyed by dbName (hindi list ng ops) dahil ang bawat "write" ay palaging
-  // full-state snapshot ng buong file — ang pinakabagong queued na rows para
-  // sa isang dbName ay kumpleto nang sarili, kaya sapat nang panatilihin ang
-  // huling desired state kasabay ng human-readable log para sa UI.
+  // Keyed by dbName (not a list of ops) because every "write" is always a
+  // full-state snapshot of the whole file — the most recently queued rows
+  // for a given dbName are already complete on their own, so it's enough
+  // to keep the latest desired state alongside a human-readable log for
+  // the UI.
   function getQueue() {
     const raw = localStorage.getItem(QUEUE_KEY);
     return raw ? JSON.parse(raw) : {};
@@ -57,7 +58,7 @@ const Sync = (() => {
     const entry = q[dbName] || { log: [], firstQueuedAt: new Date().toISOString() };
     entry.rows = rows;
     entry.header = header;
-    entry.log.push({ description: description || 'Pagbabago', ts: new Date().toISOString() });
+    entry.log.push({ description: description || 'Change', ts: new Date().toISOString() });
     q[dbName] = entry;
     setQueue(q);
   }
@@ -80,11 +81,11 @@ const Sync = (() => {
   }
 
   // Real connectivity probe — navigator.onLine only reflects the network
-  // interface, hindi kung reachable talaga ang GitHub.
+  // interface, not whether GitHub is actually reachable.
   async function ping() {
     try {
       const res = await fetch(PING_URL, { cache: 'no-store', mode: 'cors' });
-      realOnline = res.ok || res.status === 403; // 403 pa rin = may connection
+      realOnline = res.ok || res.status === 403; // still 403 = there's a connection
     } catch (e) {
       realOnline = false;
     }
@@ -92,10 +93,10 @@ const Sync = (() => {
     return realOnline;
   }
 
-  // Ang dbName ay maaaring galing sa root app (walang prefix, gamit ang
-  // window.DB) o sa HR module (naka-prefix na "hr_", gamit ang window.HRDB)
-  // — magkaibang engine dahil magkaibang dbPath/file ang tinutukoy nila
-  // kahit magkapareho ang ilang pangalan (hal. "employeesDB").
+  // dbName may come from the root app (no prefix, using window.DB) or
+  // from the HR module (prefixed "hr_", using window.HRDB) — different
+  // engines because they point at different dbPaths/files even when some
+  // names coincide (e.g. "employeesDB").
   function engineFor(dbName) {
     if (dbName.startsWith('hr_')) {
       return typeof HRDB !== 'undefined' ? { db: HRDB, realName: dbName.slice(3) } : null;
@@ -103,9 +104,9 @@ const Sync = (() => {
     return typeof DB !== 'undefined' ? { db: DB, realName: dbName } : null;
   }
 
-  // I-commit ang bawat pending dbName sa GitHub gamit ang tamang engine's
-  // forceCommit (fresh sha muna, tapos write). Kung mag-conflict/mag-fail
-  // ang isa, i-log at ituloy pa rin ang iba — itigil lang kung bumalik na offline.
+  // Commit each pending dbName to GitHub using the right engine's
+  // forceCommit (fresh sha first, then write). If one conflicts/fails,
+  // log it and keep going with the rest — only stop if we go back offline.
   async function flush() {
     if (flushing) return { synced: 0, remaining: Object.keys(getQueue()).length };
     if (!(await ping())) return { synced: 0, remaining: Object.keys(getQueue()).length };
@@ -118,15 +119,15 @@ const Sync = (() => {
         const entry = getQueue()[dbName];
         if (!entry) continue;
         const engine = engineFor(dbName);
-        if (!engine) continue; // hindi available sa page na ito — subukan ulit sa ibang page/flush
+        if (!engine) continue; // not available on this page — try again on another page/flush
         try {
           await engine.db.forceCommit(engine.realName, entry.rows, entry.header);
           removeFromQueue(dbName);
           synced++;
         } catch (e) {
-          if (isConnectivityError(e)) break; // bumalik offline habang nag-sync
-          // Real error (hal. validation/permission) — i-log pero panatilihin
-          // sa queue para masubukan ulit sa susunod na flush.
+          if (isConnectivityError(e)) break; // went back offline mid-sync
+          // Real error (e.g. validation/permission) — log it but keep it
+          // in the queue to retry on the next flush.
           lastError = `${dbName}: ${e.message}`;
         }
       }

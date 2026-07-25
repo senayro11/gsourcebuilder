@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fil">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -37,7 +37,7 @@
 <!-- Loading screen while fetching token from GitHub -->
 <div class="loading-screen" id="loading-screen">
   <div class="spinner"></div>
-  <div style="color:var(--text2);font-size:14px">Naglo-load ng system...</div>
+  <div style="color:var(--text2);font-size:14px">Loading system...</div>
 </div>
 
 <!-- Main login (hidden until ready) -->
@@ -49,7 +49,7 @@
   </div>
 
   <div class="login-card">
-    <h2>Mag-login</h2>
+    <h2>Login</h2>
     <div class="form-group">
       <label>Username</label>
       <div class="input-wrap">
@@ -64,39 +64,39 @@
         <input type="password" id="password" placeholder="Enter password" autocomplete="current-password">
       </div>
     </div>
-    <button class="btn btn-primary w-full" onclick="doLogin()" id="login-btn">🚀 Mag-login</button>
+    <button class="btn btn-primary w-full" onclick="doLogin()" id="login-btn">🚀 Login</button>
     <div id="login-error" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;color:#f87171;font-size:13px"></div>
 
     <!-- SETUP BOX: shown only when no token saved in GitHub yet -->
     <div id="setup-box" class="setup-box" style="display:none">
       <div class="title">⚙️ One-time Setup — SuperAdmin Only</div>
       <div class="sub">
-        Kailangan ng GitHub Personal Access Token (PAT) para gumana ang system.<br>
-        <strong>Isang beses lang ito</strong> — pagkatapos i-save, lahat ng devices ay awtomatikong gagana.<br><br>
-        1. Pumunta sa <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a><br>
-        2. Generate new token (classic) → i-check ang <strong>repo</strong> scope<br>
-        3. I-paste dito:
+        A GitHub Personal Access Token (PAT) is required for the system to work.<br>
+        <strong>This is only needed once</strong> — once saved, all devices will work automatically.<br><br>
+        1. Go to <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a><br>
+        2. Generate new token (classic) → check the <strong>repo</strong> scope<br>
+        3. Paste it here:
       </div>
       <div class="form-group" style="margin-bottom:8px">
         <label>Personal Access Token</label>
         <input type="password" id="gh-token-input" placeholder="ghp_xxxxxxxxxxxx">
       </div>
-      <button class="btn btn-warning w-full" onclick="doFirstTimeSetup()">💾 I-save at I-activate ang System</button>
+      <button class="btn btn-warning w-full" onclick="doFirstTimeSetup()">💾 Save and Activate System</button>
     </div>
 
-    <!-- Naka-hide by default — link sa ibaba ang nagpapakita nito ulit -->
+    <!-- Hidden by default — the link below reveals it again -->
     <div id="change-token-toggle" style="display:none;text-align:center;margin-top:16px">
       <a href="#" onclick="toggleChangeToken();return false" style="font-size:12px;color:var(--text3)">⚙️ GitHub Token Settings</a>
     </div>
     <div id="change-token-box" style="display:none;margin-top:12px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">
-      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">⚙️ Baguhin ang Token</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Gamitin ito kung may bago o na-expire na token — apektado lang ang device na ito.</div>
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">⚙️ Change Token</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Use this if you have a new or expired token — only this device is affected.</div>
       <div class="form-group" style="margin-bottom:8px">
-        <input type="password" id="gh-token-change" placeholder="Bagong token...">
+        <input type="password" id="gh-token-change" placeholder="New token...">
       </div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('change-token-box').style.display='none'">Kanselahin</button>
-        <button class="btn btn-warning btn-sm" onclick="doChangeToken()">I-update ang Token</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('change-token-box').style.display='none'">Cancel</button>
+        <button class="btn btn-warning btn-sm" onclick="doChangeToken()">Update Token</button>
       </div>
     </div>
 
@@ -124,14 +124,13 @@
 <script>
 // ============================================================
 //  TOKEN BOOTSTRAP
-//  Ang PAT ay HINDI kailanman isinusulat sa loob ng repo (mabi-block
-//  ito ng GitHub secret scanning, at delikado rin kung public ang repo).
-//  Kaya't lokal lang sa bawat device/browser (localStorage) naka-store
-//  ang token. Ang appconfig.txt sa repo ay isang beses lang na ginagamit
-//  para malaman kung "setup_done" na ang system (walang totoong secret
-//  ang nilalaman nito), para malaman ng bagong device kung dapat pa ba
-//  itong mag-generate ng bagong token o humingi na lang ng existing token
-//  mula sa taong nag-setup.
+//  The PAT is NEVER written into the repo (GitHub secret scanning would
+//  block it, and it's dangerous anyway if the repo is public). So the
+//  token is only ever stored locally per device/browser (localStorage).
+//  appconfig.txt in the repo is only ever used to know whether
+//  "setup_done" is true (it contains no real secret), so a new device
+//  knows whether it should generate a new token or ask for the existing
+//  one from whoever did the setup.
 // ============================================================
 
 const RAW_CONFIG_URL =
@@ -140,7 +139,7 @@ const RAW_CONFIG_URL =
 const API_CONFIG_URL =
   `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.dbPath}/appconfig.txt`;
 
-let configSha = ''; // needed lang kapag ide-flag ang setup_done
+let configSha = ''; // only needed when flagging setup_done
 
 async function bootstrap() {
   // Redirect if already have a valid session
@@ -150,19 +149,19 @@ async function bootstrap() {
     return;
   }
 
-  // Ang token ay palaging lokal sa device na ito lang.
+  // The token always stays local to this device only.
   const localToken = (localStorage.getItem('ent_gh_token') || '').trim();
 
   if (localToken) {
     GITHUB_CONFIG.token = localToken;
     showLogin(false);
   } else {
-    // Walang token dito pa — tignan kung may nag-setup na sa ibang device
+    // No token here yet — check if setup was already done on another device
     let setupDone = false;
     try {
       const res = await fetch(RAW_CONFIG_URL + '?t=' + Date.now());
       if (res.ok) setupDone = parseAppConfig(await res.text()).setup_done === 'true';
-    } catch(e) { /* offline o unreachable — ituring na bagong setup */ }
+    } catch(e) { /* offline or unreachable — treat as a fresh setup */ }
     showLogin(true, setupDone);
   }
 }
@@ -177,13 +176,13 @@ function parseAppConfig(text) {
   return result;
 }
 
-// Actual auth check (hindi tulad ng pag-fetch ng public repo contents, kailangan
-// dito ng valid na Authorization header)
+// Actual auth check (unlike fetching public repo contents, this requires
+// a valid Authorization header)
 async function verifyToken(token) {
   const res = await fetch('https://api.github.com/user', {
     headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
   });
-  if (!res.ok) throw new Error(res.status === 401 ? 'Hindi valid ang token.' : `Hindi ma-verify ang token (HTTP ${res.status})`);
+  if (!res.ok) throw new Error(res.status === 401 ? 'Invalid token.' : `Could not verify the token (HTTP ${res.status})`);
 }
 
 async function loadConfigSha(token) {
@@ -202,18 +201,18 @@ function showLogin(needsSetup, alreadySetupElsewhere) {
   document.getElementById('loading-screen').style.display = 'none';
   document.getElementById('main-login').style.display     = '';
   document.getElementById('setup-box').style.display      = needsSetup ? '' : 'none';
-  // Kapag may naka-save nang token dito, itago ang setup box pero panatilihing
-  // naa-access ang "GitHub Token Settings" link kung sakaling kailangang
-  // palitan (bagong token, na-expire, atbp.) — ang box mismo ay naka-hide
-  // pa rin by default hanggang i-click ang link.
+  // When a token is already saved here, hide the setup box but keep the
+  // "GitHub Token Settings" link accessible in case it needs to be
+  // changed (new token, expired, etc.) — the box itself stays hidden
+  // by default until the link is clicked.
   document.getElementById('change-token-toggle').style.display = needsSetup ? 'none' : '';
   if (needsSetup && alreadySetupElsewhere) {
-    document.querySelector('#setup-box .title').textContent = '⚙️ Kailangan ng Token sa Device na Ito';
+    document.querySelector('#setup-box .title').textContent = '⚙️ Token Needed on This Device';
     document.querySelector('#setup-box .sub').innerHTML =
-      'May-existing na ang system. <strong>Huwag gumawa ng bagong token</strong> — hingi na lang ng ' +
-      'kopya ng token mula sa SuperAdmin (ipapadala niya ito sa iyo nang <strong>privado</strong> ' +
-      'gaya ng Messenger/Viber, hindi sa email o public chat), tapos i-paste dito para ma-save ' +
-      'lokal sa device na ito:';
+      'The system is already set up. <strong>Don\'t create a new token</strong> — just ask ' +
+      'the SuperAdmin for a copy of the token (they\'ll send it to you <strong>privately</strong> ' +
+      'e.g. via Messenger/Viber, not email or public chat), then paste it here to save it ' +
+      'locally on this device:';
   }
 }
 
@@ -223,24 +222,24 @@ function toggleChangeToken() {
 }
 
 // ============================================================
-//  SETUP / TOKEN ENTRY — lokal lang sa device na ito, hindi kailanman
-//  isinusulat ang totoong token sa loob ng repo.
+//  SETUP / TOKEN ENTRY — local to this device only, the real token is
+//  never written into the repo.
 // ============================================================
 async function doFirstTimeSetup() {
   const token = document.getElementById('gh-token-input').value.trim();
-  if (!token) { UI.toast('Walang token na nilagay.','warning'); return; }
+  if (!token) { UI.toast('No token entered.','warning'); return; }
   if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
-    UI.toast('Mukhang hindi valid ang token format.','warning'); return;
+    UI.toast('The token format doesn\'t look valid.','warning'); return;
   }
 
   GITHUB_CONFIG.token = token;
-  UI.loading(true, 'Sinusuri ang token...');
+  UI.loading(true, 'Verifying token...');
   try {
     await verifyToken(token);
     await loadConfigSha(token);
     localStorage.setItem('ent_gh_token', token);
-    await markSetupDone(token); // safe: setup_done flag lang, walang totoong token value
-    UI.toast('Naka-save ang token sa device na ito! ✅ (Kailangan ulit i-enter sa ibang devices)','success',5000);
+    await markSetupDone(token); // safe: just the setup_done flag, no real token value
+    UI.toast('Token saved on this device! ✅ (Needs to be entered again on other devices)','success',5000);
     setTimeout(() => showLogin(false), 1500);
   } catch(e) {
     GITHUB_CONFIG.token = '';
@@ -250,24 +249,24 @@ async function doFirstTimeSetup() {
   UI.loading(false);
 }
 
-// Baguhin ang token — lokal lang sa device na ito, naa-access via ang
+// Change the token — local to this device only, accessible via the
 // "GitHub Token Settings" link (toggleChangeToken)
 async function doChangeToken() {
   const token = document.getElementById('gh-token-change').value.trim();
-  if (!token) { UI.toast('Walang token','warning'); return; }
-  UI.loading(true,'Sinusuri ang token...');
+  if (!token) { UI.toast('No token entered','warning'); return; }
+  UI.loading(true,'Verifying token...');
   try {
     await verifyToken(token);
     localStorage.setItem('ent_gh_token', token);
     GITHUB_CONFIG.token = token;
-    UI.toast('Na-update ang token sa device na ito ✅','success');
+    UI.toast('Token updated on this device ✅','success');
     document.getElementById('change-token-box').style.display='none';
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
 }
 
-// I-flag lang na "setup_done" ang system — walang totoong token value ang
-// isinusulat dito, kaya hindi ito hahabulin ng GitHub secret scanning.
+// Just flag the system as "setup_done" — no real token value is written
+// here, so GitHub secret scanning won't flag it.
 async function markSetupDone(token) {
   if (!configSha) await loadConfigSha(token);
   const content = `key|value\ntoken|\nsetup_done|true\napp_name|Enterprise System\n`;
@@ -288,7 +287,7 @@ async function markSetupDone(token) {
     body: JSON.stringify(body)
   });
   if (res.ok) { const json = await res.json(); configSha = json.content.sha; }
-  // Hindi kritikal kung mabigo ito — cosmetic flag lang ito.
+  // Not critical if this fails — it's just a cosmetic flag.
 }
 
 // ============================================================
@@ -299,19 +298,19 @@ async function doLogin() {
   const password = document.getElementById('password').value;
   const btn      = document.getElementById('login-btn');
 
-  if (!username || !password) { showError('Punan ang lahat ng fields.'); return; }
-  if (!GITHUB_CONFIG.token)   { showError('Hindi pa na-setup ang system. Makipag-ugnayan sa SuperAdmin.'); return; }
+  if (!username || !password) { showError('Fill in all fields.'); return; }
+  if (!GITHUB_CONFIG.token)   { showError('The system hasn\'t been set up yet. Contact the SuperAdmin.'); return; }
 
   btn.disabled    = true;
-  btn.textContent = '⏳ Nag-lo-login...';
+  btn.textContent = '⏳ Logging in...';
   document.getElementById('login-error').style.display = 'none';
 
   const result = await Auth.login(username, password);
   btn.disabled   = false;
-  btn.innerHTML  = '🚀 Mag-login';
+  btn.innerHTML  = '🚀 Login';
 
   if (result.success) {
-    UI.toast(`Maligayang pagdating, ${result.user.full_name}! 👋`, 'success');
+    UI.toast(`Welcome, ${result.user.full_name}! 👋`, 'success');
     setTimeout(() => { window.location.href = Auth.getHomeUrl(result.user); }, 700);
   } else {
     showError(result.message);

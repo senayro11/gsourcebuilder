@@ -1,6 +1,6 @@
 # 🏢 Enterprise System
 
-Isang integrated business management system na naka-deploy sa GitHub Pages. Gumagamit ng plain TXT files bilang database, na ina-access at ina-update via GitHub API (AJAX).
+An integrated business management system deployed on GitHub Pages. Uses plain TXT files as the database, accessed and updated via the GitHub API (AJAX).
 
 ## 📁 File Structure
 
@@ -16,7 +16,7 @@ enterprise-system/
 ├── css/
 │   └── style.css       ← Global styles
 ├── js/
-│   ├── config.js       ← ⚙️ I-edit ito! GitHub settings + permissions
+│   ├── config.js       ← ⚙️ Edit this! GitHub settings + permissions
 │   ├── auth.js         ← Authentication engine
 │   ├── db.js           ← GitHub API database engine
 │   └── ui.js           ← Shared UI utilities
@@ -33,35 +33,35 @@ enterprise-system/
 
 ## 🚀 Setup Instructions
 
-### 1. I-fork/upload sa GitHub
-- Gumawa ng bagong GitHub repository
-- I-upload ang lahat ng files (kasama ang `db/` folder)
-- I-enable ang GitHub Pages: Settings → Pages → Source: `main` branch
+### 1. Fork/upload to GitHub
+- Create a new GitHub repository
+- Upload all files (including the `db/` folder)
+- Enable GitHub Pages: Settings → Pages → Source: `main` branch
 
-### 2. I-edit ang `js/config.js`
+### 2. Edit `js/config.js`
 ```javascript
 const GITHUB_CONFIG = {
-  owner: 'YOUR_GITHUB_USERNAME',  // ← palitan ito
-  repo:  'YOUR_REPO_NAME',        // ← palitan ito
+  owner: 'YOUR_GITHUB_USERNAME',  // ← change this
+  repo:  'YOUR_REPO_NAME',        // ← change this
   branch: 'main',
-  token: '',   // pwede ring ilagay dito, pero mas safe kung sa UI ilagay
+  token: '',   // can be set here too, but it's safer to set it via the UI
   dbPath: 'db'
 };
 ```
 
-### 3. Gumawa ng GitHub Personal Access Token (PAT)
-1. Pumunta sa https://github.com/settings/tokens
+### 3. Create a GitHub Personal Access Token (PAT)
+1. Go to https://github.com/settings/tokens
 2. Generate new token (classic)
-3. I-check ang `repo` scope (full access)
-4. I-copy ang token
+3. Check the `repo` scope (full access)
+4. Copy the token
 
-### 4. I-set ang token sa login page
-- I-click ang "GitHub Token Settings" sa ibaba ng login form
-- I-paste ang iyong PAT token
-- I-click "I-save ang Token"
-- Mino-store ito sa localStorage (hindi nasa GitHub)
+### 4. Set the token on the login page
+- Click "GitHub Token Settings" below the login form
+- Paste your PAT token
+- Click "Save Token"
+- It's stored in localStorage (not in GitHub)
 
-### 5. Mag-login!
+### 5. Log in!
 Default accounts (password: `admin123`):
 
 | Username    | Role       | System              |
@@ -75,7 +75,7 @@ Default accounts (password: `admin123`):
 | ojt01       | OJT        | Inventory           |
 | guest01     | Guest      | POS System          |
 
-**PALITAN AGAD ANG DEFAULT PASSWORDS sa User Management!**
+**CHANGE THE DEFAULT PASSWORDS RIGHT AWAY in User Management!**
 
 ## 🔐 Access Control
 
@@ -90,15 +90,15 @@ Default accounts (password: `admin123`):
 | Access all systems   | ❌    | ❌  | ❌    | ❌    | ✅         |
 
 ### Important: Admin per System
-- `admin_pos` → POS System lang
-- `admin_inv` → Inventory lang
-- `admin_att` → Attendance/Payroll lang
-- `admin_bud` → Budget lang
-- `superadmin` → Lahat ng systems
+- `admin_pos` → POS System only
+- `admin_inv` → Inventory only
+- `admin_att` → Attendance/Payroll only
+- `admin_bud` → Budget only
+- `superadmin` → All systems
 
 ## 💾 Database Format (TXT)
 
-Pipe-delimited (`|`) ang format. Ang unang linya ay ang headers.
+The format is pipe-delimited (`|`). The first line is the headers.
 
 ```
 id|name|category|price|stock
@@ -106,61 +106,61 @@ P001|White Rice (1kg)|Groceries|55.00|500
 P002|Cooking Oil (1L)|Groceries|89.00|200
 ```
 
-Pwede mong i-edit manually ang TXT files sa GitHub directly kung kailangan.
+You can edit the TXT files manually on GitHub directly if needed.
 
 ## 🔧 Customization
 
-### Magdagdag ng bagong system
-1. Gumawa ng bagong `.html` file (kopya mula sa isa sa existing)
-2. Idagdag sa `SYSTEMS` object sa `config.js`
-3. Idagdag ang permissions sa `PERMISSIONS` object
-4. Gagawa ang sidebar at dashboard ng link automatically
+### Adding a new system
+1. Create a new `.html` file (copy from an existing one)
+2. Add it to the `SYSTEMS` object in `config.js`
+3. Add the permissions to the `PERMISSIONS` object
+4. The sidebar and dashboard will link to it automatically
 
-### Magbago ng roles/permissions
-I-edit ang `PERMISSIONS` object sa `config.js`.
+### Changing roles/permissions
+Edit the `PERMISSIONS` object in `config.js`.
 
-### Magdagdag ng fields sa database
-1. Idagdag ang field sa header ng TXT file
-2. I-update ang relevant HTML/JS na nag-a-access ng field na iyon
+### Adding fields to the database
+1. Add the field to the TXT file's header
+2. Update the relevant HTML/JS that accesses that field
 
 ## 🔌 Offline Mode & Auto-Sync
 
-Ang system ay **offline-first**: pwede mo pa ring buksan at gamitin ang app kahit walang internet
-(hal. naka-save ang page sa computer/browser), basta't nabuksan mo na ito nang online kahit isang beses
-(para may naka-cache na data).
+The system is **offline-first**: you can still open and use the app even without internet
+(e.g. the page was already saved on the computer/browser), as long as you've opened it online
+at least once before (so there's already cached data).
 
-Paano gumagana:
+How it works:
 
-1. **Bawat successful na `DB.read()`** ay awtomatikong sinasave sa `localStorage` ng browser
-   (`ent_cache_<dbName>`) bilang huling-kilalang snapshot.
-2. **Kapag walang internet** (o hindi ma-reach ang GitHub API):
-   - Ang mga *read* ay babalik sa naka-cache na snapshot sa halip na mag-error.
-   - Ang mga *write* (add/edit/delete) ay ise-save muna nang lokal at ilalagay sa isang
-     **offline sync queue** (`ent_sync_queue` sa localStorage) — hindi ito basta mawawala.
-3. **Kapag bumalik ang internet** (`online` event, o awtomatikong pag-check bawat ~25 segundo),
-   ise-sync ni `js/sync.js` ang lahat ng naka-queue na pagbabago pabalik sa GitHub,
-   isa-isa, gamit ang pinakabagong file `sha` para maiwasan ang stale-write errors.
-4. Makikita ang **status ng koneksyon at bilang ng pending na pagbabago** sa isang pill sa navbar
-   (🟢 Online / 🟡 May pending / 🔴 Offline) sa bawat page — i-click ito para mag-force-sync agad.
-5. Ang **SuperAdmin Panel → 🔄 Sync Center** ang buong control room: makikita dito kung anong mga
-   database ang may pending na pagbabago, ilan, kailan huling nag-sync, at may buttons para
-   mag-force sync o mag-clear ng queue.
+1. **Every successful `DB.read()`** is automatically saved to the browser's `localStorage`
+   (`ent_cache_<dbName>`) as the last-known snapshot.
+2. **When there's no internet** (or the GitHub API can't be reached):
+   - *Reads* fall back to the cached snapshot instead of erroring out.
+   - *Writes* (add/edit/delete) are saved locally first and placed into an
+     **offline sync queue** (`ent_sync_queue` in localStorage) — nothing is lost.
+3. **When internet comes back** (`online` event, or an automatic check every ~25 seconds),
+   `js/sync.js` syncs all queued changes back to GitHub, one at a time,
+   using the latest file `sha` to avoid stale-write errors.
+4. **Connection status and pending change count** are shown in a pill on the navbar
+   (🟢 Online / 🟡 Pending changes / 🔴 Offline) on every page — click it to force a sync immediately.
+5. The **SuperAdmin Panel → 🔄 Sync Center** is the full control room: it shows which
+   databases have pending changes, how many, when the last sync happened, and has buttons
+   to force a sync or clear the queue.
 
-### ⚠️ Mahalagang paalala tungkol sa offline sync
-- Ito ay **last-write-wins**: kung dalawang device ang gumawa ng offline na pagbabago sa **parehong
-  database file** bago mag-sync, ang huling na-sync ang mananatili — puwedeng ma-overwrite ang isa.
-  Iwasan ang sabay-sabay na offline editing sa parehong system kung maiiwasan.
-- Kailangan pa ring naka-login/naka-access ang device online kahit minsan bago gumana nang maayos
-  ang offline mode (para may laman ang local cache).
+### ⚠️ Important notes about offline sync
+- This is **last-write-wins**: if two devices make offline changes to the **same
+  database file** before syncing, whichever syncs last wins — the other change can be overwritten.
+  Avoid simultaneous offline editing on the same system where possible.
+- The device still needs to log in/access the system online at least once before offline
+  mode works properly (so the local cache has data in it).
 
-## ⚠️ Mga Limitasyon
+## ⚠️ Limitations
 
-- **Rate limits**: GitHub API ay may 5,000 requests/hour limit per token.
-- **Token security**: Ang PAT token ay naka-store sa localStorage ng browser. Hindi ideal para sa high-security applications.
-- **No real-time sync**: Hindi automatic ang sync ng ibang tabs. I-refresh ang page para makita ang pinakabagong data.
+- **Rate limits**: The GitHub API has a 5,000 requests/hour limit per token.
+- **Token security**: The PAT token is stored in the browser's localStorage. Not ideal for high-security applications.
+- **No real-time sync**: Syncing across other tabs isn't automatic. Refresh the page to see the latest data.
 
-Para sa mas malaking operasyon, i-consider ang migration sa proper backend (Supabase, Firebase, etc.)
+For larger-scale operations, consider migrating to a proper backend (Supabase, Firebase, etc.)
 
 ## 📞 Support
 
-Para magdagdag ng bagong system o feature, ipadala ang request kasama ang detalye ng requirements.
+To add a new system or feature, send the request along with the requirement details.
