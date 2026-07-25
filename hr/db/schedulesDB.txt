@@ -4,3 +4,4 @@ SCH002|EMP002|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri|Regular weekday schedule|adm
 SCH003|EMP003|SH002|2025-06-01||Mon,Tue,Wed,Thu,Fri,Sat|Night shift June|admin
 SCH004|EMP004|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri||admin
 SCH005|EMP005|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri||admin
+SCH006|EMP002|SH001|2025-01-01||Mon,Tue,Wed,Thu,Fri,Sat|Regular weekday schedule|admin_att
