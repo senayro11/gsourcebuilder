@@ -469,3 +469,86 @@ const HRDB = (() => {
 
   return { read, write, insert, update, remove, forceCommit, nextId, clearCache };
 })();
+
+// ============================================================
+//  BREAK SCHEDULE — per-employee na configurable break windows
+//  (AM/Lunch/PM), ginagamit ng kiosk (timein.html) at ng Attendance/
+//  Schedule pages (attendance.html). Bawat break ay pwedeng i-on/off,
+//  at ang oras/tagal ay editable per employee sa schedulesDB.
+// ============================================================
+const BREAK_TYPES = [
+  { key: 'am_break',    label: 'AM Break',    icon: '☕', defaultStart: '10:00', defaultEnd: '10:15' },
+  { key: 'lunch_break', label: 'Lunch Break', icon: '🍽️', defaultStart: '12:00', defaultEnd: '13:00' },
+  { key: 'pm_break',    label: 'PM Break',    icon: '☕', defaultStart: '15:00', defaultEnd: '15:15' }
+];
+
+function timeToMin(t) {
+  if (!t) return null;
+  const [h, m] = t.split(':').map(Number);
+  if (Number.isNaN(h)) return null;
+  return h * 60 + (m || 0);
+}
+
+// Piliin ang schedule row na applicable sa employee sa ibinigay na petsa —
+// ang pinakabago sa mga schedule na naka-effective na at hindi pa
+// nag-e-expire. Null kung walang assigned schedule.
+function getActiveSchedule(schedules, employeeId, dateStr) {
+  const date = dateStr || new Date().toISOString().split('T')[0];
+  const candidates = (schedules || []).filter(s =>
+    s.employee_id === employeeId &&
+    s.effective_date && s.effective_date <= date &&
+    (!s.end_date || s.end_date >= date)
+  );
+  if (!candidates.length) return null;
+  return candidates.sort((a, b) => b.effective_date.localeCompare(a.effective_date))[0];
+}
+
+// Ilang minuto ang ibabawas sa work hours dahil sa breaks.
+// Priyoridad: (1) aktwal na break punch (out+in) mula sa attendance record;
+// (2) kung enabled ang break pero walang punch, ang naka-configure na
+// window (end-start) ang default deduction. Kung wala talagang schedule
+// o walang naka-enable na break dito, babalik sa lumang flat na
+// fallbackMinutes (hal. shift.break_minutes) para hindi masira ang
+// computation ng mga employee na hindi pa na-configure ang bagong feature.
+function computeBreakMinutes(schedule, att, fallbackMinutes) {
+  const anyEnabled = schedule && BREAK_TYPES.some(bt => schedule[`${bt.key}_enabled`] === 'true');
+  if (!anyEnabled) return parseFloat(fallbackMinutes || 0);
+  let total = 0;
+  BREAK_TYPES.forEach(bt => {
+    if (schedule[`${bt.key}_enabled`] !== 'true') return;
+    const outT = att && att[`${bt.key}_out`];
+    const inT  = att && att[`${bt.key}_in`];
+    const outM = timeToMin(outT), inM = timeToMin(inT);
+    if (outM !== null && inM !== null) {
+      total += Math.max(0, inM - outM);
+    } else {
+      const sM = timeToMin(schedule[`${bt.key}_start`]), eM = timeToMin(schedule[`${bt.key}_end`]);
+      if (sM !== null && eM !== null) total += Math.max(0, eM - sM);
+    }
+  });
+  return total;
+}
+
+// Status ng isang partikular na break para sa attendance record ngayong
+// araw: 'disabled' (hindi ginagamit ng schedule na ito), 'pending' (hindi
+// pa sinimulan), 'ongoing' (naka-out, hinihintay bumalik), 'done'.
+function breakStatus(schedule, att, breakKey) {
+  if (!schedule || schedule[`${breakKey}_enabled`] !== 'true') return 'disabled';
+  const outT = att && att[`${breakKey}_out`];
+  const inT  = att && att[`${breakKey}_in`];
+  if (outT && inT) return 'done';
+  if (outT) return 'ongoing';
+  return 'pending';
+}
+
+// Compact text summary ng mga break na na-punch sa isang attendance record,
+// hal. "☕10:05–10:20  🍽️12:00–13:00". Ginagamit ng kiosk (Today's Record)
+// at ng Attendance HR table para makita agad ang aktwal na break times.
+function breakSummaryText(att) {
+  if (!att) return '';
+  return BREAK_TYPES.map(bt => {
+    const o = att[`${bt.key}_out`], i = att[`${bt.key}_in`];
+    if (!o) return null;
+    return `${bt.icon}${o}${i ? ('–' + i) : '…'}`;
+  }).filter(Boolean).join('  ');
+}

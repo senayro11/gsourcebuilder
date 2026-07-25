@@ -1,4 +1,4 @@
-id|employee_id|date|time_in|time_out|break_minutes|work_hours|overtime_hours|status|notes
+id|employee_id|date|time_in|time_out|break_minutes|work_hours|overtime_hours|status|notes|am_break_out|am_break_in|lunch_break_out|lunch_break_in|pm_break_out|pm_break_in
 ATT001|EMP001|2025-06-02|08:02|17:05|60|8.05|0.05|present|
 ATT002|EMP002|2025-06-02|08:00|17:00|60|8.00|0.00|present|
 ATT003|EMP003|2025-06-02|07:55|19:30|60|10.58|2.58|present|

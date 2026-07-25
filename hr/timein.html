@@ -47,12 +47,19 @@
     .emp-result .emp-info h3 { font-size:15px; font-weight:700; color:var(--white); }
     .emp-result .emp-info p  { font-size:12px; color:var(--text2); }
     .status-row {
-      display:flex; gap:8px; margin-top:6px;
+      display:flex; flex-direction:column; gap:8px; margin-top:6px;
     }
     .btn-timein  { background:var(--success); color:white; flex:1; justify-content:center; padding:14px; font-size:15px; }
     .btn-timeout { background:var(--danger);  color:white; flex:1; justify-content:center; padding:14px; font-size:15px; }
     .btn-timein:hover  { background:#16a34a; }
     .btn-timeout:hover { background:#dc2626; }
+    .break-actions { display:flex; flex-direction:column; gap:6px; }
+    .break-row {
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+      padding:8px 10px; background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+    }
+    .break-label { font-size:13px; color:var(--white); }
+    .break-window { font-size:11px; color:var(--text3); font-family:var(--mono); }
     .success-card {
       display:none; text-align:center; padding:24px;
       background:rgba(34,197,94,.1); border:1px solid rgba(34,197,94,.3);
@@ -119,6 +126,7 @@
       <div class="att-today-row"><span>Time Out</span><span id="today-out" style="font-family:var(--mono)">—</span></div>
       <div class="att-today-row"><span>Hours Worked</span><span id="today-hrs">—</span></div>
       <div class="att-today-row"><span>Status</span><span id="today-status">—</span></div>
+      <div class="att-today-row" id="today-breaks-row" style="display:none"><span>Breaks</span><span id="today-breaks" style="font-family:var(--mono);font-size:11px"></span></div>
     </div>
 
     <!-- Success message -->
@@ -153,7 +161,7 @@ tick(); setInterval(tick, 1000);
 const savedToken = localStorage.getItem('ent_gh_token');
 if (savedToken) GITHUB_CONFIG.token = savedToken;
 
-let verifiedEmp = null, todayRecord = null;
+let verifiedEmp = null, todayRecord = null, activeSchedule = null;
 
 // ---- Verify Employee ----
 async function verifyEmployee() {
@@ -164,10 +172,11 @@ async function verifyEmployee() {
 
   Loading.show('Verifying...');
   try {
-    const [emps, accounts, atts] = await Promise.all([
+    const [emps, accounts, atts, schedules] = await Promise.all([
       HRDB.read('employeesDB'),
       HRDB.read('hraccountsDB'),
-      HRDB.read('attendanceDB')
+      HRDB.read('attendanceDB'),
+      HRDB.read('schedulesDB')
     ]);
 
     // Find employee by employee_id
@@ -180,6 +189,7 @@ async function verifyEmployee() {
     if (!acct) { Toast.show('Mali ang password','error'); Loading.hide(); return; }
 
     verifiedEmp = emp;
+    activeSchedule = getActiveSchedule(schedules, emp.id);
 
     // Show employee card
     document.getElementById('emp-av').textContent    = emp.name.charAt(0);
@@ -198,19 +208,46 @@ async function verifyEmployee() {
       document.getElementById('today-hrs').textContent    = todayRecord.work_hours ? parseFloat(todayRecord.work_hours).toFixed(2) + ' hrs' : '—';
       document.getElementById('today-status').textContent = todayRecord.status || '—';
     }
-
-    // Show action buttons
-    const btnRow = document.getElementById('emp-status-row');
-    if (!todayRecord || !todayRecord.time_in) {
-      btnRow.innerHTML = `<button class="btn btn-timein" onclick="doTimeIn()">🟢 Time In</button>`;
-    } else if (!todayRecord.time_out) {
-      btnRow.innerHTML = `<button class="btn btn-timeout" onclick="doTimeOut()">🔴 Time Out</button>`;
-    } else {
-      btnRow.innerHTML = `<span class="badge badge-success" style="margin-top:4px">✅ Kumpleto ang attendance ngayon</span>`;
-    }
+    renderBreakSummary(todayRecord);
+    renderActionButtons(activeSchedule, todayRecord);
 
   } catch(e) { Toast.show('Error: ' + e.message, 'error'); }
   Loading.hide();
+}
+
+// ---- Action buttons: Time In, per-break Start/Return, Time Out ----
+function renderActionButtons(schedule, rec) {
+  const btnRow = document.getElementById('emp-status-row');
+  if (!rec || !rec.time_in) {
+    btnRow.innerHTML = `<button class="btn btn-timein" onclick="doTimeIn()">🟢 Time In</button>`;
+    return;
+  }
+  if (rec.time_out) {
+    btnRow.innerHTML = `<span class="badge badge-success" style="margin-top:4px">✅ Kumpleto ang attendance ngayon</span>`;
+    return;
+  }
+  let html = '<div class="break-actions">';
+  BREAK_TYPES.forEach(bt => {
+    const status = breakStatus(schedule, rec, bt.key);
+    if (status === 'disabled') return;
+    const windowLabel = schedule ? `${schedule[bt.key + '_start'] || ''}–${schedule[bt.key + '_end'] || ''}` : '';
+    let action;
+    if (status === 'pending') action = `<button class="btn btn-ghost btn-sm" onclick="doBreakOut('${bt.key}')">${bt.icon} Simulan</button>`;
+    else if (status === 'ongoing') action = `<button class="btn btn-warning btn-sm" onclick="doBreakIn('${bt.key}')">🔙 Bumalik</button>`;
+    else action = `<span class="badge badge-success">✅ Tapos na</span>`;
+    html += `<div class="break-row"><span class="break-label">${bt.icon} ${bt.label}<br><span class="break-window">${windowLabel}</span></span>${action}</div>`;
+  });
+  html += '</div>';
+  html += `<button class="btn btn-timeout" onclick="doTimeOut()">🔴 Time Out</button>`;
+  btnRow.innerHTML = html;
+}
+
+function renderBreakSummary(rec) {
+  const row = document.getElementById('today-breaks-row');
+  const text = breakSummaryText(rec);
+  if (!text) { row.style.display = 'none'; return; }
+  row.style.display = '';
+  document.getElementById('today-breaks').textContent = text;
 }
 
 async function doTimeIn() {
@@ -220,10 +257,8 @@ async function doTimeIn() {
   const timeIn = now.toTimeString().substring(0, 5);
 
   // Get shift to check if late
-  const schedules = await HRDB.read('schedulesDB');
-  const shifts    = await HRDB.read('shiftsDB');
-  const sched = schedules.find(s => s.employee_id === verifiedEmp.id);
-  const shift = sched ? shifts.find(sh => sh.id === sched.shift_id) : null;
+  const shifts = await HRDB.read('shiftsDB');
+  const shift  = activeSchedule ? shifts.find(sh => sh.id === activeSchedule.shift_id) : null;
   let status = 'present';
   if (shift && shift.start_time) {
     const [sh, sm] = shift.start_time.split(':').map(Number);
@@ -240,10 +275,38 @@ async function doTimeIn() {
       id, employee_id: verifiedEmp.id, date: today,
       time_in: timeIn, time_out: '', break_minutes: shift?.break_minutes || '60',
       work_hours: '0', overtime_hours: '0', undertime: '0',
-      status, notes: status === 'late' ? `Late by ${lateMin(timeIn, shift?.start_time)} min` : '', shift_id: sched?.shift_id || ''
+      status, notes: status === 'late' ? `Late by ${lateMin(timeIn, shift?.start_time)} min` : ''
     });
     showSuccess('🟢', 'Time In Recorded!', `${verifiedEmp.name} — ${timeIn}${status === 'late' ? ' (Late)' : ''}`);
     Toast.show(`Time In: ${timeIn} ✅`, 'success');
+  } catch(e) { Toast.show('Error: ' + e.message, 'error'); }
+  Loading.hide();
+}
+
+// ---- Break out / Break in (AM break, lunch, PM break) ----
+async function doBreakOut(key) {
+  if (!verifiedEmp || !todayRecord) return;
+  const now = new Date().toTimeString().substring(0, 5);
+  const label = (BREAK_TYPES.find(b => b.key === key) || {}).label || key;
+  Loading.show(`Sinisimulan ang ${label}...`);
+  try {
+    await HRDB.update('attendanceDB', r => r.id === todayRecord.id, { [`${key}_out`]: now });
+    todayRecord = { ...todayRecord, [`${key}_out`]: now };
+    showSuccess('☕', `${label} Started!`, `${verifiedEmp.name} — ${now}`);
+    Toast.show(`${label} started: ${now} ☕`, 'success');
+  } catch(e) { Toast.show('Error: ' + e.message, 'error'); }
+  Loading.hide();
+}
+async function doBreakIn(key) {
+  if (!verifiedEmp || !todayRecord) return;
+  const now = new Date().toTimeString().substring(0, 5);
+  const label = (BREAK_TYPES.find(b => b.key === key) || {}).label || key;
+  Loading.show(`Nire-record ang pagbalik...`);
+  try {
+    await HRDB.update('attendanceDB', r => r.id === todayRecord.id, { [`${key}_in`]: now });
+    todayRecord = { ...todayRecord, [`${key}_in`]: now };
+    showSuccess('🔙', `Bumalik mula sa ${label}!`, `${verifiedEmp.name} — ${now}`);
+    Toast.show(`Bumalik mula sa ${label}: ${now} 🔙`, 'success');
   } catch(e) { Toast.show('Error: ' + e.message, 'error'); }
   Loading.hide();
 }
@@ -259,14 +322,13 @@ async function doTimeOut() {
   const inDate  = new Date(`${date}T${timeIn}:00`);
   const outDate = new Date(`${date}T${timeOut}:00`);
   let workHrs   = (outDate - inDate) / 3600000;
-  const brk     = parseFloat(todayRecord.break_minutes || 60) / 60;
 
-  // Get shift
-  const schedules = await HRDB.read('schedulesDB');
-  const shifts    = await HRDB.read('shiftsDB');
-  const sched  = schedules.find(s => s.employee_id === verifiedEmp.id);
-  const shift  = sched ? shifts.find(sh => sh.id === sched.shift_id) : null;
-  const reqHrs = shift ? (parseFloat(shift.end_time.replace(':','.'))-parseFloat(shift.start_time.replace(':','.'))) : 8;
+  // Get shift + compute actual break deduction (punches kung meron,
+  // configured window kung wala, o legacy flat minutes kung walang
+  // schedule/break config talaga)
+  const shifts = await HRDB.read('shiftsDB');
+  const shift  = activeSchedule ? shifts.find(sh => sh.id === activeSchedule.shift_id) : null;
+  const brk    = computeBreakMinutes(activeSchedule, todayRecord, shift?.break_minutes || 60) / 60;
 
   workHrs = Math.max(0, workHrs - brk);
   const otHrs  = Math.max(0, workHrs - (shift ? parseInt(shift.ot_after||480)/60 : 8));
@@ -303,7 +365,7 @@ function resetForm() {
   document.getElementById('att-today').classList.remove('show');
   document.getElementById('success-card').classList.remove('show');
   document.getElementById('emp-status-row').innerHTML = '';
-  verifiedEmp = null; todayRecord = null;
+  verifiedEmp = null; todayRecord = null; activeSchedule = null;
   HRDB.clearCache('attendanceDB');
 }
 
