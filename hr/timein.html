@@ -231,11 +231,12 @@ function renderActionButtons(schedule, rec) {
     const status = breakStatus(schedule, rec, bt.key);
     if (status === 'disabled') return;
     const windowLabel = schedule ? `${schedule[bt.key + '_start'] || ''}–${schedule[bt.key + '_end'] || ''}` : '';
+    const paidLabel = isBreakPaid(schedule, bt.key) ? ' · Paid' : ' · Unpaid';
     let action;
     if (status === 'pending') action = `<button class="btn btn-ghost btn-sm" onclick="doBreakOut('${bt.key}')">${bt.icon} Simulan</button>`;
     else if (status === 'ongoing') action = `<button class="btn btn-warning btn-sm" onclick="doBreakIn('${bt.key}')">🔙 Bumalik</button>`;
     else action = `<span class="badge badge-success">✅ Tapos na</span>`;
-    html += `<div class="break-row"><span class="break-label">${bt.icon} ${bt.label}<br><span class="break-window">${windowLabel}</span></span>${action}</div>`;
+    html += `<div class="break-row"><span class="break-label">${bt.icon} ${bt.label}<br><span class="break-window">${windowLabel}${paidLabel}</span></span>${action}</div>`;
   });
   html += '</div>';
   html += `<button class="btn btn-timeout" onclick="doTimeOut()">🔴 Time Out</button>`;
