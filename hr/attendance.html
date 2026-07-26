@@ -714,14 +714,14 @@
         <button class="btn btn-primary" onclick="openAddDept()">+ Add Department</button>
       </div>
       <div class="stats-grid" id="dept-stats" style="grid-template-columns:repeat(3,1fr)"></div>
-      <div class="card">
-        <div class="card-header" style="flex-wrap:nowrap">
-          <span class="card-title" style="flex-shrink:0">Department List</span>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;flex:1;min-width:0;justify-content:flex-end">
-            <button class="btn btn-ghost btn-icon" style="height:38px;box-sizing:border-box;flex-shrink:0" onclick="loadDepartments()">🔄</button>
-            <div class="search-bar dept-search-bar" style="width:240px;height:38px;box-sizing:border-box"><span class="search-icon">🔍</span><input type="text" id="dept-search" placeholder="Search..." oninput="filterDepts()"></div>
-          </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;margin-bottom:12px">
+        <span class="card-title" style="flex-shrink:0">Department List</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;flex:1;min-width:0;justify-content:flex-end">
+          <button class="btn btn-ghost btn-icon" style="height:38px;box-sizing:border-box;flex-shrink:0" onclick="loadDepartments()">🔄</button>
+          <div class="search-bar dept-search-bar" style="width:240px;height:38px;box-sizing:border-box"><span class="search-icon">🔍</span><input type="text" id="dept-search" placeholder="Search..." oninput="filterDepts()"></div>
         </div>
+      </div>
+      <div class="card">
         <div class="table-wrap">
           <table>
             <thead><tr><th>No</th><th>Department Name</th><th>Head</th><th>Phone</th><th>Email</th><th>Employees</th><th>Status</th><th>Actions</th></tr></thead>
