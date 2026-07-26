@@ -541,6 +541,10 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
   .main-content { padding: 16px; }
   .form-row, .form-row-3, .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
+  /* These stat-grids force a fixed column count inline (for desktop
+     layout); let them fall back to the same responsive collapse the
+     default .stats-grid already gets, instead of staying squeezed. */
+  #leave-stats, #hrlv-stats, #ma-stats, #payroll-stats, #user-stats { grid-template-columns: 1fr 1fr !important; }
 }
 /* Separate, lower breakpoint for .only-desktop/.only-mobile: Chrome's
    "Request Desktop Site" mode reports a viewport around 980px, which is
@@ -566,6 +570,7 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 }
 @media (max-width: 640px) {
   .stats-grid { grid-template-columns: 1fr; }
+  #leave-stats, #hrlv-stats, #ma-stats, #payroll-stats, #user-stats { grid-template-columns: 1fr !important; }
   .topbar { padding: 0 12px; }
   .topbar-date { display: none; }
 }

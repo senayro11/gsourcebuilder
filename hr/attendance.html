@@ -301,7 +301,7 @@
         <h1>📅 My Leave Requests</h1>
         <p class="subtitle">View and manage your leave applications</p>
       </div>
-      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stats-grid" id="leave-stats" style="grid-template-columns:repeat(4,1fr)">
         <div class="stat-card"><div class="stat-icon blue">📄</div><div><div class="stat-value" id="lv-total">—</div><div class="stat-label">Total Leave Balance</div></div></div>
         <div class="stat-card"><div class="stat-icon green">📆</div><div><div class="stat-value" id="lv-annual">—</div><div class="stat-label">Annual Leave</div></div></div>
         <div class="stat-card"><div class="stat-icon red">🏥</div><div><div class="stat-value" id="lv-medical">—</div><div class="stat-label">Medical Leave</div></div></div>
@@ -396,7 +396,7 @@
         <h1>📋 Leave Manage (HR)</h1>
         <p class="subtitle">Manage all employee leave requests</p>
       </div>
-      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stats-grid" id="hrlv-stats" style="grid-template-columns:repeat(4,1fr)">
         <div class="stat-card"><div class="stat-icon blue">📊</div><div><div class="stat-value" id="hr-lv-today">—</div><div class="stat-label">Today / Presents Leave</div></div></div>
         <div class="stat-card"><div class="stat-icon yellow">📅</div><div><div class="stat-value" id="hr-lv-today2">—</div><div class="stat-label">Today Leaves</div></div></div>
         <div class="stat-card"><div class="stat-icon red">⚠️</div><div><div class="stat-value" id="hr-lv-unplanned">—</div><div class="stat-label">Unplanned Leaves</div></div></div>
@@ -578,7 +578,7 @@
           <button class="btn btn-ghost btn-sm" onclick="loadMainAttendance()">🔄 Refresh</button>
         </div>
       </div>
-      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+      <div class="stats-grid" id="ma-stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
         <div class="stat-card"><div class="stat-icon blue">👥</div><div><div class="stat-value" id="ma-total">—</div><div class="stat-label">Total Employees</div></div></div>
         <div class="stat-card"><div class="stat-icon red">❌</div><div><div class="stat-value" id="ma-absent">—</div><div class="stat-label">Absent Today</div></div></div>
         <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-value" id="ma-present">—</div><div class="stat-label">Present Today</div></div></div>
@@ -617,7 +617,7 @@
         <h1>💵 Payroll Report</h1>
         <p class="subtitle">View and manage all payroll records</p>
       </div>
-      <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stats-grid" id="payroll-stats" style="grid-template-columns:repeat(4,1fr)">
         <div class="stat-card"><div class="stat-icon green">💰</div><div><div class="stat-value" id="pr-gross" style="font-size:18px">—</div><div class="stat-label">Total Gross Pay</div></div></div>
         <div class="stat-card"><div class="stat-icon red">📉</div><div><div class="stat-value" id="pr-deduct" style="font-size:18px">—</div><div class="stat-label">Total Deductions</div></div></div>
         <div class="stat-card"><div class="stat-icon blue">💸</div><div><div class="stat-value" id="pr-net" style="font-size:18px">—</div><div class="stat-label">Total Net Pay</div></div></div>
