@@ -2080,7 +2080,7 @@ async function openAddSchedule() {
   const empSel=document.getElementById('sch-emp');
   empSel.innerHTML=allEmployees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
   const shiftSel=document.getElementById('sch-shift');
-  shiftSel.innerHTML=allShifts.filter(s=>s.status==='active').map(s=>`<option value="${s.id}">${s.name} (${s.type})</option>`).join('');
+  shiftSel.innerHTML=allShifts.filter(s=>s.status==='active').map(s=>{const t=(s.start_time||s.end_time)?`${fmtTime12(s.start_time)||'Flexible'}–${fmtTime12(s.end_time)||'Flexible'}`:'Flexible';return `<option value="${s.id}">${s.name} (${s.type}) — ${t}</option>`;}).join('');
   document.getElementById('sch-date').value=document.getElementById('sched-date-filter').value||todayStr();
   document.getElementById('sch-assignment').value='';
   document.getElementById('sch-notes').value='';
