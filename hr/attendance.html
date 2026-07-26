@@ -766,7 +766,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Employee</th><th>Date</th><th>Time Sched</th><th>Shift</th><th>Work Assign</th><th>Notes</th><th>Action</th></tr></thead>
+            <thead><tr><th>Employee</th><th>Date</th><th>Start</th><th>End</th><th>Shift</th><th>Work Assign</th><th>Notes</th><th>Action</th></tr></thead>
             <tbody id="schedules-tbody"></tbody>
           </table>
         </div>
@@ -2026,10 +2026,6 @@ function fmtTime12(t) {
   const h12 = h % 12 || 12;
   return `${h12}:${String(m).padStart(2,'0')} ${period}`;
 }
-function fmtTimeRange(shift) {
-  if (!shift || (!shift.start_time && !shift.end_time)) return 'Flexible';
-  return `${fmtTime12(shift.start_time) || 'Flexible'}–${fmtTime12(shift.end_time) || 'Flexible'}`;
-}
 
 async function loadSchedules() {
   Loading.show();
@@ -2061,7 +2057,8 @@ function renderSchedulesTable(rows) {
     return `<tr>
       <td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||s.employee_id}</div><div class="emp-pos">${emp?.position||''}</div></div></div></td>
       <td class="mono" style="font-size:11px">${s.effective_date}</td>
-      <td style="font-size:12px">${fmtTimeRange(shift)}</td>
+      <td class="mono" style="font-size:12px">${shift?fmtTime12(shift.start_time)||'Flexible':'—'}</td>
+      <td class="mono" style="font-size:12px">${shift?fmtTime12(shift.end_time)||'Flexible':'—'}</td>
       <td><strong>${shift?.name||s.shift_id}</strong></td>
       <td style="color:var(--text2);font-size:12px">${s.work_assignment||'—'}</td>
       <td style="color:var(--text3);font-size:12px">${s.notes||'—'}</td>
@@ -2070,7 +2067,7 @@ function renderSchedulesTable(rows) {
         <button class="btn btn-danger btn-xs" onclick="deleteSched('${s.id}')">🗑</button>
       </div></td>
     </tr>`;
-  }).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:32px">No schedules for this date</td></tr>';
+  }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">No schedules for this date</td></tr>';
 }
 async function openAddSchedule() {
   editSchedId=null;
