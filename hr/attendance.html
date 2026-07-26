@@ -275,14 +275,17 @@
         </div>
         <button class="btn btn-primary" onclick="openAddHoliday()">+ Add Holiday</button>
       </div>
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Holidays 2025</span>
-          <div class="search-bar" style="width:240px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;margin-bottom:12px">
+        <span class="card-title" style="flex-shrink:0">Holidays 2025</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;flex:1;min-width:0;justify-content:flex-end">
+          <button class="btn btn-ghost btn-icon" style="height:38px;box-sizing:border-box;flex-shrink:0" onclick="loadHolidays()">🔄</button>
+          <div class="search-bar hol-search-bar" style="width:240px;height:38px;box-sizing:border-box">
             <span class="search-icon">🔍</span>
             <input type="text" id="holiday-search" placeholder="Search..." oninput="filterHolidays()">
           </div>
         </div>
+      </div>
+      <div class="card">
         <div class="table-wrap">
           <table>
             <thead><tr><th>No</th><th>Holiday Name</th><th>Date</th><th>Day</th><th>Type</th><th>Actions</th></tr></thead>

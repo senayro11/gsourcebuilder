@@ -555,6 +555,7 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
   .sched-search-bar { flex: 1 1 140px; width: auto; min-width: 0; }
   .emp-search-bar { flex: 1 1 100px; width: auto; min-width: 0; }
   .dept-search-bar { flex: 1 1 80px; width: auto !important; min-width: 0; }
+  .hol-search-bar { flex: 1 1 80px; width: auto !important; min-width: 0; }
   /* Compact department stat cards on mobile only: [icon][number] on
      top, label below, card height ~= 2x the Add Department button. */
   #dept-stats .stat-card { grid-template-columns: auto 1fr; column-gap: 8px; row-gap: 3px; padding: 9px 14px; }
