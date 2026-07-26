@@ -1868,9 +1868,9 @@ function renderDeptStats() {
   const inactive = allDepts.filter(d=>d.status!=='active').length;
   const total    = allDepts.reduce((s,d)=>s+parseInt(d.employee_count||0),0);
   document.getElementById('dept-stats').innerHTML = `
-    <div class="stat-card"><div class="dept-stat-top"><div class="stat-icon blue">🏢</div><div class="stat-value">${active}</div></div><div class="stat-label">Active Departments</div></div>
-    <div class="stat-card"><div class="dept-stat-top"><div class="stat-icon gray">📁</div><div class="stat-value">${inactive}</div></div><div class="stat-label">Inactive</div></div>
-    <div class="stat-card"><div class="dept-stat-top"><div class="stat-icon green">👥</div><div class="stat-value">${total}</div></div><div class="stat-label">Total Employees</div></div>`;
+    <div class="stat-card"><div class="stat-icon blue">🏢</div><div class="stat-value">${active}</div><div class="stat-label">Active Departments</div></div>
+    <div class="stat-card"><div class="stat-icon gray">📁</div><div class="stat-value">${inactive}</div><div class="stat-label">Inactive</div></div>
+    <div class="stat-card"><div class="stat-icon green">👥</div><div class="stat-value">${total}</div><div class="stat-label">Total Employees</div></div>`;
 }
 
 function filterDepts() {
