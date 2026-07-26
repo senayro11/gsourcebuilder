@@ -534,6 +534,7 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
    mode reliably counts as desktop. */
 @media (max-width: 900px) {
   .only-desktop { display: none !important; }
+  .sched-search-bar { flex: 1 1 140px; width: auto; min-width: 0; }
 }
 @media (min-width: 901px) {
   .only-mobile { display: none !important; }
