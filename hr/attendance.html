@@ -240,12 +240,14 @@
         </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-        <button class="btn btn-ghost btn-sm" onclick="loadEmployees()">🔄</button>
-        <div class="search-bar emp-search-bar">
-          <span class="search-icon">🔍</span>
-          <input type="text" id="emp-search" placeholder="Search employees..." oninput="filterEmployees()">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;flex:1;min-width:0">
+          <button class="btn btn-ghost btn-icon" onclick="loadEmployees()">🔄</button>
+          <div class="search-bar emp-search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="emp-search" placeholder="Search employees..." oninput="filterEmployees()">
+          </div>
+          <button class="btn btn-primary" style="flex-shrink:0" onclick="openAddEmployee()">+ Add Employee</button>
         </div>
-        <button class="btn btn-primary" onclick="openAddEmployee()">+ Add Employee</button>
         <select id="emp-dept-filter" style="padding:7px 10px" onchange="filterEmployees()">
           <option value="">All Departments</option>
         </select>
