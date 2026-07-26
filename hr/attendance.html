@@ -757,6 +757,7 @@
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
         <button class="btn btn-ghost btn-sm" onclick="loadSchedules()">🔄</button>
         <input type="date" id="sched-date-filter" style="padding:7px 10px;width:160px" onchange="filterSchedulesByDate()">
+        <button class="btn btn-ghost btn-sm" onclick="goToTodaySchedule()">Today</button>
         <button class="btn btn-primary only-mobile" onclick="openAddSchedule()">+ Assign Schedule</button>
         <div class="search-bar sched-search-bar">
           <span class="search-icon">🔍</span>
@@ -2038,6 +2039,10 @@ async function loadSchedules() {
     filterSchedulesByDate();
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
+}
+function goToTodaySchedule() {
+  document.getElementById('sched-date-filter').value = todayStr();
+  filterSchedulesByDate();
 }
 function filterSchedulesByDate() {
   const date = document.getElementById('sched-date-filter').value || todayStr();
