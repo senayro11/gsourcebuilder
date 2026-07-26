@@ -238,17 +238,17 @@
           <h1>👥 Employee List</h1>
           <p class="subtitle">Manage all employees in the organization</p>
         </div>
-        <button class="btn btn-primary" onclick="openAddEmployee()">+ Add Employee</button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-        <div class="search-bar" style="width:280px">
+        <button class="btn btn-ghost btn-sm" onclick="loadEmployees()">🔄</button>
+        <div class="search-bar emp-search-bar">
           <span class="search-icon">🔍</span>
           <input type="text" id="emp-search" placeholder="Search employees..." oninput="filterEmployees()">
         </div>
+        <button class="btn btn-primary" onclick="openAddEmployee()">+ Add Employee</button>
         <select id="emp-dept-filter" style="padding:7px 10px" onchange="filterEmployees()">
           <option value="">All Departments</option>
         </select>
-        <button class="btn btn-ghost btn-sm" onclick="loadEmployees()">🔄</button>
       </div>
       <div class="card">
         <div class="table-wrap">
