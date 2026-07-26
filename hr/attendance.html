@@ -240,19 +240,17 @@
         </div>
         <button class="btn btn-primary" onclick="openAddEmployee()">+ Add Employee</button>
       </div>
-      <div class="card">
-        <div class="card-header">
-          <div class="search-bar" style="width:280px">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="emp-search" placeholder="Search employees..." oninput="filterEmployees()">
-          </div>
-          <div style="display:flex;gap:8px">
-            <select id="emp-dept-filter" style="padding:7px 10px" onchange="filterEmployees()">
-              <option value="">All Departments</option>
-            </select>
-            <button class="btn btn-ghost btn-sm" onclick="loadEmployees()">🔄</button>
-          </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <div class="search-bar" style="width:280px">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="emp-search" placeholder="Search employees..." oninput="filterEmployees()">
         </div>
+        <select id="emp-dept-filter" style="padding:7px 10px" onchange="filterEmployees()">
+          <option value="">All Departments</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="loadEmployees()">🔄</button>
+      </div>
+      <div class="card">
         <div class="table-wrap">
           <table>
             <thead><tr><th>Employee ID</th><th>Name</th><th>Position</th><th>Department</th><th>Employment Type</th><th>Daily Rate</th><th>Status</th><th>Actions</th></tr></thead>
