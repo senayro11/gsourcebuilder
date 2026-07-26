@@ -241,12 +241,12 @@
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;flex:1;min-width:0">
-          <button class="btn btn-ghost btn-icon" onclick="loadEmployees()">🔄</button>
-          <div class="search-bar emp-search-bar">
+          <button class="btn btn-ghost btn-icon" style="height:38px;box-sizing:border-box" onclick="loadEmployees()">🔄</button>
+          <div class="search-bar emp-search-bar" style="height:38px;box-sizing:border-box">
             <span class="search-icon">🔍</span>
             <input type="text" id="emp-search" placeholder="Search employees..." oninput="filterEmployees()">
           </div>
-          <button class="btn btn-primary" style="flex-shrink:0" onclick="openAddEmployee()">+ Add Employee</button>
+          <button class="btn btn-primary" style="flex-shrink:0;height:38px;box-sizing:border-box" onclick="openAddEmployee()">+ Add Employee</button>
         </div>
         <select id="emp-dept-filter" style="padding:7px 10px" onchange="filterEmployees()">
           <option value="">All Departments</option>
