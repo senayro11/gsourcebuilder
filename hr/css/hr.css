@@ -542,6 +542,7 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
   .emp-search-bar { width: 280px; }
   .sched-search-bar { width: 240px; margin-left: auto; }
   .emp-dept-filter { width: 180px; order: -1; }
+  .emp-toolbar-actions { flex: 0 1 auto !important; min-width: auto !important; margin-left: auto; }
 }
 @media (max-width: 640px) {
   .stats-grid { grid-template-columns: 1fr; }
