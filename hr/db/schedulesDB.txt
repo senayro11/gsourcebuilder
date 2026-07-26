@@ -11,3 +11,4 @@ SCH018|EMP001|SH001|2026-07-24|2026-07-24|||admin_att|true|10:00|10:15|true|12:0
 SCH020|EMP001|SH002|2026-07-24|2026-07-24||Night shift June|admin_att|true|10:00|10:15|true|12:00|13:00|true|15:00|15:15|true|false|true|Diamond
 SCH021|EMP002|SH001|2026-07-24|2026-07-24|||admin_att|true|10:00|10:15|true|12:00|13:00|true|15:00|15:15|true|false|true|
 SCH022|EMP001|SH001|2026-07-26|2026-07-26|||admin_att|true|10:00|10:15|true|12:00|13:00|true|15:00|15:15|true|false|true|
+SCH023|EMP001|SH002|2026-07-25|2026-07-25||Night shift June jsjs|admin_att|true|10:00|10:15|true|12:00|13:00|true|15:00|15:15|true|false|true|Diamond
