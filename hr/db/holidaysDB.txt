@@ -1,5 +1,5 @@
 id|name|date|day|type|description
-HOL001|New Year's Day|2026-01-01|Thursday|Regular|National Holiday
+HOL001|New Year's Day|2025-01-01|Wednesday|Regular|National Holiday
 HOL002|EDSA Revolution|2025-02-25|Tuesday|Special|Anniversary of EDSA
 HOL003|Araw ng Kagitingan|2025-04-09|Wednesday|Regular|Day of Valor
 HOL004|Labor Day|2025-05-01|Thursday|Regular|International Labor Day
