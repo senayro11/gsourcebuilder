@@ -759,12 +759,14 @@
     <div id="page-schedules" class="page-section" style="display:none">
       <div class="page-header-row">
         <div class="page-header"><h1>📆 Employee Schedule</h1><p class="subtitle">Daily work assignments per employee</p></div>
-        <button class="btn btn-primary only-desktop" onclick="openAddSchedule()">+ Assign Schedule</button>
+        <button class="btn btn-primary only-desktop no-print" onclick="openAddSchedule()">+ Assign Schedule</button>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+      <div class="no-print" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
         <button class="btn btn-ghost btn-sm" onclick="loadSchedules()">🔄</button>
         <input type="date" id="sched-date-filter" style="padding:7px 10px;width:160px" onchange="filterSchedulesByDate()">
         <button class="btn btn-success" style="padding:7px 14px" onclick="goToTodaySchedule()">Today</button>
+        <button class="btn btn-ghost only-desktop" style="height:38px;box-sizing:border-box" onclick="printSchedule()">🖨 Print Schedule</button>
+        <button class="btn btn-ghost only-desktop" style="height:38px;box-sizing:border-box" onclick="downloadScheduleDoc()">⬇ Download Schedule</button>
         <div class="search-bar sched-search-bar">
           <span class="search-icon">🔍</span>
           <input type="text" id="sched-search" placeholder="Search employee..." oninput="filterSchedulesByDate()">
@@ -774,7 +776,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Employee</th><th>Date</th><th>Start</th><th>End</th><th>Shift</th><th>Work Assign</th><th>Notes</th><th>Action</th></tr></thead>
+            <thead><tr><th>Employee</th><th>Date</th><th>Start</th><th>End</th><th>Shift</th><th>Work Assign</th><th>Notes</th><th class="no-print">Action</th></tr></thead>
             <tbody id="schedules-tbody"></tbody>
           </table>
         </div>
@@ -2051,16 +2053,48 @@ function goToTodaySchedule() {
   document.getElementById('sched-date-filter').value = todayStr();
   filterSchedulesByDate();
 }
-function filterSchedulesByDate() {
+function getFilteredSchedules() {
   const date = document.getElementById('sched-date-filter').value || todayStr();
   const q = (document.getElementById('sched-search')?.value || '').toLowerCase();
-  const rows = allSchedules.filter(s => {
+  return allSchedules.filter(s => {
     if (!(s.effective_date <= date && (!s.end_date || s.end_date >= date))) return false;
     if (!q) return true;
     const emp = allEmployees.find(e => e.id === s.employee_id);
     return (emp?.name || '').toLowerCase().includes(q);
   });
-  renderSchedulesTable(rows);
+}
+function filterSchedulesByDate() {
+  renderSchedulesTable(getFilteredSchedules());
+}
+function printSchedule() {
+  window.print();
+}
+function downloadScheduleDoc() {
+  const date = document.getElementById('sched-date-filter').value || todayStr();
+  const rows = getFilteredSchedules();
+  const tableRows = rows.map(s => {
+    const emp = allEmployees.find(e => e.id === s.employee_id);
+    const shift = allShifts.find(sh => sh.id === s.shift_id);
+    const start = shift ? (fmtTime12(shift.start_time) || 'Flexible') : '—';
+    const end = shift ? (fmtTime12(shift.end_time) || 'Flexible') : '—';
+    return `<tr><td>${emp?.name || s.employee_id}</td><td>${s.effective_date}</td><td>${start}</td><td>${end}</td><td>${shift?.name || s.shift_id}</td><td>${s.work_assignment || ''}</td><td>${s.notes || ''}</td></tr>`;
+  }).join('');
+  const html = `<html><head><meta charset="utf-8"><title>Employee Schedule ${date}</title></head><body>
+    <h2>Employee Schedule — ${date}</h2>
+    <table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px">
+      <thead><tr><th>Employee</th><th>Date</th><th>Start</th><th>End</th><th>Shift</th><th>Work Assignment</th><th>Notes</th></tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+  </body></html>`;
+  const blob = new Blob(['﻿', html], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Employee_Schedule_${date}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 function renderSchedulesTable(rows) {
   document.getElementById('schedules-tbody').innerHTML = rows.map(s=>{
@@ -2074,7 +2108,7 @@ function renderSchedulesTable(rows) {
       <td><strong>${shift?.name||s.shift_id}</strong></td>
       <td style="color:var(--text2);font-size:12px">${s.work_assignment||'—'}</td>
       <td style="color:var(--text3);font-size:12px">${s.notes||'—'}</td>
-      <td><div style="display:flex;gap:4px">
+      <td class="no-print"><div style="display:flex;gap:4px">
         <button class="btn btn-ghost btn-xs" onclick="editSched('${s.id}')">✏️</button>
         <button class="btn btn-danger btn-xs" onclick="deleteSched('${s.id}')">🗑</button>
       </div></td>
