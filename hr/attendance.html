@@ -2085,10 +2085,10 @@ async function openAddSchedule() {
   editSchedId=null;
   await Promise.all([HRDB.read('employeesDB'),HRDB.read('shiftsDB')]);
   const empSel=document.getElementById('sch-emp');
-  empSel.innerHTML=allEmployees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+  empSel.innerHTML='<option value="">Select Employee</option>'+allEmployees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
   const shiftSel=document.getElementById('sch-shift');
-  shiftSel.innerHTML=allShifts.filter(s=>s.status==='active').map(s=>{const t=(s.start_time||s.end_time)?`${fmtTime12(s.start_time)||'Flexible'}–${fmtTime12(s.end_time)||'Flexible'}`:'Flexible';return `<option value="${s.id}">${s.name} (${s.type}) — ${t}</option>`;}).join('');
-  document.getElementById('sch-date').value=document.getElementById('sched-date-filter').value||todayStr();
+  shiftSel.innerHTML='<option value="">Select Shift</option>'+allShifts.filter(s=>s.status==='active').map(s=>{const t=(s.start_time||s.end_time)?`${fmtTime12(s.start_time)||'Flexible'}–${fmtTime12(s.end_time)||'Flexible'}`:'Flexible';return `<option value="${s.id}">${s.name} (${s.type}) — ${t}</option>`;}).join('');
+  document.getElementById('sch-date').value='';
   document.getElementById('sch-assignment').value='';
   document.getElementById('sch-notes').value='';
   document.getElementById('sched-modal-title').textContent='+ Assign Schedule';
@@ -2101,6 +2101,7 @@ function updateShiftPreview() {
   const shift=allShifts.find(s=>s.id===id);
   const preview=document.getElementById('shift-preview');
   if(shift&&preview){preview.style.display='';preview.innerHTML=`<strong>${shift.name}</strong> — ${shift.start_time||'Flexible'} to ${shift.end_time||'Flexible'} | Break: ${shift.break_minutes}min | Grace: ${shift.grace_period}min | Type: <strong>${shift.type}</strong>`;}
+  else if(preview){preview.style.display='none';}
 }
 
 // Break Schedule rows — editable per employee. New schedule: ON by
