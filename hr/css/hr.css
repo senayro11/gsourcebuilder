@@ -151,6 +151,7 @@ body {
   font-size: 22px; font-weight: 800; color: white;
   flex-shrink: 0;
 }
+.sidebar-logo .logo-icon.has-logo { background: transparent; }
 .sidebar-logo .logo-text { font-size: 16px; font-weight: 700; color: var(--white); }
 .sidebar-logo .logo-sub  { font-size: 10px; color: var(--text3); letter-spacing: .5px; }
 

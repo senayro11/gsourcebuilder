@@ -1321,7 +1321,7 @@ async function loadSidebarLogo() {
     const row = rows.find(r => r.key === 'logo');
     if (row && row.value) {
       const el = document.getElementById('hr-logo-icon');
-      if (el) el.innerHTML = `<img src="${row.value}" style="width:100%;height:100%;object-fit:contain;border-radius:inherit">`;
+      if (el) { el.innerHTML = `<img src="${row.value}" style="width:100%;height:100%;object-fit:contain;border-radius:inherit">`; el.classList.add('has-logo'); }
     }
   } catch (e) { /* keep default "HR" text if the config can't be read */ }
 }
@@ -1355,7 +1355,9 @@ function handleLogoUpload(e) {
       Loading.show('Uploading logo...');
       try {
         await saveHrLogo(dataUri);
-        document.getElementById('hr-logo-icon').innerHTML = `<img src="${dataUri}" style="width:100%;height:100%;object-fit:contain;border-radius:inherit">`;
+        const logoEl = document.getElementById('hr-logo-icon');
+        logoEl.innerHTML = `<img src="${dataUri}" style="width:100%;height:100%;object-fit:contain;border-radius:inherit">`;
+        logoEl.classList.add('has-logo');
         Toast.show('Logo updated ✅', 'success');
       } catch (err) {
         Toast.show('Error: ' + err.message, 'error');
