@@ -1,1 +1,2 @@
 id|employee_id|year|leave_type|unused_days|daily_rate|amount|status|processed_by|released_date
+LP001|EMP001|2025|Vacation Leave|12|650.00|7800.00|pending|Edz|
