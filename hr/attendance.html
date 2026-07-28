@@ -12,12 +12,12 @@
   <!-- ===== SIDEBAR ===== -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <div class="logo-icon" id="hr-logo-icon">HR</div>
-      <input type="file" id="hr-logo-input" accept="image/*" style="display:none" onchange="handleLogoUpload(event)">
       <div>
         <div class="logo-text">HR System</div>
         <div class="logo-sub">MANAGEMENT</div>
       </div>
+      <div class="logo-icon" id="hr-logo-icon">HR</div>
+      <input type="file" id="hr-logo-input" accept="image/*" style="display:none" onchange="handleLogoUpload(event)">
     </div>
 
     <nav class="sidebar-nav">
@@ -1342,7 +1342,7 @@ function handleLogoUpload(e) {
   reader.onload = (ev) => {
     const img = new Image();
     img.onload = async () => {
-      const size = 96;
+      const size = 160;
       const canvas = document.createElement('canvas');
       canvas.width = size; canvas.height = size;
       const ctx = canvas.getContext('2d');

@@ -135,16 +135,21 @@ body {
   padding: 20px 20px 16px;
   border-bottom: 1px solid var(--border);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-shrink: 0;
+  text-align: center;
 }
 .sidebar-logo .logo-icon {
-  width: 36px; height: 36px;
+  width: 60%;
+  max-width: 120px;
+  aspect-ratio: 1 / 1;
+  height: auto;
   background: linear-gradient(135deg, var(--accent), #7c5ef8);
-  border-radius: 10px;
+  border-radius: 14px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 800; color: white;
+  font-size: 22px; font-weight: 800; color: white;
   flex-shrink: 0;
 }
 .sidebar-logo .logo-text { font-size: 16px; font-weight: 700; color: var(--white); }
