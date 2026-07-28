@@ -310,7 +310,7 @@
       </div>
       <div class="stats-grid" id="leave-stats" style="grid-template-columns:repeat(4,1fr)">
         <div class="stat-card"><div class="stat-icon blue">📄</div><div><div class="stat-value" id="lv-total">—</div><div class="stat-label">Total Leave Balance</div></div></div>
-        <div class="stat-card"><div class="stat-icon green">📆</div><div><div class="stat-value" id="lv-annual">—</div><div class="stat-label">Annual Leave</div></div></div>
+        <div class="stat-card"><div class="stat-icon green">📆</div><div><div class="stat-value" id="lv-annual">—</div><div class="stat-label">Vacation Leave</div></div></div>
         <div class="stat-card"><div class="stat-icon red">🏥</div><div><div class="stat-value" id="lv-medical">—</div><div class="stat-label">Medical Leave</div></div></div>
         <div class="stat-card"><div class="stat-icon yellow">⏳</div><div><div class="stat-value" id="lv-remaining">—</div><div class="stat-label">Remaining Leave</div></div></div>
       </div>
@@ -1871,7 +1871,7 @@ async function loadEmpLeaves() {
     const totalAlloc=Object.values(policy).reduce((s,p)=>s+p.allocation,0);
     const usedThisYear=myLeaves.filter(l=>l.year===String(year) && leaveCountsAgainstBalance(l)).reduce((s,l)=>s+(parseInt(l.days)||0),0);
     document.getElementById('lv-total').textContent=totalAlloc;
-    document.getElementById('lv-annual').textContent=policy['Annual Leave']?.allocation ?? 0;
+    document.getElementById('lv-annual').textContent=policy['Vacation Leave']?.allocation ?? 0;
     document.getElementById('lv-medical').textContent=policy['Medical Leave']?.allocation ?? 0;
     document.getElementById('lv-remaining').textContent=Math.max(0,totalAlloc-usedThisYear);
   }catch(e){Toast.show('Error: '+e.message,'error');}
