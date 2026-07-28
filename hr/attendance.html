@@ -1521,13 +1521,10 @@ function isEssSession(session) { return session.role !== 'admin' && session.role
 async function applyAccessRestrictions(session) {
   const isAdmin = !isEssSession(session);
   document.querySelectorAll('[data-restrict="admin"]').forEach(el => { if (!isAdmin) el.style.display = 'none'; });
-  if (isAdmin) return;
 
-  const navAtt = document.getElementById('nav-att-hr');
-  if (navAtt) navAtt.textContent = 'My Attendance';
-  const navPay = document.getElementById('nav-payslip');
-  if (navPay) navPay.textContent = 'My Payslip';
-
+  // Dept-head status is independent of role -- an admin who is also linked
+  // to an employee record can legitimately be a department head too, so
+  // this check must run for admin sessions as well, not just ESS ones.
   if (session.employee_id) {
     try {
       const depts = await HRDB.read('departmentsDB');
@@ -1535,6 +1532,13 @@ async function applyAccessRestrictions(session) {
     } catch (e) { isDeptHead = false; }
   }
   document.querySelectorAll('[data-restrict="dept-head"]').forEach(el => { el.style.display = isDeptHead ? '' : 'none'; });
+
+  if (isAdmin) return;
+
+  const navAtt = document.getElementById('nav-att-hr');
+  if (navAtt) navAtt.textContent = 'My Attendance';
+  const navPay = document.getElementById('nav-payslip');
+  if (navPay) navPay.textContent = 'My Payslip';
 }
 
 function doLogout() {
