@@ -28,8 +28,8 @@
         </a>
       </div>
 
-      <!-- HR Management -->
-      <div class="nav-group">
+      <!-- HR Management (admin only) -->
+      <div class="nav-group" data-restrict="admin">
         <div class="nav-group-label">HR Management</div>
         <div class="nav-item nav-parent">
           <span class="nav-icon">🏢</span>HR Management<span class="chevron">›</span>
@@ -41,8 +41,8 @@
         </div>
       </div>
 
-      <!-- Scheduling -->
-      <div class="nav-group">
+      <!-- Scheduling (admin only) -->
+      <div class="nav-group" data-restrict="admin">
         <div class="nav-item nav-parent">
           <span class="nav-icon">📆</span>Scheduling<span class="chevron">›</span>
         </div>
@@ -58,10 +58,13 @@
           <span class="nav-icon">📅</span>Leave Manage<span class="chevron">›</span>
         </div>
         <div class="nav-sub">
-          <a class="nav-sub-item" data-page="leave-by-emp"   href="#" onclick="navigate('leave-by-emp');return false">By Employee</a>
-          <a class="nav-sub-item" data-page="leave-add-emp"  href="#" onclick="navigate('leave-add-emp');return false">Add Leave (Employee)</a>
-          <a class="nav-sub-item" data-page="leave-by-hr"    href="#" onclick="navigate('leave-by-hr');return false">By HR</a>
-          <a class="nav-sub-item" data-page="leave-add-hr"   href="#" onclick="navigate('leave-add-hr');return false">Add Leave (HR)</a>
+          <a class="nav-sub-item" data-page="leave-by-emp"   href="#" onclick="navigate('leave-by-emp');return false">My Leave Requests</a>
+          <a class="nav-sub-item" data-page="leave-add-emp"  href="#" onclick="navigate('leave-add-emp');return false">Apply Leave</a>
+          <a class="nav-sub-item" data-page="leave-team"      href="#" onclick="navigate('leave-team');return false" data-restrict="dept-head" style="display:none">Team Approvals</a>
+          <a class="nav-sub-item" data-page="leave-by-hr"    href="#" onclick="navigate('leave-by-hr');return false" data-restrict="admin">By HR</a>
+          <a class="nav-sub-item" data-page="leave-add-hr"   href="#" onclick="navigate('leave-add-hr');return false" data-restrict="admin">Add Leave (HR)</a>
+          <a class="nav-sub-item" data-page="leave-settings" href="#" onclick="navigate('leave-settings');return false" data-restrict="admin">Leave Settings</a>
+          <a class="nav-sub-item" data-page="leave-payout"   href="#" onclick="navigate('leave-payout');return false" data-restrict="admin">Year-End Payout</a>
         </div>
       </div>
 
@@ -71,9 +74,9 @@
           <span class="nav-icon">⏰</span>Attendance<span class="chevron">›</span>
         </div>
         <div class="nav-sub">
-          <a class="nav-sub-item" data-page="att-hr"         href="#" onclick="navigate('att-hr');return false">Attendance (HR)</a>
-          <a class="nav-sub-item" data-page="att-main"       href="#" onclick="navigate('att-main');return false">Main Attendance</a>
-          <a class="nav-sub-item" data-page="timein-terminal" href="#" onclick="navigate('timein-terminal');return false">⏱ Time In/Out Terminal</a>
+          <a class="nav-sub-item" data-page="att-hr"         href="#" onclick="navigate('att-hr');return false" id="nav-att-hr">Attendance (HR)</a>
+          <a class="nav-sub-item" data-page="att-main"       href="#" onclick="navigate('att-main');return false" data-restrict="admin">Main Attendance</a>
+          <a class="nav-sub-item" data-page="timein-terminal" href="#" onclick="navigate('timein-terminal');return false" data-restrict="admin">⏱ Time In/Out Terminal</a>
         </div>
       </div>
 
@@ -83,10 +86,10 @@
           <span class="nav-icon">💵</span>Payroll<span class="chevron">›</span>
         </div>
         <div class="nav-sub">
-          <a class="nav-sub-item" data-page="payroll-report"   href="#" onclick="navigate('payroll-report');return false">Payroll Report</a>
-          <a class="nav-sub-item" data-page="payroll-generate" href="#" onclick="navigate('payroll-generate');return false">Generate Payroll</a>
-          <a class="nav-sub-item" data-page="payslip"          href="#" onclick="navigate('payslip');return false">Payslip</a>
-          <a class="nav-sub-item" data-page="thirteenth-month" href="#" onclick="navigate('thirteenth-month');return false">13th Month & Bonus</a>
+          <a class="nav-sub-item" data-page="payroll-report"   href="#" onclick="navigate('payroll-report');return false" data-restrict="admin">Payroll Report</a>
+          <a class="nav-sub-item" data-page="payroll-generate" href="#" onclick="navigate('payroll-generate');return false" data-restrict="admin">Generate Payroll</a>
+          <a class="nav-sub-item" data-page="payslip"          href="#" onclick="navigate('payslip');return false" id="nav-payslip">Payslip</a>
+          <a class="nav-sub-item" data-page="thirteenth-month" href="#" onclick="navigate('thirteenth-month');return false" data-restrict="admin">13th Month & Bonus</a>
         </div>
       </div>
 
@@ -99,8 +102,8 @@
         </div>
       </div>
 
-      <!-- User Management -->
-      <div class="nav-group">
+      <!-- User Management (admin only) -->
+      <div class="nav-group" data-restrict="admin">
         <div class="nav-group-label">System</div>
         <div class="nav-item" data-page="user-mgmt" href="#" onclick="navigate('user-mgmt');return false" style="cursor:pointer">
           <span class="nav-icon">👥</span>User Management
@@ -318,8 +321,8 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>No</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Approved By</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody id="lv-emp-tbody"><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">Loading...</td></tr></tbody>
+            <thead><tr><th>No</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Approved By</th><th>Paid?</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="lv-emp-tbody"><tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">Loading...</td></tr></tbody>
           </table>
         </div>
         <div id="lv-emp-pagination"></div>
@@ -346,7 +349,7 @@
                 </select>
               </div>
               <div class="form-group">
-                <label>Remaining Leaves</label>
+                <label>Remaining Leaves (this year)</label>
                 <input type="text" id="alf-remaining" readonly style="background:var(--surface3)" value="0">
               </div>
             </div>
@@ -374,6 +377,9 @@
                 </select>
               </div>
             </div>
+            <div class="form-group" id="alf-paid-preview-wrap" style="display:none">
+              <span class="badge badge-blue" id="alf-paid-preview"></span>
+            </div>
             <div class="form-group">
               <label>Reason</label>
               <textarea id="alf-reason" rows="3" placeholder="Brief reason for leave..."></textarea>
@@ -386,7 +392,7 @@
         </div>
         <!-- Leave Info Panel -->
         <div class="card">
-          <div class="card-header"><span class="card-title">Leave Information 2025</span></div>
+          <div class="card-header"><span class="card-title" id="leave-info-title">Leave Information</span></div>
           <div class="card-body" id="leave-info-panel"></div>
         </div>
       </div>
@@ -425,8 +431,8 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>No</th><th>Employee</th><th>Leave Type</th><th>Reason</th><th>Days</th><th>From</th><th>To</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody id="hr-lv-tbody"><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">Loading...</td></tr></tbody>
+            <thead><tr><th>No</th><th>Employee</th><th>Leave Type</th><th>Reason</th><th>Days</th><th>From</th><th>To</th><th>Paid?</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="hr-lv-tbody"><tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">Loading...</td></tr></tbody>
           </table>
         </div>
         <div id="hr-lv-pagination"></div>
@@ -448,7 +454,7 @@
             <div class="form-row">
               <div class="form-group">
                 <label>Employee *</label>
-                <select id="hlf-emp" onchange="loadHRLeaveInfo()"></select>
+                <select id="hlf-emp" onchange="loadHRLeaveInfo();updateHRRemainingLeave()"></select>
               </div>
               <div class="form-group">
                 <label>Employee ID</label>
@@ -502,8 +508,71 @@
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><span class="card-title">Leave Information 2025</span></div>
+          <div class="card-header"><span class="card-title" id="hr-leave-info-title">Leave Information</span></div>
           <div class="card-body" id="hr-leave-info-panel"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================
+         PAGE: LEAVE — TEAM APPROVALS (department head)
+    ========================================= -->
+    <div id="page-leave-team" class="page-section" style="display:none">
+      <div class="page-header">
+        <h1>🧑‍💼 Team Approvals</h1>
+        <p class="subtitle">Leave requests from your team waiting for your approval</p>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>No</th><th>Employee</th><th>Leave Type</th><th>Reason</th><th>Days</th><th>From</th><th>To</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="team-lv-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================
+         PAGE: LEAVE SETTINGS (HR only)
+    ========================================= -->
+    <div id="page-leave-settings" class="page-section" style="display:none">
+      <div class="page-header">
+        <h1>⚙️ Leave Settings</h1>
+        <p class="subtitle">Set the yearly allocation per leave type, and whether unused days are convertible to cash at year-end</p>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Leave Type</th><th>Yearly Allocation (days)</th><th>Convertible to Cash</th></tr></thead>
+            <tbody id="leave-settings-tbody"></tbody>
+          </table>
+        </div>
+        <div style="padding:16px;text-align:right">
+          <button class="btn btn-primary" onclick="saveLeaveSettings()">💾 Save Leave Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================
+         PAGE: LEAVE PAYOUT / ENCASHMENT (HR only)
+    ========================================= -->
+    <div id="page-leave-payout" class="page-section" style="display:none">
+      <div class="page-header-row">
+        <div class="page-header"><h1>💰 Year-End Leave Payout</h1><p class="subtitle">Convert unused, convertible leave credits to cash for active employees</p></div>
+      </div>
+      <div style="background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:var(--radius-lg);padding:16px;margin-bottom:20px;font-size:13px;color:var(--text2)">
+        ℹ️ Only leave types marked "Convertible to Cash" in <a href="#" onclick="navigate('leave-settings');return false" style="color:var(--accent2)">Leave Settings</a> are included. Amount = unused days × employee daily rate.
+      </div>
+      <div class="form-row" style="margin-bottom:16px;max-width:400px">
+        <div class="form-group"><label>Year</label><input type="number" id="lp-year" min="2020" max="2035"></div>
+        <div class="form-group" style="display:flex;align-items:flex-end"><button class="btn btn-ghost w-full" onclick="initLeavePayout()">🔄 Compute</button></div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Employee</th><th>Leave Type</th><th>Unused Days</th><th>Daily Rate</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="lp-tbody"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -518,7 +587,7 @@
       </div>
       <div style="display:grid;grid-template-columns:260px 1fr;gap:16px">
         <!-- Employee selector + profile -->
-        <div class="card" style="height:fit-content">
+        <div class="card" style="height:fit-content" id="att-hr-emp-card">
           <div class="card-header"><span class="card-title">Select Employee</span></div>
           <div class="card-body" style="padding:12px">
             <select id="att-hr-emp" onchange="loadEmpAttendance()" style="margin-bottom:12px">
@@ -547,9 +616,11 @@
             <span class="card-title">Attendance Records</span>
             <div style="display:flex;gap:8px">
               <input type="month" id="att-hr-month" style="padding:6px 10px" onchange="loadEmpAttendance()">
-              <button class="btn btn-success btn-sm" onclick="approveAllAtt()">✅ Approve All</button>
-              <button class="btn btn-danger btn-sm" onclick="rejectAllAtt()">❌ Reject All</button>
-              <button class="btn btn-primary btn-sm" onclick="openAddAtt()">+ Add</button>
+              <span id="att-hr-actions" style="display:flex;gap:8px">
+                <button class="btn btn-success btn-sm" onclick="approveAllAtt()">✅ Approve All</button>
+                <button class="btn btn-danger btn-sm" onclick="rejectAllAtt()">❌ Reject All</button>
+                <button class="btn btn-primary btn-sm" onclick="openAddAtt()">+ Add</button>
+              </span>
             </div>
           </div>
           <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin:0;padding:16px;border-bottom:1px solid var(--border)">
@@ -942,7 +1013,11 @@
     <div class="modal-body">
       <div class="form-group"><label>Department Name *</label><input type="text" id="df-name"></div>
       <div class="form-row">
-        <div class="form-group"><label>Head of Department</label><input type="text" id="df-head"></div>
+        <div class="form-group"><label>Head of Department (employee)</label><select id="df-head-emp" onchange="onDeptHeadEmpChange()"><option value="">— Not linked / external —</option></select></div>
+        <div class="form-group"><label>Head Name</label><input type="text" id="df-head"></div>
+      </div>
+      <div class="form-group" style="margin-top:-6px"><small style="color:var(--text3)">Linking to an employee lets that person log in and approve their team's leave requests as the department head.</small></div>
+      <div class="form-row">
         <div class="form-group"><label>Phone</label><input type="text" id="df-phone"></div>
       </div>
       <div class="form-group"><label>Email</label><input type="email" id="df-email"></div>
@@ -1306,6 +1381,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initNavAccordion();
   startClock('topbar-clock');
   loadSidebarLogo();
+  await applyAccessRestrictions(session);
   if (session.role === 'superadmin') {
     const logoIcon = document.getElementById('hr-logo-icon');
     logoIcon.style.cursor = 'pointer';
@@ -1369,6 +1445,33 @@ function handleLogoUpload(e) {
   reader.readAsDataURL(file);
 }
 
+// ---- Access restriction (Employee Self-Service view) ----
+// Admins/superadmins see the full HR panel. Everyone else (staff/ojt/guest
+// accounts linked to an employee_id) only sees their own records: nav items
+// marked data-restrict="admin" are hidden, and the shared Attendance/Payslip
+// pages below auto-lock to the logged-in employee.
+let isDeptHead = false;
+function isEssSession(session) { return session.role !== 'admin' && session.role !== 'superadmin'; }
+
+async function applyAccessRestrictions(session) {
+  const isAdmin = !isEssSession(session);
+  document.querySelectorAll('[data-restrict="admin"]').forEach(el => { if (!isAdmin) el.style.display = 'none'; });
+  if (isAdmin) return;
+
+  const navAtt = document.getElementById('nav-att-hr');
+  if (navAtt) navAtt.textContent = 'My Attendance';
+  const navPay = document.getElementById('nav-payslip');
+  if (navPay) navPay.textContent = 'My Payslip';
+
+  if (session.employee_id) {
+    try {
+      const depts = await HRDB.read('departmentsDB');
+      isDeptHead = depts.some(d => d.head_employee_id === session.employee_id);
+    } catch (e) { isDeptHead = false; }
+  }
+  document.querySelectorAll('[data-restrict="dept-head"]').forEach(el => { el.style.display = isDeptHead ? '' : 'none'; });
+}
+
 function doLogout() {
   // Clear both session keys
   sessionStorage.removeItem(ENT_SESSION_KEY);
@@ -1398,6 +1501,7 @@ function updateBreadcrumb(pageId) {
     'employee-list':'Employee List','holidays':'Holidays',
     'leave-by-emp':'By Employee','leave-add-emp':'Add Leave (Employee)',
     'leave-by-hr':'By HR','leave-add-hr':'Add Leave (HR)',
+    'leave-team':'Team Approvals','leave-settings':'Leave Settings','leave-payout':'Year-End Payout',
     'att-hr':'Attendance (HR)','att-main':'Main Attendance',
     'payroll-report':'Payroll Report','payroll-generate':'Generate Payroll','payslip':'Payslip',
     'departments':'Department','shifts':'Shift Types','schedules':'Employee Schedule',
@@ -1409,6 +1513,7 @@ function updateBreadcrumb(pageId) {
     'employee-list':'HR Management','holidays':'HR Management',
     'leave-by-emp':'Leave Manage','leave-add-emp':'Leave Manage',
     'leave-by-hr':'Leave Manage','leave-add-hr':'Leave Manage',
+    'leave-team':'Leave Manage','leave-settings':'Leave Manage','leave-payout':'Leave Manage',
     'att-hr':'Attendance','att-main':'Attendance',
     'payroll-report':'Payroll','payroll-generate':'Payroll','payslip':'Payroll',
     'departments':'HR Management','shifts':'Scheduling','schedules':'Scheduling',
@@ -1430,9 +1535,12 @@ async function loadPage(pageId) {
     case 'employee-list':   await loadEmployees(); break;
     case 'holidays':        await loadHolidays(); break;
     case 'leave-by-emp':    await loadEmpLeaves(); break;
-    case 'leave-add-emp':   initAddLeaveEmp(); break;
+    case 'leave-add-emp':   await initAddLeaveEmp(); break;
     case 'leave-by-hr':     await loadHRLeaves(); break;
     case 'leave-add-hr':    await initAddLeaveHR(); break;
+    case 'leave-team':      await loadTeamApprovals(); break;
+    case 'leave-settings':  await loadLeaveSettings(); break;
+    case 'leave-payout':    await initLeavePayout(); break;
     case 'att-hr':          await initAttHR(); break;
     case 'att-main':        await loadMainAttendance(); break;
     case 'payroll-report':  await loadPayroll(); break;
@@ -1470,7 +1578,7 @@ async function loadDashboard() {
     const present = todayAtts.filter(a => a.status === 'present' || a.status === 'late').length;
     const absent  = todayAtts.filter(a => a.status === 'absent').length;
     const onLeave = leaves.filter(l => l.from_date <= today && l.to_date >= today && l.status === 'approved').length;
-    const pending = leaves.filter(l => l.status === 'pending' || l.status === 'new').length;
+    const pending = leaves.filter(l => ['pending','new','pending_manager','pending_hr'].includes(l.status)).length;
     const thisMonth = new Date().toISOString().substring(0,7);
     const monthHolidays = holidays.filter(h => h.date.startsWith(thisMonth)).length;
 
@@ -1650,56 +1758,311 @@ function deleteHoliday(id){Modal.confirm('Delete this holiday?',async()=>{Loadin
 // ============================================================
 //  LEAVE — EMPLOYEE SELF-SERVICE
 // ============================================================
+// ============================================================
+//  LEAVE POLICY (allocation + convertible-to-cash), persisted in
+//  hrconfigDB under key "leave_policy" as JSON. Falls back to the
+//  defaults in hr-config.js when nothing has been saved yet.
+// ============================================================
+let _leavePolicyCache=null;
+async function getLeavePolicy(force){
+  if(_leavePolicyCache && !force) return _leavePolicyCache;
+  const rows=await HRDB.read('hrconfigDB',force);
+  const row=rows.find(r=>r.key==='leave_policy');
+  let saved={};
+  if(row && row.value){ try{ saved=JSON.parse(row.value); }catch(e){ saved={}; } }
+  const policy={};
+  HR_LEAVE_TYPES.forEach(t=>{
+    policy[t]={
+      allocation: saved[t]?.allocation!=null ? Number(saved[t].allocation) : HR_LEAVE_ALLOCATIONS[t],
+      convertible: saved[t]?.convertible!=null ? !!saved[t].convertible : !!HR_LEAVE_CONVERTIBLE[t]
+    };
+  });
+  _leavePolicyCache=policy;
+  return policy;
+}
+async function saveLeavePolicyValue(policy){
+  const rows=await HRDB.read('hrconfigDB',true);
+  const existing=rows.find(r=>r.key==='leave_policy');
+  const value=JSON.stringify(policy);
+  if(existing) await HRDB.update('hrconfigDB',r=>r.key==='leave_policy',{value});
+  else await HRDB.insert('hrconfigDB',{key:'leave_policy',value});
+  _leavePolicyCache=policy;
+}
+async function loadLeaveSettings(){
+  Loading.show();
+  try{
+    const policy=await getLeavePolicy(true);
+    document.getElementById('leave-settings-tbody').innerHTML=HR_LEAVE_TYPES.map(t=>`<tr>
+      <td>${t}</td>
+      <td><input type="number" min="0" id="ls-alloc-${t}" value="${policy[t].allocation}" style="width:90px"></td>
+      <td><input type="checkbox" id="ls-conv-${t}" ${policy[t].convertible?'checked':''} style="width:18px;height:18px"></td>
+    </tr>`).join('');
+  }catch(e){Toast.show('Error: '+e.message,'error');}
+  Loading.hide();
+}
+async function saveLeaveSettings(){
+  Loading.show();
+  try{
+    const policy={};
+    HR_LEAVE_TYPES.forEach(t=>{
+      policy[t]={
+        allocation: Math.max(0, parseInt(document.getElementById(`ls-alloc-${t}`).value)||0),
+        convertible: document.getElementById(`ls-conv-${t}`).checked
+      };
+    });
+    await saveLeavePolicyValue(policy);
+    Toast.show('Leave settings saved ✅','success');
+  }catch(e){Toast.show('Error: '+e.message,'error');}
+  Loading.hide();
+}
+async function renderLeaveInfoPanel(elId){
+  const el=document.getElementById(elId); if(!el) return;
+  const policy=await getLeavePolicy();
+  const year=new Date().getFullYear();
+  const titleEl=document.getElementById(elId==='leave-info-panel'?'leave-info-title':'hr-leave-info-title');
+  if(titleEl) titleEl.textContent=`Leave Information ${year}`;
+  const total=Object.values(policy).reduce((s,p)=>s+p.allocation,0);
+  el.innerHTML=Object.entries(policy).map(([k,p])=>`<div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--text2)">${k}${p.convertible?' <span class="badge badge-green" style="font-size:9px">convertible</span>':''}</span><span class="badge badge-blue">${String(p.allocation).padStart(2,'0')}</span></div>`).join('')
+    +`<div class="flex-between" style="padding:8px 0;margin-top:4px"><span style="font-size:13px;font-weight:700;color:var(--white)">Total Balance</span><span class="badge badge-green">${total}</span></div>`;
+}
+
+// ---- Per-year balance + paid/unpaid split ----
+function leaveCountsAgainstBalance(l){ return l.status!=='rejected'; }
+async function usedDaysThisYear(empId,type,year,leaves){
+  const rows=leaves||await HRDB.read('leavesDB');
+  return rows.filter(l=>l.employee_id===empId && l.leave_type===type && l.year===String(year) && leaveCountsAgainstBalance(l))
+    .reduce((s,l)=>s+ (parseInt(l.days)||0),0);
+}
+async function computePaidSplit(empId,type,year,requestedDays){
+  const policy=await getLeavePolicy();
+  const allocation=policy[type]?.allocation ?? (HR_LEAVE_ALLOCATIONS[type]||0);
+  const used=await usedDaysThisYear(empId,type,year);
+  const remaining=Math.max(0,allocation-used);
+  const paidDays=Math.min(remaining,requestedDays);
+  const unpaidDays=Math.max(0,requestedDays-paidDays);
+  const label = requestedDays<=0 ? '' : (unpaidDays<=0 ? 'Paid' : (paidDays>0 ? 'Partial' : 'Unpaid'));
+  return {paidDays,unpaidDays,label};
+}
+
+// ---- Multi-level approval: Employee -> Department Head -> HR ----
+// A department's head is only a routing step if it's linked to a real
+// employee (head_employee_id) and isn't the requester themselves --
+// heads' own leave requests go straight to HR.
+async function determineApprovalStart(empId){
+  const emps=await HRDB.read('employeesDB');
+  const emp=emps.find(e=>e.id===empId);
+  const depts=await HRDB.read('departmentsDB');
+  const dept=depts.find(d=>d.name===emp?.department);
+  if(dept && dept.head_employee_id && dept.head_employee_id!==empId) return 'pending_manager';
+  return 'pending_hr';
+}
+const HR_ACTIONABLE_STATUSES=['pending_hr','pending','new']; // 'pending'/'new' = legacy rows from before this workflow existed
+
 async function loadEmpLeaves() {
   Loading.show();
   try {
     allLeaves=await HRDB.read('leavesDB',true);
     allEmployees=await HRDB.read('employeesDB');
     const session=getSession();
-    // For demo, show all. In prod, filter by employee_id
-    const myLeaves=allLeaves;
+    const myLeaves=session.employee_id ? allLeaves.filter(l=>l.employee_id===session.employee_id) : [];
     renderEmpLeaveTable(myLeaves,1);
-    // Stats
-    const used=myLeaves.filter(l=>l.status==='approved').reduce((s,l)=>s+parseInt(l.days||0),0);
-    document.getElementById('lv-total').textContent=Object.values(HR_LEAVE_ALLOCATIONS).reduce((s,v)=>s+v,0);
-    document.getElementById('lv-annual').textContent=HR_LEAVE_ALLOCATIONS['Annual Leave'];
-    document.getElementById('lv-medical').textContent=HR_LEAVE_ALLOCATIONS['Medical Leave'];
-    document.getElementById('lv-remaining').textContent=Math.max(0,Object.values(HR_LEAVE_ALLOCATIONS).reduce((s,v)=>s+v,0)-used);
+    const policy=await getLeavePolicy();
+    const year=new Date().getFullYear();
+    const totalAlloc=Object.values(policy).reduce((s,p)=>s+p.allocation,0);
+    const usedThisYear=myLeaves.filter(l=>l.year===String(year) && leaveCountsAgainstBalance(l)).reduce((s,l)=>s+(parseInt(l.days)||0),0);
+    document.getElementById('lv-total').textContent=totalAlloc;
+    document.getElementById('lv-annual').textContent=policy['Annual Leave']?.allocation ?? 0;
+    document.getElementById('lv-medical').textContent=policy['Medical Leave']?.allocation ?? 0;
+    document.getElementById('lv-remaining').textContent=Math.max(0,totalAlloc-usedThisYear);
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
 }
 let lvEmpPage=1;
-function renderEmpLeaveTable(rows,page){lvEmpPage=page;const paged=paginate(rows,page);document.getElementById('lv-emp-tbody').innerHTML=paged.rows.map((l,i)=>`<tr><td>${paged.start+i+1}</td><td>${l.leave_type}</td><td>${Fmt.date(l.from_date)}</td><td>${Fmt.date(l.to_date)}</td><td>${l.days}</td><td style="max-width:160px">${l.reason||'—'}</td><td>${l.approved_by||'—'}</td><td>${Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-danger btn-xs" onclick="deleteLeave('${l.id}')">🗑</button></div></td></tr>`).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">No leave records</td></tr>';renderPager('lv-emp-pagination',paged,p=>renderEmpLeaveTable(rows,p));}
+function renderEmpLeaveTable(rows,page){lvEmpPage=page;const paged=paginate(rows,page);document.getElementById('lv-emp-tbody').innerHTML=paged.rows.map((l,i)=>`<tr><td>${paged.start+i+1}</td><td>${l.leave_type}</td><td>${Fmt.date(l.from_date)}</td><td>${Fmt.date(l.to_date)}</td><td>${l.days}</td><td style="max-width:160px">${l.reason||'—'}</td><td>${l.approved_by||'—'}</td><td>${l.paid?`<span class="badge ${l.paid==='Paid'?'badge-success':l.paid==='Unpaid'?'badge-danger':'badge-warning'}">${l.paid}</span>`:'—'}</td><td>${Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px">${l.status==='pending_manager'||l.status==='pending_hr'||l.status==='new'||l.status==='pending'?`<button class="btn btn-danger btn-xs" onclick="deleteLeave('${l.id}')">🗑</button>`:''}</div></td></tr>`).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">No leave records</td></tr>';renderPager('lv-emp-pagination',paged,p=>renderEmpLeaveTable(rows,p));}
 
-function initAddLeaveEmp(){const sel=document.getElementById('alf-type');sel.innerHTML='<option value="">Select Leave Type</option>'+HR_LEAVE_TYPES.map(t=>`<option>${t}</option>`).join('');renderLeaveInfoPanel('leave-info-panel');}
-function renderLeaveInfoPanel(elId){const el=document.getElementById(elId);if(!el)return;el.innerHTML=Object.entries(HR_LEAVE_ALLOCATIONS).map(([k,v])=>`<div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--text2)">${k}</span><span class="badge badge-blue">${String(v).padStart(2,'0')}</span></div>`).join('')+'<div class="flex-between" style="padding:8px 0;margin-top:4px"><span style="font-size:13px;font-weight:700;color:var(--white)">Total Balance</span><span class="badge badge-green">'+Object.values(HR_LEAVE_ALLOCATIONS).reduce((s,v)=>s+v,0)+'</span></div>';}
-function updateRemainingLeave(){const t=document.getElementById('alf-type').value;document.getElementById('alf-remaining').value=HR_LEAVE_ALLOCATIONS[t]||0;}
-function calcLeaveDays(){const f=document.getElementById('alf-from').value,t=document.getElementById('alf-to').value;if(f&&t){const days=Math.max(0,Math.ceil((new Date(t)-new Date(f))/(1000*60*60*24))+1);document.getElementById('alf-days').value=days;}}
-function resetLeaveForm(){['alf-type','alf-from','alf-to','alf-reason'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});document.getElementById('alf-remaining').value='0';document.getElementById('alf-days').value='0';}
-async function submitLeaveEmployee(){const type=document.getElementById('alf-type').value,from=document.getElementById('alf-from').value,to=document.getElementById('alf-to').value,days=document.getElementById('alf-days').value,reason=document.getElementById('alf-reason').value;if(!type||!from||!to){Toast.show('Fill required fields','warning');return;}Loading.show('Submitting...');try{const all=await HRDB.read('leavesDB',true);const session=getSession();await HRDB.insert('leavesDB',{id:HRDB.nextId(all,'id','LV'),employee_id:session.employee_id||'EMP001',leave_type:type,from_date:from,to_date:to,days,leave_day_type:document.getElementById('alf-daytype').value,reason,status:'new',approved_by:'',created_at:new Date().toISOString().split('T')[0]});Toast.show('Leave application submitted! ✅','success');resetLeaveForm();navigate('leave-by-emp');}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+async function initAddLeaveEmp(){const sel=document.getElementById('alf-type');sel.innerHTML='<option value="">Select Leave Type</option>'+HR_LEAVE_TYPES.map(t=>`<option>${t}</option>`).join('');resetLeaveForm();await renderLeaveInfoPanel('leave-info-panel');}
+async function updateRemainingLeave(){
+  const t=document.getElementById('alf-type').value;
+  const session=getSession();
+  const year=document.getElementById('alf-from').value?.slice(0,4) || new Date().getFullYear();
+  if(!t || !session.employee_id){document.getElementById('alf-remaining').value='0';return;}
+  const policy=await getLeavePolicy();
+  const used=await usedDaysThisYear(session.employee_id,t,year);
+  document.getElementById('alf-remaining').value=Math.max(0,(policy[t]?.allocation||0)-used);
+  await updateLeavePreview();
+}
+async function updateLeavePreview(){
+  const t=document.getElementById('alf-type').value;
+  const days=parseInt(document.getElementById('alf-days').value)||0;
+  const wrap=document.getElementById('alf-paid-preview-wrap'), badge=document.getElementById('alf-paid-preview');
+  const session=getSession();
+  if(!t || !days || !session.employee_id){ wrap.style.display='none'; return; }
+  const year=document.getElementById('alf-from').value?.slice(0,4) || new Date().getFullYear();
+  const split=await computePaidSplit(session.employee_id,t,year,days);
+  if(!split.label){ wrap.style.display='none'; return; }
+  wrap.style.display='';
+  badge.className='badge '+(split.label==='Paid'?'badge-success':split.label==='Unpaid'?'badge-danger':'badge-warning');
+  badge.textContent = split.label==='Partial' ? `Partial: ${split.paidDays} Paid + ${split.unpaidDays} Unpaid day(s)` : `${split.label} Leave`;
+}
+async function calcLeaveDays(){const f=document.getElementById('alf-from').value,t=document.getElementById('alf-to').value;if(f&&t){const days=Math.max(0,Math.ceil((new Date(t)-new Date(f))/(1000*60*60*24))+1);document.getElementById('alf-days').value=days;}await updateRemainingLeave();}
+function resetLeaveForm(){['alf-type','alf-from','alf-to','alf-reason'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});document.getElementById('alf-remaining').value='0';document.getElementById('alf-days').value='0';const wrap=document.getElementById('alf-paid-preview-wrap');if(wrap)wrap.style.display='none';}
+async function submitLeaveEmployee(){
+  const type=document.getElementById('alf-type').value,from=document.getElementById('alf-from').value,to=document.getElementById('alf-to').value,days=parseInt(document.getElementById('alf-days').value)||0,reason=document.getElementById('alf-reason').value;
+  if(!type||!from||!to){Toast.show('Fill required fields','warning');return;}
+  const session=getSession();
+  if(!session.employee_id){Toast.show('This account is not linked to an employee record. Ask HR to link it in User Management.','error');return;}
+  Loading.show('Submitting...');
+  try{
+    const all=await HRDB.read('leavesDB',true);
+    const year=from.slice(0,4);
+    const split=await computePaidSplit(session.employee_id,type,year,days);
+    const status=await determineApprovalStart(session.employee_id);
+    await HRDB.insert('leavesDB',{id:HRDB.nextId(all,'id','LV'),employee_id:session.employee_id,leave_type:type,from_date:from,to_date:to,days,leave_day_type:document.getElementById('alf-daytype').value,reason,status,approved_by:'',created_at:new Date().toISOString().split('T')[0],year,paid:split.label,manager_by:'',manager_at:''});
+    Toast.show('Leave application submitted! ✅','success');resetLeaveForm();navigate('leave-by-emp');
+  }catch(e){Toast.show('Error: '+e.message,'error');}
+  Loading.hide();
+}
 
 // ============================================================
-//  LEAVE — HR VIEW
+//  LEAVE — TEAM APPROVALS (department head, first approval level)
+// ============================================================
+async function loadTeamApprovals(){
+  Loading.show();
+  try{
+    const session=getSession();
+    allEmployees=await HRDB.read('employeesDB');
+    const depts=await HRDB.read('departmentsDB');
+    allLeaves=await HRDB.read('leavesDB',true);
+    const myDeptNames=depts.filter(d=>d.head_employee_id===session.employee_id).map(d=>d.name);
+    const rows=allLeaves.filter(l=>{
+      if(l.status!=='pending_manager') return false;
+      const emp=allEmployees.find(e=>e.id===l.employee_id);
+      return emp && myDeptNames.includes(emp.department);
+    }).sort((a,b)=>b.created_at.localeCompare(a.created_at));
+    document.getElementById('team-lv-tbody').innerHTML=rows.map((l,i)=>{
+      const emp=allEmployees.find(e=>e.id===l.employee_id);
+      return `<tr><td>${i+1}</td><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td><td>${l.leave_type}</td><td style="max-width:140px;font-size:12px">${l.reason||'—'}</td><td>${l.days}</td><td style="font-size:12px">${Fmt.date(l.from_date)}</td><td style="font-size:12px">${Fmt.date(l.to_date)}</td><td>${Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-success btn-xs" onclick="approveManagerLeave('${l.id}')">✅</button><button class="btn btn-danger btn-xs" onclick="rejectManagerLeave('${l.id}')">❌</button></div></td></tr>`;
+    }).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">No leave requests waiting for your approval</td></tr>';
+  }catch(e){Toast.show('Error: '+e.message,'error');}
+  Loading.hide();
+}
+async function approveManagerLeave(id){Loading.show();try{const session=getSession();await HRDB.update('leavesDB',r=>r.id===id,{status:'pending_hr',manager_by:session.username,manager_at:new Date().toISOString().split('T')[0]});Toast.show('Approved — forwarded to HR ✅','success');await loadTeamApprovals();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+async function rejectManagerLeave(id){Loading.show();try{const session=getSession();await HRDB.update('leavesDB',r=>r.id===id,{status:'rejected',manager_by:session.username,manager_at:new Date().toISOString().split('T')[0]});Toast.show('Rejected','warning');await loadTeamApprovals();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+
+// ============================================================
+//  LEAVE — HR VIEW (final approval)
 // ============================================================
 let hrLvPage=1;
-async function loadHRLeaves(){Loading.show();try{allLeaves=await HRDB.read('leavesDB',true);allEmployees=await HRDB.read('employeesDB');const today=new Date().toISOString().split('T')[0];const todayLeaves=allLeaves.filter(l=>l.from_date<=today&&l.to_date>=today);document.getElementById('hr-lv-today').textContent=`${todayLeaves.filter(l=>l.status==='approved').length}/${allEmployees.filter(e=>e.status==='active').length}`;document.getElementById('hr-lv-today2').textContent=todayLeaves.length;document.getElementById('hr-lv-unplanned').textContent=allLeaves.filter(l=>l.status==='new').length;document.getElementById('hr-lv-pending').textContent=allLeaves.filter(l=>l.status==='pending').length;filterHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+async function loadHRLeaves(){Loading.show();try{allLeaves=await HRDB.read('leavesDB',true);allEmployees=await HRDB.read('employeesDB');const today=new Date().toISOString().split('T')[0];const todayLeaves=allLeaves.filter(l=>l.from_date<=today&&l.to_date>=today);document.getElementById('hr-lv-today').textContent=`${todayLeaves.filter(l=>l.status==='approved').length}/${allEmployees.filter(e=>e.status==='active').length}`;document.getElementById('hr-lv-today2').textContent=todayLeaves.length;document.getElementById('hr-lv-unplanned').textContent=allLeaves.filter(l=>l.status==='new').length;document.getElementById('hr-lv-pending').textContent=allLeaves.filter(l=>HR_ACTIONABLE_STATUSES.includes(l.status)||l.status==='pending_manager').length;filterHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 function filterHRLeaves(){const q=(document.getElementById('hr-lv-search')?.value||'').toLowerCase();const st=document.getElementById('hr-lv-status-filter')?.value||'';let rows=allLeaves;if(q)rows=rows.filter(l=>{const e=allEmployees.find(x=>x.id===l.employee_id);return(e?.name||'').toLowerCase().includes(q)||l.leave_type.toLowerCase().includes(q);});if(st)rows=rows.filter(l=>l.status===st);rows.sort((a,b)=>b.created_at.localeCompare(a.created_at));renderHRLeaveTable(rows,1);}
-function renderHRLeaveTable(rows,page){hrLvPage=page;const paged=paginate(rows,page);document.getElementById('hr-lv-tbody').innerHTML=paged.rows.map((l,i)=>{const emp=allEmployees.find(e=>e.id===l.employee_id);return`<tr><td>${paged.start+i+1}</td><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td><td>${l.leave_type}</td><td style="max-width:140px;font-size:12px">${l.reason||'—'}</td><td>${l.days}</td><td style="font-size:12px">${Fmt.date(l.from_date)}</td><td style="font-size:12px">${Fmt.date(l.to_date)}</td><td>${Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px">${l.status!=='approved'?`<button class="btn btn-success btn-xs" onclick="approveLeave('${l.id}')">✅</button>`:''}${l.status!=='rejected'?`<button class="btn btn-danger btn-xs" onclick="rejectLeave('${l.id}')">❌</button>`:''}<button class="btn btn-ghost btn-xs" onclick="deleteLeave('${l.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">No leave records</td></tr>';renderPager('hr-lv-pagination',paged,p=>renderHRLeaveTable(rows,p));}
-async function approveLeave(id){Loading.show();try{await HRDB.update('leavesDB',r=>r.id===id,{status:'approved',approved_by:'HR Admin'});Toast.show('Leave approved ✅','success');await loadHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
-async function rejectLeave(id){Loading.show();try{await HRDB.update('leavesDB',r=>r.id===id,{status:'rejected',approved_by:'HR Admin'});Toast.show('Leave rejected','warning');await loadHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
-async function deleteLeave(id){Modal.confirm('Delete this leave record?',async()=>{Loading.show();try{await HRDB.remove('leavesDB',r=>r.id===id);Toast.show('Deleted','success');if(currentPage==='leave-by-hr')await loadHRLeaves();else await loadEmpLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
-async function initAddLeaveHR(){Loading.show();try{allEmployees=await HRDB.read('employeesDB');const empSel=document.getElementById('hlf-emp');empSel.innerHTML=allEmployees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name} (${e.employee_id})</option>`).join('');document.getElementById('hlf-type').innerHTML='<option value="">Select Leave Type</option>'+HR_LEAVE_TYPES.map(t=>`<option>${t}</option>`).join('');loadHRLeaveInfo();renderLeaveInfoPanel('hr-leave-info-panel');}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+function renderHRLeaveTable(rows,page){hrLvPage=page;const paged=paginate(rows,page);document.getElementById('hr-lv-tbody').innerHTML=paged.rows.map((l,i)=>{const emp=allEmployees.find(e=>e.id===l.employee_id);const actionable=HR_ACTIONABLE_STATUSES.includes(l.status);return`<tr><td>${paged.start+i+1}</td><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td><td>${l.leave_type}</td><td style="max-width:140px;font-size:12px">${l.reason||'—'}</td><td>${l.days}</td><td style="font-size:12px">${Fmt.date(l.from_date)}</td><td style="font-size:12px">${Fmt.date(l.to_date)}</td><td>${l.paid?`<span class="badge ${l.paid==='Paid'?'badge-success':l.paid==='Unpaid'?'badge-danger':'badge-warning'}">${l.paid}</span>`:'—'}</td><td>${l.status==='pending_manager'?'<span class="badge badge-warning">Waiting: Manager</span>':Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px">${actionable?`<button class="btn btn-success btn-xs" onclick="approveLeave('${l.id}')">✅</button><button class="btn btn-danger btn-xs" onclick="rejectLeave('${l.id}')">❌</button>`:''}<button class="btn btn-ghost btn-xs" onclick="deleteLeave('${l.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">No leave records</td></tr>';renderPager('hr-lv-pagination',paged,p=>renderHRLeaveTable(rows,p));}
+async function approveLeave(id){Loading.show();try{const session=getSession();await HRDB.update('leavesDB',r=>r.id===id,{status:'approved',approved_by:session.full_name||'HR Admin'});Toast.show('Leave approved ✅','success');await loadHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+async function rejectLeave(id){Loading.show();try{const session=getSession();await HRDB.update('leavesDB',r=>r.id===id,{status:'rejected',approved_by:session.full_name||'HR Admin'});Toast.show('Leave rejected','warning');await loadHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+async function deleteLeave(id){Modal.confirm('Delete this leave record?',async()=>{Loading.show();try{await HRDB.remove('leavesDB',r=>r.id===id);Toast.show('Deleted','success');if(currentPage==='leave-by-hr')await loadHRLeaves();else if(currentPage==='leave-team')await loadTeamApprovals();else await loadEmpLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
+async function initAddLeaveHR(){Loading.show();try{allEmployees=await HRDB.read('employeesDB');const empSel=document.getElementById('hlf-emp');empSel.innerHTML=allEmployees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name} (${e.employee_id})</option>`).join('');document.getElementById('hlf-type').innerHTML='<option value="">Select Leave Type</option>'+HR_LEAVE_TYPES.map(t=>`<option>${t}</option>`).join('');loadHRLeaveInfo();await renderLeaveInfoPanel('hr-leave-info-panel');}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 function loadHRLeaveInfo(){const e=allEmployees.find(x=>x.id===document.getElementById('hlf-emp')?.value);document.getElementById('hlf-emp-id').value=e?.employee_id||'';}
-function updateHRRemainingLeave(){const t=document.getElementById('hlf-type').value;document.getElementById('hlf-remaining').value=HR_LEAVE_ALLOCATIONS[t]||0;}
-function calcHRLeaveDays(){const f=document.getElementById('hlf-from').value,t=document.getElementById('hlf-to').value;if(f&&t){const days=Math.max(0,Math.ceil((new Date(t)-new Date(f))/(1000*60*60*24))+1);document.getElementById('hlf-days').value=days;}}
+async function updateHRRemainingLeave(){const t=document.getElementById('hlf-type').value;const empId=document.getElementById('hlf-emp').value;const year=document.getElementById('hlf-from').value?.slice(0,4)||new Date().getFullYear();if(!t||!empId){document.getElementById('hlf-remaining').value='0';return;}const policy=await getLeavePolicy();const used=await usedDaysThisYear(empId,t,year);document.getElementById('hlf-remaining').value=Math.max(0,(policy[t]?.allocation||0)-used);}
+async function calcHRLeaveDays(){const f=document.getElementById('hlf-from').value,t=document.getElementById('hlf-to').value;if(f&&t){const days=Math.max(0,Math.ceil((new Date(t)-new Date(f))/(1000*60*60*24))+1);document.getElementById('hlf-days').value=days;}await updateHRRemainingLeave();}
 function resetHRLeaveForm(){['hlf-type','hlf-from','hlf-to','hlf-reason'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});document.getElementById('hlf-remaining').value='0';document.getElementById('hlf-days').value='0';}
-async function submitLeaveHR(){const empId=document.getElementById('hlf-emp').value,type=document.getElementById('hlf-type').value,from=document.getElementById('hlf-from').value,to=document.getElementById('hlf-to').value,days=document.getElementById('hlf-days').value,reason=document.getElementById('hlf-reason').value;if(!empId||!type||!from||!to){Toast.show('Fill required fields','warning');return;}Loading.show('Submitting...');try{const all=await HRDB.read('leavesDB',true);await HRDB.insert('leavesDB',{id:HRDB.nextId(all,'id','LV'),employee_id:empId,leave_type:type,from_date:from,to_date:to,days,leave_day_type:document.getElementById('hlf-daytype').value,reason,status:'pending',approved_by:'',created_at:new Date().toISOString().split('T')[0]});Toast.show('Leave added! ✅','success');resetHRLeaveForm();navigate('leave-by-hr');}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+async function submitLeaveHR(){
+  const empId=document.getElementById('hlf-emp').value,type=document.getElementById('hlf-type').value,from=document.getElementById('hlf-from').value,to=document.getElementById('hlf-to').value,days=parseInt(document.getElementById('hlf-days').value)||0,reason=document.getElementById('hlf-reason').value;
+  if(!empId||!type||!from||!to){Toast.show('Fill required fields','warning');return;}
+  Loading.show('Submitting...');
+  try{
+    const all=await HRDB.read('leavesDB',true);
+    const year=from.slice(0,4);
+    const split=await computePaidSplit(empId,type,year,days);
+    // Added directly by HR -- skip the department-head step, HR is the final approver already.
+    await HRDB.insert('leavesDB',{id:HRDB.nextId(all,'id','LV'),employee_id:empId,leave_type:type,from_date:from,to_date:to,days,leave_day_type:document.getElementById('hlf-daytype').value,reason,status:'pending_hr',approved_by:'',created_at:new Date().toISOString().split('T')[0],year,paid:split.label,manager_by:'',manager_at:''});
+    Toast.show('Leave added! ✅','success');resetHRLeaveForm();navigate('leave-by-hr');
+  }catch(e){Toast.show('Error: '+e.message,'error');}
+  Loading.hide();
+}
+
+// ============================================================
+//  LEAVE — YEAR-END PAYOUT / ENCASHMENT
+//  Unused days on leave types marked "convertible" in Leave Settings
+//  get cashed out at the employee's daily rate. Two-step: Process
+//  (creates a pending record) then Release (marks it paid), mirroring
+//  the 13th Month workflow already used elsewhere in this app.
+// ============================================================
+async function initLeavePayout(){
+  const yearInput=document.getElementById('lp-year');
+  if(!yearInput.value) yearInput.value=new Date().getFullYear();
+  const year=yearInput.value;
+  Loading.show();
+  try{
+    const policy=await getLeavePolicy();
+    const convertibleTypes=Object.entries(policy).filter(([,p])=>p.convertible).map(([t])=>t);
+    allEmployees=await HRDB.read('employeesDB');
+    const leaves=await HRDB.read('leavesDB',true);
+    const payouts=await HRDB.read('leavepayoutsDB',true);
+    const activeEmps=allEmployees.filter(e=>e.status==='active');
+    const rows=[];
+    for(const emp of activeEmps){
+      for(const type of convertibleTypes){
+        const used=await usedDaysThisYear(emp.id,type,year,leaves);
+        const unused=Math.max(0,policy[type].allocation-used);
+        if(unused<=0) continue;
+        const dailyRate=parseFloat(emp.daily_rate||0);
+        const existing=payouts.find(p=>p.employee_id===emp.id&&p.year===String(year)&&p.leave_type===type);
+        rows.push({emp,type,unused,dailyRate,amount:unused*dailyRate,existing});
+      }
+    }
+    document.getElementById('lp-tbody').innerHTML = rows.map(r=>`<tr>
+      <td><div class="emp-card">${Fmt.avatarHtml(r.emp.name,'28')}<div><div class="emp-name">${r.emp.name}</div></div></div></td>
+      <td>${r.type}</td>
+      <td>${r.unused}</td>
+      <td>${Fmt.peso(r.dailyRate)}</td>
+      <td><strong>${Fmt.peso(r.amount)}</strong></td>
+      <td>${r.existing?Fmt.statusBadge(r.existing.status):'<span class="badge badge-gray">Not processed</span>'}</td>
+      <td>${!r.existing?`<button class="btn btn-primary btn-xs" onclick="processPayout('${r.emp.id}','${r.type}',${r.unused},${r.dailyRate},'${year}')">Process</button>`:(r.existing.status==='pending'?`<button class="btn btn-success btn-xs" onclick="releasePayout('${r.existing.id}')">Release</button>`:'—')}</td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:32px">No unused convertible leave found for active employees in this year</td></tr>';
+  }catch(e){Toast.show('Error: '+e.message,'error');}
+  Loading.hide();
+}
+async function processPayout(empId,type,unused,dailyRate,year){
+  Loading.show();
+  try{
+    const all=await HRDB.read('leavepayoutsDB',true);
+    const session=getSession();
+    await HRDB.insert('leavepayoutsDB',{id:HRDB.nextId(all,'id','LP'),employee_id:empId,year:String(year),leave_type:type,unused_days:String(unused),daily_rate:dailyRate.toFixed(2),amount:(unused*dailyRate).toFixed(2),status:'pending',processed_by:session.full_name||session.username,released_date:''});
+    Toast.show('Payout processed — pending release ✅','success');
+    await initLeavePayout();
+  }catch(e){Toast.show('Error: '+e.message,'error');}
+  Loading.hide();
+}
+function releasePayout(id){
+  Modal.confirm('Mark this payout as released (paid)?',async()=>{
+    Loading.show();
+    try{
+      await HRDB.update('leavepayoutsDB',r=>r.id===id,{status:'released',released_date:new Date().toISOString().split('T')[0]});
+      Toast.show('Payout released ✅','success');
+      await initLeavePayout();
+    }catch(e){Toast.show('Error: '+e.message,'error');}
+    Loading.hide();
+  });
+}
 
 // ============================================================
 //  ATTENDANCE — HR PER EMPLOYEE
 // ============================================================
 let attHRPage=1, attEmpId='', attEditId=null, attEmpSchedule=null;
-async function initAttHR(){Loading.show();try{allEmployees=await HRDB.read('employeesDB');const sel=document.getElementById('att-hr-emp');sel.innerHTML='<option value="">Select Employee...</option>'+allEmployees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name} (${e.employee_id})</option>`).join('');const today=new Date();document.getElementById('att-hr-month').value=today.toISOString().substring(0,7);}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+async function initAttHR(){
+  Loading.show();
+  try{
+    allEmployees=await HRDB.read('employeesDB');
+    const session=getSession();
+    const ess=isEssSession(session);
+    document.getElementById('att-hr-emp-card').style.display=ess?'none':'';
+    document.getElementById('att-hr-actions').style.display=ess?'none':'';
+    const sel=document.getElementById('att-hr-emp');
+    sel.innerHTML='<option value="">Select Employee...</option>'+allEmployees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name} (${e.employee_id})</option>`).join('');
+    document.getElementById('att-hr-month').value=new Date().toISOString().substring(0,7);
+    if(ess && session.employee_id){ sel.value=session.employee_id; await loadEmpAttendance(); }
+  }catch(e){Toast.show('Error: '+e.message,'error');}
+  Loading.hide();
+}
 async function loadEmpAttendance(){attEmpId=document.getElementById('att-hr-emp').value;if(!attEmpId){document.getElementById('att-emp-profile').style.display='none';return;}const emp=allEmployees.find(e=>e.id===attEmpId);if(emp){document.getElementById('att-emp-profile').style.display='';document.getElementById('att-emp-avatar').textContent=emp.name.charAt(0);document.getElementById('att-emp-name2').textContent=emp.name;document.getElementById('att-emp-pos').textContent=emp.position;document.getElementById('att-emp-id2').textContent=emp.employee_id;document.getElementById('att-emp-dept').textContent=emp.department;document.getElementById('att-emp-hire').textContent=Fmt.date(emp.hire_date);}Loading.show();try{const schedules=await HRDB.read('schedulesDB');attEmpSchedule=getActiveSchedule(schedules,attEmpId);allAttendance=await HRDB.read('attendanceDB',true);const month=document.getElementById('att-hr-month').value;const rows=allAttendance.filter(a=>a.employee_id===attEmpId&&a.date.startsWith(month));const approvedHrs=rows.reduce((s,a)=>s+parseFloat(a.work_hours||0),0);const otHrs=rows.reduce((s,a)=>s+parseFloat(a.overtime_hours||0),0);document.getElementById('att-approved-hrs').textContent=approvedHrs.toFixed(2)+' hrs';document.getElementById('att-rejected-hrs').textContent='0 hrs';document.getElementById('att-ot-hrs').textContent=otHrs.toFixed(2)+' hrs';renderAttHRTable(rows,1);}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 function renderAttHRTable(rows,page){attHRPage=page;const paged=paginate(rows,page,20);const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];document.getElementById('att-hr-tbody').innerHTML=paged.rows.map(a=>{const d=new Date(a.date+'T00:00:00');const brkText=breakSummaryText(a);return`<tr><td><strong class="mono">${a.date}</strong></td><td><span class="badge badge-gray">${days[d.getDay()]}</span></td><td>${a.time_in||'—'}</td><td>${a.time_out||'—'}</td><td style="font-size:11px" title="${brkText||(a.break_minutes||0)+' min (flat)'}">${brkText||((a.break_minutes||0)+' min')}</td><td><strong>${parseFloat(a.work_hours||0).toFixed(2)} hrs</strong></td><td>${parseFloat(a.overtime_hours||0)>0?`<span style="color:var(--warning)">${parseFloat(a.overtime_hours).toFixed(2)} hrs</span>`:'—'}</td><td>${Fmt.statusBadge(a.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="editAtt('${a.id}')">✏️</button><button class="btn btn-danger btn-xs" onclick="delAtt('${a.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">No attendance records for this period</td></tr>';renderPager('att-hr-pagination',paged,p=>renderAttHRTable(rows,p));}
 async function approveAllAtt(){if(!attEmpId)return;Modal.confirm('Approve all attendance for this employee this month?',async()=>{Loading.show();try{const month=document.getElementById('att-hr-month').value;await HRDB.update('attendanceDB',r=>r.employee_id===attEmpId&&r.date.startsWith(month),{status:'present'});Toast.show('All approved ✅','success');await loadEmpAttendance();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
@@ -1796,7 +2159,19 @@ async function saveGeneratedPayroll(){if(!generatedRows.length){Toast.show('No d
 // ============================================================
 //  PAYSLIP
 // ============================================================
-async function initPayslip(){Loading.show();try{allEmployees=await HRDB.read('employeesDB');const sel=document.getElementById('ps-emp');sel.innerHTML='<option value="">Select Employee...</option>'+allEmployees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name} (${e.employee_id})</option>`).join('');}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+async function initPayslip(){
+  Loading.show();
+  try{
+    allEmployees=await HRDB.read('employeesDB');
+    const session=getSession();
+    const ess=isEssSession(session);
+    const sel=document.getElementById('ps-emp');
+    sel.innerHTML='<option value="">Select Employee...</option>'+allEmployees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name} (${e.employee_id})</option>`).join('');
+    sel.disabled=ess;
+    if(ess && session.employee_id) sel.value=session.employee_id;
+  }catch(e){Toast.show('Error: '+e.message,'error');}
+  Loading.hide();
+}
 async function loadPayslip(){const empId=document.getElementById('ps-emp').value,from=document.getElementById('ps-from').value,to=document.getElementById('ps-to').value;if(!empId){Toast.show('Select an employee','warning');return;}Loading.show();try{allPayroll=await HRDB.read('payrollDB');const emp=allEmployees.find(e=>e.id===empId);let records=allPayroll.filter(p=>p.employee_id===empId);if(from)records=records.filter(p=>p.period_start>=from);if(to)records=records.filter(p=>p.period_end<=to);if(!records.length){Toast.show('No payroll record for this period','warning');Loading.hide();return;}// Use latest record
 const p=records.sort((a,b)=>b.period_start.localeCompare(a.period_start))[0];renderPayslip(emp,p);}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 function renderPayslip(emp,p){const html=`<div class="payslip"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px"><div><h2>🏢 Enterprise System</h2><div class="sub">Official Payslip</div></div><div style="text-align:right;font-size:12px;color:#666"><div>Payroll Period</div><div style="font-weight:700">${p.period_start} to ${p.period_end}</div><div>Generated: ${p.generated_date||new Date().toISOString().split('T')[0]}</div></div></div><hr><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px"><div><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">Employee</div><div style="font-size:15px;font-weight:700">${emp.name}</div><div style="color:#6b7280">${emp.position} — ${emp.department}</div><div style="font-family:monospace;font-size:12px;margin-top:4px">${emp.employee_id}</div></div><div style="text-align:right"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">Summary</div><div>Days Worked: <strong>${p.days_worked}</strong></div><div>Regular Hrs: <strong>${p.regular_hours}</strong></div><div>Overtime Hrs: <strong>${p.overtime_hours}</strong></div></div></div><hr><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div><table><thead><tr><th>Earnings</th><th style="text-align:right">Amount</th></tr></thead><tbody><tr><td>Basic Pay (${p.days_worked} days)</td><td style="text-align:right">${Fmt.peso(p.basic_pay)}</td></tr><tr><td>Overtime Pay</td><td style="text-align:right">${Fmt.peso(p.overtime_pay)}</td></tr><tr><td>Allowance</td><td style="text-align:right">${Fmt.peso(p.allowance||0)}</td></tr><tr class="total-row"><td><strong>Gross Pay</strong></td><td style="text-align:right"><strong>${Fmt.peso(p.gross_pay)}</strong></td></tr></tbody></table></div><div><table><thead><tr><th>Deductions</th><th style="text-align:right">Amount</th></tr></thead><tbody><tr><td>SSS</td><td style="text-align:right">${Fmt.peso(p.sss)}</td></tr><tr><td>PhilHealth</td><td style="text-align:right">${Fmt.peso(p.philhealth)}</td></tr><tr><td>Pag-IBIG</td><td style="text-align:right">${Fmt.peso(p.pagibig)}</td></tr><tr><td>Withholding Tax</td><td style="text-align:right">${Fmt.peso(p.tax)}</td></tr><tr class="total-row"><td><strong>Total Deductions</strong></td><td style="text-align:right"><strong>${Fmt.peso(p.total_deductions)}</strong></td></tr></tbody></table></div></div><hr><div style="background:#f0fdf4;padding:16px;border-radius:8px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:14px;font-weight:600;color:#166534">NET PAY</div><div style="font-size:24px;font-weight:800;color:#166534">${Fmt.peso(p.net_pay)}</div></div><div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:24px"><div style="border-top:1px solid #e5e7eb;padding-top:8px;text-align:center;font-size:11px;color:#6b7280">Employee Signature</div><div style="border-top:1px solid #e5e7eb;padding-top:8px;text-align:center;font-size:11px;color:#6b7280">HR / Authorized Signature</div></div></div>`;document.getElementById('payslip-content').innerHTML=html;document.getElementById('payslip-container').style.display='';}
@@ -1927,10 +2302,22 @@ async function loadDepartments() {
   Loading.show();
   try {
     allDepts = await HRDB.read('departmentsDB', true);
+    allEmployees = await HRDB.read('employeesDB');
     renderDeptStats();
     filterDepts();
   } catch(e) { Toast.show('Error: '+e.message,'error'); }
   Loading.hide();
+}
+function deptHeadEmpOptions(selectedId) {
+  return '<option value="">— Not linked / external —</option>' +
+    (allEmployees||[]).filter(e=>e.status==='active').map(e=>`<option value="${e.id}" ${e.id===selectedId?'selected':''}>${e.name} (${e.employee_id})</option>`).join('');
+}
+function onDeptHeadEmpChange() {
+  const sel=document.getElementById('df-head-emp');
+  const nameInput=document.getElementById('df-head');
+  const emp=(allEmployees||[]).find(e=>e.id===sel.value);
+  if (emp) { nameInput.value=emp.name; nameInput.readOnly=true; }
+  else { nameInput.readOnly=false; }
 }
 
 function renderDeptStats() {
@@ -1970,6 +2357,8 @@ function renderDeptTable(rows, page) {
 function openAddDept() {
   editDeptId = null;
   ['df-name','df-head','df-phone','df-email'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('df-head-emp').innerHTML=deptHeadEmpOptions('');
+  document.getElementById('df-head').readOnly=false;
   document.getElementById('df-status').value='active';
   document.getElementById('dept-modal-title').textContent='+ Add Department';
   Modal.open('dept-modal');
@@ -1978,7 +2367,9 @@ function editDept(id) {
   const d=allDepts.find(x=>x.id===id);if(!d)return;
   editDeptId=id;
   document.getElementById('df-name').value=d.name;
+  document.getElementById('df-head-emp').innerHTML=deptHeadEmpOptions(d.head_employee_id||'');
   document.getElementById('df-head').value=d.head||'';
+  document.getElementById('df-head').readOnly=!!d.head_employee_id;
   document.getElementById('df-phone').value=d.phone||'';
   document.getElementById('df-email').value=d.email||'';
   document.getElementById('df-status').value=d.status;
@@ -1990,7 +2381,7 @@ async function saveDept() {
   if(!name){Toast.show('Department name is required','warning');return;}
   Loading.show();
   try {
-    const data={name,head:document.getElementById('df-head').value,phone:document.getElementById('df-phone').value,email:document.getElementById('df-email').value,status:document.getElementById('df-status').value};
+    const data={name,head:document.getElementById('df-head').value,head_employee_id:document.getElementById('df-head-emp').value,phone:document.getElementById('df-phone').value,email:document.getElementById('df-email').value,status:document.getElementById('df-status').value};
     if(editDeptId){
       await HRDB.update('departmentsDB',r=>r.id===editDeptId,data);
       Toast.show('Department updated ✅','success');
@@ -2303,13 +2694,28 @@ function deleteAnn(id){Modal.confirm('Delete this announcement?',async()=>{Loadi
 
 // ============================================================
 //  USER MANAGEMENT
+//  Accounts created here are written to the MAIN enterprise
+//  accountsDB (db/accountsDB.txt, assigned_system="attendance") --
+//  the same table index.html's login form checks -- so an employee
+//  account made here can actually log in and land in this app,
+//  restricted to their own Employee Self-Service view.
 // ============================================================
 let allUsers=[], editUserId=null;
+
+// GITHUB_CONFIG.dbPath points at "hr/db" on this page (see hr-config.js).
+// Temporarily point it at the root "db" folder to read/write the shared
+// accountsDB, then restore it -- HRDB itself is unaware of the swap.
+async function rootDB(fn) {
+  const saved = GITHUB_CONFIG.dbPath;
+  GITHUB_CONFIG.dbPath = 'db';
+  try { return await fn(); } finally { GITHUB_CONFIG.dbPath = saved; }
+}
 
 async function loadUsers() {
   Loading.show();
   try {
-    allUsers=await HRDB.read('hraccountsDB',true);
+    const all = await rootDB(() => HRDB.read('accountsDB', true));
+    allUsers = all.filter(u => u.assigned_system === 'attendance');
     allEmployees=await HRDB.read('employeesDB');
     renderUserStats();
     filterUsers();
@@ -2322,9 +2728,36 @@ function renderUserTable(rows,page){const paged=paginate(rows,page,10);document.
 
 async function openAddUser(){editUserId=null;['uf-username','uf-fullname','uf-email','uf-password','uf-password2'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});document.getElementById('uf-role').value='staff';document.getElementById('uf-status').value='active';document.getElementById('uf-username').disabled=false;document.getElementById('uf-pw-label').textContent='Password *';document.getElementById('uf-pw-note').style.display='none';const empLink=document.getElementById('uf-emp-link');empLink.innerHTML='<option value="">None</option>'+(allEmployees||[]).filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name} (${e.employee_id})</option>`).join('');document.getElementById('user-modal-title').textContent='+ Add User';Modal.open('user-modal');}
 function editUser(username){const u=allUsers.find(x=>x.username===username);if(!u)return;editUserId=username;document.getElementById('uf-username').value=u.username;document.getElementById('uf-username').disabled=true;document.getElementById('uf-fullname').value=u.full_name;document.getElementById('uf-email').value=u.email||'';document.getElementById('uf-role').value=u.role;document.getElementById('uf-status').value=u.status;document.getElementById('uf-password').value='';document.getElementById('uf-password2').value='';document.getElementById('uf-pw-label').textContent='Password (optional)';document.getElementById('uf-pw-note').style.display='';const empLink=document.getElementById('uf-emp-link');empLink.innerHTML='<option value="">None</option>'+(allEmployees||[]).filter(e=>e.status==='active').map(e=>`<option value="${e.id}" ${e.id===u.employee_id?'selected':''}>${e.name}</option>`).join('');document.getElementById('user-modal-title').textContent='✏️ Edit User';Modal.open('user-modal');}
-async function saveUser(){const username=document.getElementById('uf-username').value.trim().toLowerCase(),fullName=document.getElementById('uf-fullname').value.trim(),role=document.getElementById('uf-role').value,pw=document.getElementById('uf-password').value,pw2=document.getElementById('uf-password2').value,status=document.getElementById('uf-status').value;if(!username||!fullName){Toast.show('Fill required fields','warning');return;}if(!editUserId&&!pw){Toast.show('Password required for new user','warning');return;}if(pw&&pw!==pw2){Toast.show('Passwords do not match','error');return;}if(pw&&pw.length<6){Toast.show('Minimum 6 characters','warning');return;}Loading.show();try{let hashed='';if(pw){const data=new TextEncoder().encode(pw);const hash=await crypto.subtle.digest('SHA-256',data);hashed=Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');}const all=await HRDB.read('hraccountsDB',true);const empId=document.getElementById('uf-emp-link').value;if(editUserId){const updates={full_name:fullName,email:document.getElementById('uf-email').value,role,status,employee_id:empId};if(hashed)updates.password_hash=hashed;await HRDB.update('hraccountsDB',r=>r.username===editUserId,updates);Toast.show('User updated ✅','success');}else{if(all.find(u=>u.username===username)){Toast.show('Username already exists!','error');Loading.hide();return;}await HRDB.insert('hraccountsDB',{username,password_hash:hashed,role,full_name:fullName,email:document.getElementById('uf-email').value,employee_id:empId,status,created_at:new Date().toISOString().split('T')[0]});Toast.show('User added ✅','success');}Modal.close('user-modal');await loadUsers();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
-async function toggleUser(username){const u=allUsers.find(x=>x.username===username);if(!u)return;const ns=u.status==='active'?'suspended':'active';Loading.show();try{await HRDB.update('hraccountsDB',r=>r.username===username,{status:ns});Toast.show(`User ${ns} ✅`,'success');await loadUsers();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
-function deleteUser(username){if(username==='hradmin'){Toast.show('Cannot delete admin account','warning');return;}Modal.confirm(`Delete user "${username}"?`,async()=>{Loading.show();try{await HRDB.remove('hraccountsDB',r=>r.username===username);Toast.show('User deleted','success');await loadUsers();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
+async function saveUser(){
+  const username=document.getElementById('uf-username').value.trim().toLowerCase(),fullName=document.getElementById('uf-fullname').value.trim(),role=document.getElementById('uf-role').value,pw=document.getElementById('uf-password').value,pw2=document.getElementById('uf-password2').value,status=document.getElementById('uf-status').value;
+  if(!username||!fullName){Toast.show('Fill required fields','warning');return;}
+  if(!editUserId&&!pw){Toast.show('Password required for new user','warning');return;}
+  if(pw&&pw!==pw2){Toast.show('Passwords do not match','error');return;}
+  if(pw&&pw.length<6){Toast.show('Minimum 6 characters','warning');return;}
+  Loading.show();
+  try{
+    let hashed='';
+    if(pw){const data=new TextEncoder().encode(pw);const hash=await crypto.subtle.digest('SHA-256',data);hashed=Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');}
+    const empId=document.getElementById('uf-emp-link').value;
+    await rootDB(async () => {
+      const all=await HRDB.read('accountsDB',true);
+      if(editUserId){
+        const updates={full_name:fullName,email:document.getElementById('uf-email').value,role,status,employee_id:empId};
+        if(hashed)updates.password_hash=hashed;
+        await HRDB.update('accountsDB',r=>r.username===editUserId,updates);
+        Toast.show('User updated ✅','success');
+      }else{
+        if(all.find(u=>u.username===username)){Toast.show('Username already exists!','error');throw new Error('__handled__');}
+        await HRDB.insert('accountsDB',{username,password_hash:hashed,role,assigned_system:'attendance',full_name:fullName,email:document.getElementById('uf-email').value,status,created_at:new Date().toISOString().split('T')[0],employee_id:empId});
+        Toast.show('User added ✅ — they can now log in from the main login page.','success');
+      }
+    });
+    Modal.close('user-modal');await loadUsers();
+  }catch(e){ if(e.message!=='__handled__') Toast.show('Error: '+e.message,'error'); }
+  Loading.hide();
+}
+async function toggleUser(username){const u=allUsers.find(x=>x.username===username);if(!u)return;const ns=u.status==='active'?'suspended':'active';Loading.show();try{await rootDB(()=>HRDB.update('accountsDB',r=>r.username===username,{status:ns}));Toast.show(`User ${ns} ✅`,'success');await loadUsers();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+function deleteUser(username){if(username==='hradmin'){Toast.show('Cannot delete admin account','warning');return;}Modal.confirm(`Delete user "${username}"?`,async()=>{Loading.show();try{await rootDB(()=>HRDB.remove('accountsDB',r=>r.username===username));Toast.show('User deleted','success');await loadUsers();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
 
 // ============================================================
 //  13TH MONTH & BONUS
@@ -2345,8 +2778,8 @@ async function release13m(id){Modal.confirm('Release 13th month pay for this emp
 //  PROFILE (edit profile, change password)
 // ============================================================
 function loadEditProfile(){const s=getSession();if(!s)return;document.getElementById('pf-fullname').value=s.full_name||'';document.getElementById('pf-email').value=s.email||'';document.getElementById('pf-phone').value=s.phone||'';document.getElementById('profile-avatar-big').textContent=s.full_name?.charAt(0)||'A';}
-async function saveProfile(){const name=document.getElementById('pf-fullname').value.trim();if(!name){Toast.show('Name required','warning');return;}Loading.show();try{const session=getSession();await HRDB.update('hraccountsDB',r=>r.username===session.username,{full_name:name,email:document.getElementById('pf-email').value});const updSession={...session,full_name:name,email:document.getElementById('pf-email').value};sessionStorage.setItem('ent_session',JSON.stringify(updSession));sessionStorage.setItem('hr_session',JSON.stringify(updSession));document.getElementById('sidebar-name').textContent=name;document.getElementById('topbar-name').textContent=name;Toast.show('Profile updated ✅','success');}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
-async function changePassword(){const curr=document.getElementById('cp-current').value,nw=document.getElementById('cp-new').value,conf=document.getElementById('cp-confirm').value;if(!curr||!nw||!conf){Toast.show('Fill all fields','warning');return;}if(nw!==conf){Toast.show('Passwords do not match','error');return;}if(nw.length<6){Toast.show('Minimum 6 characters','warning');return;}Loading.show('Changing password...');try{const session=getSession();const hash=async p=>{const d=new TextEncoder().encode(p);const h=await crypto.subtle.digest('SHA-256',d);return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');};const currHash=await hash(curr);const users=await HRDB.read('hraccountsDB',true);const user=users.find(u=>u.username===session.username&&u.password_hash===currHash);if(!user){Toast.show('Current password is incorrect','error');Loading.hide();return;}const newHash=await hash(nw);await HRDB.update('hraccountsDB',r=>r.username===session.username,{password_hash:newHash});Toast.show('Password changed ✅','success');['cp-current','cp-new','cp-confirm'].forEach(id=>document.getElementById(id).value='');}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+async function saveProfile(){const name=document.getElementById('pf-fullname').value.trim();if(!name){Toast.show('Name required','warning');return;}Loading.show();try{const session=getSession();await rootDB(()=>HRDB.update('accountsDB',r=>r.username===session.username,{full_name:name,email:document.getElementById('pf-email').value}));const updSession={...session,full_name:name,email:document.getElementById('pf-email').value};sessionStorage.setItem('ent_session',JSON.stringify(updSession));sessionStorage.setItem('hr_session',JSON.stringify(updSession));document.getElementById('sidebar-name').textContent=name;document.getElementById('topbar-name').textContent=name;Toast.show('Profile updated ✅','success');}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+async function changePassword(){const curr=document.getElementById('cp-current').value,nw=document.getElementById('cp-new').value,conf=document.getElementById('cp-confirm').value;if(!curr||!nw||!conf){Toast.show('Fill all fields','warning');return;}if(nw!==conf){Toast.show('Passwords do not match','error');return;}if(nw.length<6){Toast.show('Minimum 6 characters','warning');return;}Loading.show('Changing password...');try{const session=getSession();const hash=async p=>{const d=new TextEncoder().encode(p);const h=await crypto.subtle.digest('SHA-256',d);return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');};const currHash=await hash(curr);const users=await rootDB(()=>HRDB.read('accountsDB',true));const user=users.find(u=>u.username===session.username&&u.password_hash===currHash);if(!user){Toast.show('Current password is incorrect','error');Loading.hide();return;}const newHash=await hash(nw);await rootDB(()=>HRDB.update('accountsDB',r=>r.username===session.username,{password_hash:newHash}));Toast.show('Password changed ✅','success');['cp-current','cp-new','cp-confirm'].forEach(id=>document.getElementById(id).value='');}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 
 // Load notifications after main init
 document.addEventListener('DOMContentLoaded', () => {

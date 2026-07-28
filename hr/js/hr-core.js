@@ -126,9 +126,11 @@ const Fmt = {
     const m = {
       approved: 'badge-success', present: 'badge-success', active: 'badge-success', released: 'badge-success',
       pending: 'badge-warning', late: 'badge-warning', new: 'badge-info',
+      pending_manager: 'badge-warning', pending_hr: 'badge-warning',
       absent: 'badge-danger', rejected: 'badge-danger', inactive: 'badge-gray', suspended: 'badge-gray', draft: 'badge-gray'
     };
-    return `<span class="badge ${m[s] || 'badge-gray'}">${s || ''}</span>`;
+    const labels = { pending_manager: 'Pending Manager', pending_hr: 'Pending HR' };
+    return `<span class="badge ${m[s] || 'badge-gray'}">${labels[s] || s || ''}</span>`;
   },
   employmentTypeBadge(t) {
     const m = {
