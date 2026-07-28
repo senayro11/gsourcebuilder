@@ -1899,13 +1899,9 @@ async function loadEmpLeaves() {
       const perType=myTypes.map(t=>{
         const allocation=policy[t]?.allocation||0;
         const used=myLeaves.filter(l=>l.leave_type===t && l.year===String(year) && leaveCountsAgainstBalance(l)).reduce((s,l)=>s+(parseInt(l.days)||0),0);
-        return {type:t, remaining:Math.max(0,allocation-used)};
+        return {type:t, allocation, remaining:Math.max(0,allocation-used)};
       });
-      const totalAlloc=myTypes.reduce((s,t)=>s+(policy[t]?.allocation||0),0);
-      const totalRemaining=perType.reduce((s,p)=>s+p.remaining,0);
-      statsEl.innerHTML=`<div class="stat-card"><div class="stat-icon blue">📄</div><div><div class="stat-value">${totalAlloc}</div><div class="stat-label">Total Leave Balance</div></div></div>`
-        +perType.map(p=>`<div class="stat-card"><div class="stat-icon green">📆</div><div><div class="stat-value">${p.remaining}</div><div class="stat-label">${p.type}</div></div></div>`).join('')
-        +`<div class="stat-card"><div class="stat-icon yellow">⏳</div><div><div class="stat-value">${totalRemaining}</div><div class="stat-label">Remaining Leave</div></div></div>`;
+      statsEl.innerHTML=perType.map(p=>`<div class="stat-card"><div class="stat-icon green">📆</div><div><div class="stat-value">${p.remaining}<span style="font-size:14px;color:var(--text3)">/${p.allocation}</span></div><div class="stat-label">${p.type}</div></div></div>`).join('');
     }
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
