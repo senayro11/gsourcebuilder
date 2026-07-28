@@ -316,8 +316,8 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>No</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Approved By</th><th>Paid?</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody id="lv-emp-tbody"><tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">Loading...</td></tr></tbody>
+            <thead><tr><th>No</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Date Filed</th><th>Approved By</th><th>Paid?</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="lv-emp-tbody"><tr><td colspan="11" style="text-align:center;color:var(--text3);padding:32px">Loading...</td></tr></tbody>
           </table>
         </div>
         <div id="lv-emp-pagination"></div>
@@ -426,8 +426,8 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>No</th><th>Employee</th><th>Leave Type</th><th>Reason</th><th>Days</th><th>From</th><th>To</th><th>Paid?</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody id="hr-lv-tbody"><tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">Loading...</td></tr></tbody>
+            <thead><tr><th>No</th><th>Employee</th><th>Leave Type</th><th>Reason</th><th>Days</th><th>From</th><th>To</th><th>Date Filed</th><th>Paid?</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="hr-lv-tbody"><tr><td colspan="11" style="text-align:center;color:var(--text3);padding:32px">Loading...</td></tr></tbody>
           </table>
         </div>
         <div id="hr-lv-pagination"></div>
@@ -520,7 +520,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>No</th><th>Employee</th><th>Leave Type</th><th>Reason</th><th>Days</th><th>From</th><th>To</th><th>Status</th><th>Action</th></tr></thead>
+            <thead><tr><th>No</th><th>Employee</th><th>Leave Type</th><th>Reason</th><th>Days</th><th>From</th><th>To</th><th>Date Filed</th><th>Status</th><th>Action</th></tr></thead>
             <tbody id="team-lv-tbody"></tbody>
           </table>
         </div>
@@ -1907,7 +1907,7 @@ async function loadEmpLeaves() {
   Loading.hide();
 }
 let lvEmpPage=1;
-function renderEmpLeaveTable(rows,page){lvEmpPage=page;const paged=paginate(rows,page);document.getElementById('lv-emp-tbody').innerHTML=paged.rows.map((l,i)=>`<tr><td>${paged.start+i+1}</td><td>${l.leave_type}</td><td>${Fmt.date(l.from_date)}</td><td>${Fmt.date(l.to_date)}</td><td>${l.days}</td><td style="max-width:160px">${l.reason||'—'}</td><td>${l.approved_by||'—'}</td><td>${l.paid?`<span class="badge ${l.paid==='Paid'?'badge-success':l.paid==='Unpaid'?'badge-danger':'badge-warning'}">${l.paid}</span>`:'—'}</td><td>${Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px">${l.status==='pending_manager'||l.status==='pending_hr'||l.status==='new'||l.status==='pending'?`<button class="btn btn-danger btn-xs" onclick="deleteLeave('${l.id}')">🗑</button>`:''}</div></td></tr>`).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">No leave records</td></tr>';renderPager('lv-emp-pagination',paged,p=>renderEmpLeaveTable(rows,p));}
+function renderEmpLeaveTable(rows,page){lvEmpPage=page;const paged=paginate(rows,page);document.getElementById('lv-emp-tbody').innerHTML=paged.rows.map((l,i)=>`<tr><td>${paged.start+i+1}</td><td>${l.leave_type}</td><td>${Fmt.date(l.from_date)}</td><td>${Fmt.date(l.to_date)}</td><td>${l.days}</td><td style="max-width:160px">${l.reason||'—'}</td><td style="font-size:12px">${Fmt.date(l.created_at)}</td><td>${l.approved_by||'—'}</td><td>${l.paid?`<span class="badge ${l.paid==='Paid'?'badge-success':l.paid==='Unpaid'?'badge-danger':'badge-warning'}">${l.paid}</span>`:'—'}</td><td>${Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px">${l.status==='pending_manager'||l.status==='pending_hr'||l.status==='new'||l.status==='pending'?`<button class="btn btn-danger btn-xs" onclick="deleteLeave('${l.id}')">🗑</button>`:''}</div></td></tr>`).join('')||'<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:32px">No leave records</td></tr>';renderPager('lv-emp-pagination',paged,p=>renderEmpLeaveTable(rows,p));}
 
 async function initAddLeaveEmp(){
   const session=getSession();
@@ -1981,8 +1981,8 @@ async function loadTeamApprovals(){
     }).sort((a,b)=>b.created_at.localeCompare(a.created_at));
     document.getElementById('team-lv-tbody').innerHTML=rows.map((l,i)=>{
       const emp=allEmployees.find(e=>e.id===l.employee_id);
-      return `<tr><td>${i+1}</td><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td><td>${l.leave_type}</td><td style="max-width:140px;font-size:12px">${l.reason||'—'}</td><td>${l.days}</td><td style="font-size:12px">${Fmt.date(l.from_date)}</td><td style="font-size:12px">${Fmt.date(l.to_date)}</td><td>${Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-success btn-xs" onclick="approveManagerLeave('${l.id}')">✅</button><button class="btn btn-danger btn-xs" onclick="rejectManagerLeave('${l.id}')">❌</button></div></td></tr>`;
-    }).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">No leave requests waiting for your approval</td></tr>';
+      return `<tr><td>${i+1}</td><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td><td>${l.leave_type}</td><td style="max-width:140px;font-size:12px">${l.reason||'—'}</td><td>${l.days}</td><td style="font-size:12px">${Fmt.date(l.from_date)}</td><td style="font-size:12px">${Fmt.date(l.to_date)}</td><td style="font-size:12px">${Fmt.date(l.created_at)}</td><td>${Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-success btn-xs" onclick="approveManagerLeave('${l.id}')">✅</button><button class="btn btn-danger btn-xs" onclick="rejectManagerLeave('${l.id}')">❌</button></div></td></tr>`;
+    }).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">No leave requests waiting for your approval</td></tr>';
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
 }
@@ -1995,7 +1995,7 @@ async function rejectManagerLeave(id){Loading.show();try{const session=getSessio
 let hrLvPage=1;
 async function loadHRLeaves(){Loading.show();try{allLeaves=await HRDB.read('leavesDB',true);allEmployees=await HRDB.read('employeesDB');const today=new Date().toISOString().split('T')[0];const todayLeaves=allLeaves.filter(l=>l.from_date<=today&&l.to_date>=today);document.getElementById('hr-lv-today').textContent=`${todayLeaves.filter(l=>l.status==='approved').length}/${allEmployees.filter(e=>e.status==='active').length}`;document.getElementById('hr-lv-today2').textContent=todayLeaves.length;document.getElementById('hr-lv-unplanned').textContent=allLeaves.filter(l=>l.status==='new').length;document.getElementById('hr-lv-pending').textContent=allLeaves.filter(l=>HR_ACTIONABLE_STATUSES.includes(l.status)||l.status==='pending_manager').length;filterHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 function filterHRLeaves(){const q=(document.getElementById('hr-lv-search')?.value||'').toLowerCase();const st=document.getElementById('hr-lv-status-filter')?.value||'';let rows=allLeaves;if(q)rows=rows.filter(l=>{const e=allEmployees.find(x=>x.id===l.employee_id);return(e?.name||'').toLowerCase().includes(q)||l.leave_type.toLowerCase().includes(q);});if(st)rows=rows.filter(l=>l.status===st);rows.sort((a,b)=>b.created_at.localeCompare(a.created_at));renderHRLeaveTable(rows,1);}
-function renderHRLeaveTable(rows,page){hrLvPage=page;const paged=paginate(rows,page);document.getElementById('hr-lv-tbody').innerHTML=paged.rows.map((l,i)=>{const emp=allEmployees.find(e=>e.id===l.employee_id);const actionable=HR_ACTIONABLE_STATUSES.includes(l.status);return`<tr><td>${paged.start+i+1}</td><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td><td>${l.leave_type}</td><td style="max-width:140px;font-size:12px">${l.reason||'—'}</td><td>${l.days}</td><td style="font-size:12px">${Fmt.date(l.from_date)}</td><td style="font-size:12px">${Fmt.date(l.to_date)}</td><td>${l.paid?`<span class="badge ${l.paid==='Paid'?'badge-success':l.paid==='Unpaid'?'badge-danger':'badge-warning'}">${l.paid}</span>`:'—'}</td><td>${l.status==='pending_manager'?'<span class="badge badge-warning">Waiting: Manager</span>':Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px">${actionable?`<button class="btn btn-success btn-xs" onclick="approveLeave('${l.id}')">✅</button><button class="btn btn-danger btn-xs" onclick="rejectLeave('${l.id}')">❌</button>`:''}<button class="btn btn-ghost btn-xs" onclick="deleteLeave('${l.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">No leave records</td></tr>';renderPager('hr-lv-pagination',paged,p=>renderHRLeaveTable(rows,p));}
+function renderHRLeaveTable(rows,page){hrLvPage=page;const paged=paginate(rows,page);document.getElementById('hr-lv-tbody').innerHTML=paged.rows.map((l,i)=>{const emp=allEmployees.find(e=>e.id===l.employee_id);const actionable=HR_ACTIONABLE_STATUSES.includes(l.status);return`<tr><td>${paged.start+i+1}</td><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td><td>${l.leave_type}</td><td style="max-width:140px;font-size:12px">${l.reason||'—'}</td><td>${l.days}</td><td style="font-size:12px">${Fmt.date(l.from_date)}</td><td style="font-size:12px">${Fmt.date(l.to_date)}</td><td style="font-size:12px">${Fmt.date(l.created_at)}</td><td>${l.paid?`<span class="badge ${l.paid==='Paid'?'badge-success':l.paid==='Unpaid'?'badge-danger':'badge-warning'}">${l.paid}</span>`:'—'}</td><td>${l.status==='pending_manager'?'<span class="badge badge-warning">Waiting: Manager</span>':Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px">${actionable?`<button class="btn btn-success btn-xs" onclick="approveLeave('${l.id}')">✅</button><button class="btn btn-danger btn-xs" onclick="rejectLeave('${l.id}')">❌</button>`:''}<button class="btn btn-ghost btn-xs" onclick="deleteLeave('${l.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:32px">No leave records</td></tr>';renderPager('hr-lv-pagination',paged,p=>renderHRLeaveTable(rows,p));}
 async function approveLeave(id){Loading.show();try{const session=getSession();await HRDB.update('leavesDB',r=>r.id===id,{status:'approved',approved_by:session.full_name||'HR Admin'});Toast.show('Leave approved ✅','success');await loadHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 async function rejectLeave(id){Loading.show();try{const session=getSession();await HRDB.update('leavesDB',r=>r.id===id,{status:'rejected',approved_by:session.full_name||'HR Admin'});Toast.show('Leave rejected','warning');await loadHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 async function deleteLeave(id){Modal.confirm('Delete this leave record?',async()=>{Loading.show();try{await HRDB.remove('leavesDB',r=>r.id===id);Toast.show('Deleted','success');if(currentPage==='leave-by-hr')await loadHRLeaves();else if(currentPage==='leave-team')await loadTeamApprovals();else await loadEmpLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
