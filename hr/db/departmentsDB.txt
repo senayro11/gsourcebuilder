@@ -1,5 +1,5 @@
 id|name|head|phone|email|employee_count|status|head_employee_id
-DEPT001|Human Resources|Melanie gupong|09171234567|hr@company.com|3|active|EMP007
+DEPT001|Human Resources|Jose Reyes|09171234567|hr@company.com|3|active|EMP005
 DEPT002|Sales|Juan dela Cruz|09187654321|sales@company.com|5|active|
 DEPT003|Inventory|Maria Santos|09194561234|inventory@company.com|4|active|EMP002
 DEPT004|Finance|Ana Garcia|09201234568|finance@company.com|3|active|EMP004
