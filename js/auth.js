@@ -31,7 +31,8 @@ const Auth = (() => {
       const sessionUser = {
         username: user.username, full_name: user.full_name,
         role: user.role, assigned_system: user.assigned_system,
-        email: user.email, login_time: new Date().toISOString()
+        email: user.email, employee_id: user.employee_id || '',
+        login_time: new Date().toISOString()
       };
       setSession(sessionUser);
       return { success: true, user: sessionUser };
