@@ -308,12 +308,7 @@
         <h1>📅 My Leave Requests</h1>
         <p class="subtitle">View and manage your leave applications</p>
       </div>
-      <div class="stats-grid" id="leave-stats" style="grid-template-columns:repeat(4,1fr)">
-        <div class="stat-card"><div class="stat-icon blue">📄</div><div><div class="stat-value" id="lv-total">—</div><div class="stat-label">Total Leave Balance</div></div></div>
-        <div class="stat-card"><div class="stat-icon green">📆</div><div><div class="stat-value" id="lv-annual">—</div><div class="stat-label">Vacation Leave</div></div></div>
-        <div class="stat-card"><div class="stat-icon red">🏥</div><div><div class="stat-value" id="lv-medical">—</div><div class="stat-label">Medical Leave</div></div></div>
-        <div class="stat-card"><div class="stat-icon yellow">⏳</div><div><div class="stat-value" id="lv-remaining">—</div><div class="stat-label">Remaining Leave</div></div></div>
-      </div>
+      <div class="stats-grid" id="leave-stats"></div>
       <div class="card">
         <div class="card-header">
           <span class="card-title">Leave History</span>
@@ -1241,6 +1236,11 @@
           <div class="form-group"><label>Pag-IBIG (₱)</label><input type="number" id="ef-pi" step="0.01"></div>
         </div>
       </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:14px;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px">🗓️ Leave Entitlements</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Only the leave types checked here will be available to this employee (Apply Leave dropdown, and the leave balance cards on their My Leave Requests page).</div>
+        <div id="ef-leave-types" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div>
+      </div>
       <div class="form-group"><label>Status</label><select id="ef-status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
     </div>
     <div class="modal-footer">
@@ -1659,6 +1659,17 @@ function renderEmpTable(rows, page) {
 }
 
 let editEmpId = null;
+// Leave types this employee is entitled to. Blank/unset (e.g. a brand new
+// employee HR hasn't configured yet) means none -- forces a deliberate
+// opt-in per employee instead of silently defaulting to "everything".
+function getEmployeeLeaveTypes(emp) {
+  if (!emp || !emp.leave_types) return [];
+  return emp.leave_types.split(',').map(s=>s.trim()).filter(Boolean);
+}
+function renderEmpLeaveTypeCheckboxes(selectedTypes) {
+  const selected=new Set(selectedTypes||[]);
+  document.getElementById('ef-leave-types').innerHTML=HR_LEAVE_TYPES.map(t=>`<label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer"><input type="checkbox" class="ef-leave-type-cb" value="${t}" ${selected.has(t)?'checked':''} style="width:16px;height:16px">${t}</label>`).join('');
+}
 function openAddEmployee() {
   editEmpId = null;
   ['ef-name','ef-empid','ef-email','ef-phone','ef-pos','ef-sss','ef-ph','ef-pi'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
@@ -1669,6 +1680,7 @@ function openAddEmployee() {
   // Populate dept
   const df = document.getElementById('ef-dept');
   df.innerHTML = HR_DEPARTMENTS.map(d=>`<option>${d}</option>`).join('');
+  renderEmpLeaveTypeCheckboxes([]);
   document.getElementById('emp-modal-title').textContent='+ Add Employee';
   Modal.open('emp-modal');
 }
@@ -1689,6 +1701,7 @@ function editEmployee(id) {
   document.getElementById('ef-emptype').value=e.employment_type||'Regular';
   const df=document.getElementById('ef-dept');
   df.innerHTML=HR_DEPARTMENTS.map(d=>`<option ${d===e.department?'selected':''}>${d}</option>`).join('');
+  renderEmpLeaveTypeCheckboxes(getEmployeeLeaveTypes(e));
   document.getElementById('emp-modal-title').textContent='✏️ Edit Employee';
   Modal.open('emp-modal');
 }
@@ -1701,7 +1714,8 @@ async function saveEmployee() {
   Loading.show('Saving...');
   try {
     const monthly=(parseFloat(rate)*22).toFixed(2);
-    const data={name,employee_id:empid,email:document.getElementById('ef-email').value,phone:document.getElementById('ef-phone').value,position:pos,department:document.getElementById('ef-dept').value,daily_rate:rate,monthly_rate:monthly,sss:document.getElementById('ef-sss').value,philhealth:document.getElementById('ef-ph').value,pagibig:document.getElementById('ef-pi').value,tin:'',hire_date:document.getElementById('ef-hire').value,status:document.getElementById('ef-status').value,photo:'',employment_type:document.getElementById('ef-emptype').value};
+    const leaveTypes=Array.from(document.querySelectorAll('.ef-leave-type-cb:checked')).map(cb=>cb.value).join(',');
+    const data={name,employee_id:empid,email:document.getElementById('ef-email').value,phone:document.getElementById('ef-phone').value,position:pos,department:document.getElementById('ef-dept').value,daily_rate:rate,monthly_rate:monthly,sss:document.getElementById('ef-sss').value,philhealth:document.getElementById('ef-ph').value,pagibig:document.getElementById('ef-pi').value,tin:'',hire_date:document.getElementById('ef-hire').value,status:document.getElementById('ef-status').value,photo:'',employment_type:document.getElementById('ef-emptype').value,leave_types:leaveTypes};
     if(editEmpId){await HRDB.update('employeesDB',r=>r.id===editEmpId,data);Toast.show('Employee updated ✅','success');}
     else{const all=await HRDB.read('employeesDB',true);await HRDB.insert('employeesDB',{id:HRDB.nextId(all,'id','EMP'),...data});Toast.show('Employee added ✅','success');}
     Modal.close('emp-modal'); await loadEmployees();
@@ -1815,14 +1829,22 @@ async function saveLeaveSettings(){
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
 }
-async function renderLeaveInfoPanel(elId){
+// allowedTypes omitted -> show every leave type in the policy (used before
+// an employee is chosen). allowedTypes as an array (possibly empty) ->
+// scope the panel to just that employee's configured entitlements.
+async function renderLeaveInfoPanel(elId, allowedTypes){
   const el=document.getElementById(elId); if(!el) return;
   const policy=await getLeavePolicy();
   const year=new Date().getFullYear();
   const titleEl=document.getElementById(elId==='leave-info-panel'?'leave-info-title':'hr-leave-info-title');
   if(titleEl) titleEl.textContent=`Leave Information ${year}`;
-  const total=Object.values(policy).reduce((s,p)=>s+p.allocation,0);
-  el.innerHTML=Object.entries(policy).map(([k,p])=>`<div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--text2)">${k}${p.convertible?' <span class="badge badge-green" style="font-size:9px">convertible</span>':''}</span><span class="badge badge-blue">${String(p.allocation).padStart(2,'0')}</span></div>`).join('')
+  const types = allowedTypes===undefined ? Object.keys(policy) : allowedTypes.filter(t=>policy[t]);
+  if(!types.length){
+    el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0">No leave entitlements configured for this employee yet. Ask HR to set them up in Employee List.</div>';
+    return;
+  }
+  const total=types.reduce((s,t)=>s+policy[t].allocation,0);
+  el.innerHTML=types.map(t=>{const p=policy[t];return `<div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--text2)">${t}${p.convertible?' <span class="badge badge-green" style="font-size:9px">convertible</span>':''}</span><span class="badge badge-blue">${String(p.allocation).padStart(2,'0')}</span></div>`;}).join('')
     +`<div class="flex-between" style="padding:8px 0;margin-top:4px"><span style="font-size:13px;font-weight:700;color:var(--white)">Total Balance</span><span class="badge badge-green">${total}</span></div>`;
 }
 
@@ -1866,21 +1888,43 @@ async function loadEmpLeaves() {
     const session=getSession();
     const myLeaves=session.employee_id ? allLeaves.filter(l=>l.employee_id===session.employee_id) : [];
     renderEmpLeaveTable(myLeaves,1);
+    const emp=allEmployees.find(e=>e.id===session.employee_id);
+    const myTypes=getEmployeeLeaveTypes(emp);
     const policy=await getLeavePolicy();
     const year=new Date().getFullYear();
-    const totalAlloc=Object.values(policy).reduce((s,p)=>s+p.allocation,0);
-    const usedThisYear=myLeaves.filter(l=>l.year===String(year) && leaveCountsAgainstBalance(l)).reduce((s,l)=>s+(parseInt(l.days)||0),0);
-    document.getElementById('lv-total').textContent=totalAlloc;
-    document.getElementById('lv-annual').textContent=policy['Vacation Leave']?.allocation ?? 0;
-    document.getElementById('lv-medical').textContent=policy['Medical Leave']?.allocation ?? 0;
-    document.getElementById('lv-remaining').textContent=Math.max(0,totalAlloc-usedThisYear);
+    const statsEl=document.getElementById('leave-stats');
+    if(!myTypes.length){
+      statsEl.innerHTML='<div class="stat-card" style="grid-column:1/-1"><div><div class="stat-label" style="color:var(--text3)">No leave entitlements configured yet. Ask HR to set them up in Employee List.</div></div></div>';
+    } else {
+      const perType=myTypes.map(t=>{
+        const allocation=policy[t]?.allocation||0;
+        const used=myLeaves.filter(l=>l.leave_type===t && l.year===String(year) && leaveCountsAgainstBalance(l)).reduce((s,l)=>s+(parseInt(l.days)||0),0);
+        return {type:t, remaining:Math.max(0,allocation-used)};
+      });
+      const totalAlloc=myTypes.reduce((s,t)=>s+(policy[t]?.allocation||0),0);
+      const totalRemaining=perType.reduce((s,p)=>s+p.remaining,0);
+      statsEl.innerHTML=`<div class="stat-card"><div class="stat-icon blue">📄</div><div><div class="stat-value">${totalAlloc}</div><div class="stat-label">Total Leave Balance</div></div></div>`
+        +perType.map(p=>`<div class="stat-card"><div class="stat-icon green">📆</div><div><div class="stat-value">${p.remaining}</div><div class="stat-label">${p.type}</div></div></div>`).join('')
+        +`<div class="stat-card"><div class="stat-icon yellow">⏳</div><div><div class="stat-value">${totalRemaining}</div><div class="stat-label">Remaining Leave</div></div></div>`;
+    }
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
 }
 let lvEmpPage=1;
 function renderEmpLeaveTable(rows,page){lvEmpPage=page;const paged=paginate(rows,page);document.getElementById('lv-emp-tbody').innerHTML=paged.rows.map((l,i)=>`<tr><td>${paged.start+i+1}</td><td>${l.leave_type}</td><td>${Fmt.date(l.from_date)}</td><td>${Fmt.date(l.to_date)}</td><td>${l.days}</td><td style="max-width:160px">${l.reason||'—'}</td><td>${l.approved_by||'—'}</td><td>${l.paid?`<span class="badge ${l.paid==='Paid'?'badge-success':l.paid==='Unpaid'?'badge-danger':'badge-warning'}">${l.paid}</span>`:'—'}</td><td>${Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px">${l.status==='pending_manager'||l.status==='pending_hr'||l.status==='new'||l.status==='pending'?`<button class="btn btn-danger btn-xs" onclick="deleteLeave('${l.id}')">🗑</button>`:''}</div></td></tr>`).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">No leave records</td></tr>';renderPager('lv-emp-pagination',paged,p=>renderEmpLeaveTable(rows,p));}
 
-async function initAddLeaveEmp(){const sel=document.getElementById('alf-type');sel.innerHTML='<option value="">Select Leave Type</option>'+HR_LEAVE_TYPES.map(t=>`<option>${t}</option>`).join('');resetLeaveForm();await renderLeaveInfoPanel('leave-info-panel');}
+async function initAddLeaveEmp(){
+  const session=getSession();
+  allEmployees=await HRDB.read('employeesDB');
+  const emp=allEmployees.find(e=>e.id===session.employee_id);
+  const myTypes=getEmployeeLeaveTypes(emp);
+  const sel=document.getElementById('alf-type');
+  sel.innerHTML = myTypes.length
+    ? '<option value="">Select Leave Type</option>'+myTypes.map(t=>`<option>${t}</option>`).join('')
+    : '<option value="">No leave types configured -- ask HR</option>';
+  resetLeaveForm();
+  await renderLeaveInfoPanel('leave-info-panel', myTypes);
+}
 async function updateRemainingLeave(){
   const t=document.getElementById('alf-type').value;
   const session=getSession();
@@ -1959,8 +2003,21 @@ function renderHRLeaveTable(rows,page){hrLvPage=page;const paged=paginate(rows,p
 async function approveLeave(id){Loading.show();try{const session=getSession();await HRDB.update('leavesDB',r=>r.id===id,{status:'approved',approved_by:session.full_name||'HR Admin'});Toast.show('Leave approved ✅','success');await loadHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 async function rejectLeave(id){Loading.show();try{const session=getSession();await HRDB.update('leavesDB',r=>r.id===id,{status:'rejected',approved_by:session.full_name||'HR Admin'});Toast.show('Leave rejected','warning');await loadHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 async function deleteLeave(id){Modal.confirm('Delete this leave record?',async()=>{Loading.show();try{await HRDB.remove('leavesDB',r=>r.id===id);Toast.show('Deleted','success');if(currentPage==='leave-by-hr')await loadHRLeaves();else if(currentPage==='leave-team')await loadTeamApprovals();else await loadEmpLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
-async function initAddLeaveHR(){Loading.show();try{allEmployees=await HRDB.read('employeesDB');const empSel=document.getElementById('hlf-emp');empSel.innerHTML=allEmployees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name} (${e.employee_id})</option>`).join('');document.getElementById('hlf-type').innerHTML='<option value="">Select Leave Type</option>'+HR_LEAVE_TYPES.map(t=>`<option>${t}</option>`).join('');loadHRLeaveInfo();await renderLeaveInfoPanel('hr-leave-info-panel');}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
-function loadHRLeaveInfo(){const e=allEmployees.find(x=>x.id===document.getElementById('hlf-emp')?.value);document.getElementById('hlf-emp-id').value=e?.employee_id||'';}
+async function initAddLeaveHR(){Loading.show();try{allEmployees=await HRDB.read('employeesDB');const empSel=document.getElementById('hlf-emp');empSel.innerHTML='<option value="">Select Employee...</option>'+allEmployees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name} (${e.employee_id})</option>`).join('');document.getElementById('hlf-type').innerHTML='<option value="">Select an employee first</option>';document.getElementById('hlf-emp-id').value='';await renderLeaveInfoPanel('hr-leave-info-panel',[]);}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+// Re-scopes the leave-type dropdown + info panel to the selected employee's
+// configured entitlements, so HR can't add a leave type on someone's behalf
+// that HR hasn't actually granted them (set in Employee List).
+async function loadHRLeaveInfo(){
+  const e=allEmployees.find(x=>x.id===document.getElementById('hlf-emp')?.value);
+  document.getElementById('hlf-emp-id').value=e?.employee_id||'';
+  const myTypes=getEmployeeLeaveTypes(e);
+  const typeSel=document.getElementById('hlf-type');
+  const prev=typeSel.value;
+  typeSel.innerHTML = myTypes.length
+    ? '<option value="">Select Leave Type</option>'+myTypes.map(t=>`<option ${t===prev?'selected':''}>${t}</option>`).join('')
+    : '<option value="">'+(e?'No leave types configured for this employee':'Select an employee first')+'</option>';
+  await renderLeaveInfoPanel('hr-leave-info-panel', myTypes);
+}
 async function updateHRRemainingLeave(){const t=document.getElementById('hlf-type').value;const empId=document.getElementById('hlf-emp').value;const year=document.getElementById('hlf-from').value?.slice(0,4)||new Date().getFullYear();if(!t||!empId){document.getElementById('hlf-remaining').value='0';return;}const policy=await getLeavePolicy();const used=await usedDaysThisYear(empId,t,year);document.getElementById('hlf-remaining').value=Math.max(0,(policy[t]?.allocation||0)-used);}
 async function calcHRLeaveDays(){const f=document.getElementById('hlf-from').value,t=document.getElementById('hlf-to').value;if(f&&t){const days=Math.max(0,Math.ceil((new Date(t)-new Date(f))/(1000*60*60*24))+1);document.getElementById('hlf-days').value=days;}await updateHRRemainingLeave();}
 function resetHRLeaveForm(){['hlf-type','hlf-from','hlf-to','hlf-reason'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});document.getElementById('hlf-remaining').value='0';document.getElementById('hlf-days').value='0';}
