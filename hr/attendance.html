@@ -1321,7 +1321,7 @@ async function loadSidebarLogo() {
     const row = rows.find(r => r.key === 'logo');
     if (row && row.value) {
       const el = document.getElementById('hr-logo-icon');
-      if (el) el.innerHTML = `<img src="${row.value}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`;
+      if (el) el.innerHTML = `<img src="${row.value}" style="width:100%;height:100%;object-fit:contain;border-radius:inherit">`;
     }
   } catch (e) { /* keep default "HR" text if the config can't be read */ }
 }
@@ -1342,18 +1342,20 @@ function handleLogoUpload(e) {
   reader.onload = (ev) => {
     const img = new Image();
     img.onload = async () => {
-      const size = 160;
+      // Fit within bounds without cropping -- preserve the whole picture,
+      // only scale down if it's larger than needed (never upscale).
+      const maxW = 400, maxH = 160;
+      const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
       const canvas = document.createElement('canvas');
-      canvas.width = size; canvas.height = size;
+      canvas.width = w; canvas.height = h;
       const ctx = canvas.getContext('2d');
-      const scale = Math.max(size / img.width, size / img.height);
-      const w = img.width * scale, h = img.height * scale;
-      ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
       const dataUri = canvas.toDataURL('image/png');
       Loading.show('Uploading logo...');
       try {
         await saveHrLogo(dataUri);
-        document.getElementById('hr-logo-icon').innerHTML = `<img src="${dataUri}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`;
+        document.getElementById('hr-logo-icon').innerHTML = `<img src="${dataUri}" style="width:100%;height:100%;object-fit:contain;border-radius:inherit">`;
         Toast.show('Logo updated ✅', 'success');
       } catch (err) {
         Toast.show('Error: ' + err.message, 'error');

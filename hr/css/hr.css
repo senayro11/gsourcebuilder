@@ -142,10 +142,9 @@ body {
   text-align: center;
 }
 .sidebar-logo .logo-icon {
-  width: 60%;
-  max-width: 120px;
-  aspect-ratio: 1 / 1;
-  height: auto;
+  width: calc(100% + 24px);
+  margin: 0 -12px;
+  height: 80px;
   background: linear-gradient(135deg, var(--accent), #7c5ef8);
   border-radius: 14px;
   display: flex; align-items: center; justify-content: center;
