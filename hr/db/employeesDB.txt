@@ -1,5 +1,5 @@
 id|employee_id|name|email|phone|position|department|daily_rate|monthly_rate|sss|philhealth|pagibig|tin|hire_date|status|photo|employment_type|leave_types
-EMP001|GS-0001|Red Matienzo|juan@company.com|09171234567|Cashier|Sales|650.00|14300.00|200.00|150.00|100.00||2023-06-01|inactive||Probationary|Vacation Leave,Sick Leave
+EMP001|GS-0001|Red Matienzo|juan@company.com|09171234567|Cashier|Sales|650.00|14300.00|200.00|150.00|100.00||2023-06-01|active||Probationary|Vacation Leave,Sick Leave
 EMP002|GS-0002|Maria Santos|maria@company.com|09187654321|Stock Clerk|Inventory|550.00|12100.00|150.00|100.00|100.00||2024-01-10|active|||Vacation Leave,Sick Leave,Medical Leave,Casual Leave,Emergency Leave,Maternity Leave,Paternity Leave
 EMP003|GS-0003|Pedro Reyes|pedro@company.com|09194561234|Supervisor|Operations|850.00|18700.00|250.00|175.00|100.00||2022-03-15|active|||Vacation Leave,Sick Leave,Medical Leave,Casual Leave,Emergency Leave,Maternity Leave,Paternity Leave
 EMP004|GS-0004|Ana Garcia|ana@company.com|09201234568|Accountant|Finance|950.00|20900.00|300.00|200.00|100.00||2021-07-20|active|||Vacation Leave,Sick Leave,Medical Leave,Casual Leave,Emergency Leave,Maternity Leave,Paternity Leave
