@@ -6,3 +6,4 @@ LV004|EMP004|Medical Leave|2025-06-20|2025-06-22|3|Full-Day|Medical procedure|pe
 LV005|EMP005|Annual Leave|2025-07-01|2025-07-05|5|Full-Day|Vacation|new||2025-06-09|2025|||
 LV006|EMP001|Sick Leave|2026-06-15|2026-06-16|2|Full-Day Leave|Sick|approved|HR Admin|2026-06-14|2026|Paid||
 LV007|EMP001|Annual Leave|2026-07-28|2026-07-29|2|Full-Day Leave||approved|Super Administrator|2026-07-28|2026|Paid||
+LV008|EMP001|Annual Leave|2026-07-28|2026-07-31|4|Full-Day Leave||pending_hr||2026-07-28|2026|Paid||
