@@ -5,7 +5,7 @@
 const GITHUB_CONFIG = {
   owner: 'senayro11',
   repo:  'gsourcebuilder',
-  branch: 'claude/enterprise-system-offline-sync-emuilz',
+  branch: 'main',
   token: '',
   dbPath: 'db'
 };
