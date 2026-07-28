@@ -1,0 +1,7 @@
+id|title|status
+POS001|Cashier|active
+POS002|Stock Clerk|active
+POS003|Supervisor|active
+POS004|Accountant|active
+POS005|Driver|active
+POS006|Tech|active
