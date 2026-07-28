@@ -2128,8 +2128,14 @@ function getFilteredSchedules() {
 function filterSchedulesByDate() {
   renderSchedulesTable(getFilteredSchedules());
 }
-function buildScheduleReportHtml(date) {
+async function buildScheduleReportHtml(date) {
   const rows = getFilteredSchedules();
+  let logoUrl = '';
+  try {
+    const cfg = await HRDB.read('hrconfigDB');
+    const row = cfg.find(r => r.key === 'logo');
+    if (row && row.value) logoUrl = row.value;
+  } catch (e) { /* no logo configured, that's fine */ }
   const rowsHtml = rows.map(s => {
     const emp = allEmployees.find(e => e.id === s.employee_id);
     const shift = allShifts.find(sh => sh.id === s.shift_id);
@@ -2140,31 +2146,37 @@ function buildScheduleReportHtml(date) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Employee Schedule — ${date}</title>
 <style>
   body { font-family: Arial, Helvetica, sans-serif; color:#111; background:#fff; margin:40px; }
-  h1 { text-align:center; font-size:24px; margin-bottom:4px; letter-spacing:1px; }
-  .sub { text-align:center; color:#555; font-size:13px; margin-bottom:24px; }
+  .report-header { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:24px; }
+  .report-logo { flex:0 0 160px; }
+  .report-logo img { max-height:70px; max-width:160px; object-fit:contain; }
+  h1 { flex:1; text-align:center; font-size:24px; margin:0; letter-spacing:1px; }
+  .report-date { flex:0 0 160px; text-align:right; color:#555; font-size:13px; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
   th, td { border:1px solid #333; padding:8px 10px; text-align:left; }
   th { background:#eee; text-transform:uppercase; font-size:11px; letter-spacing:.5px; }
 </style>
 </head><body>
-  <h1>EMPLOYEE SCHEDULE</h1>
-  <div class="sub">${date}</div>
+  <div class="report-header">
+    <div class="report-logo">${logoUrl ? `<img src="${logoUrl}">` : ''}</div>
+    <h1>EMPLOYEE SCHEDULE</h1>
+    <div class="report-date">${date}</div>
+  </div>
   <table>
     <thead><tr><th>Employee</th><th>Position</th><th>Date</th><th>Start</th><th>End</th><th>Shift</th><th>Work Assignment</th></tr></thead>
     <tbody>${rowsHtml}</tbody>
   </table>
 </body></html>`;
 }
-function printSchedule() {
+async function printSchedule() {
   const date = document.getElementById('sched-date-filter').value || todayStr();
   const win = window.open('', '_blank');
-  win.document.write(buildScheduleReportHtml(date));
+  win.document.write(await buildScheduleReportHtml(date));
   win.document.close();
   setTimeout(() => { win.focus(); win.print(); }, 300);
 }
-function downloadScheduleDoc() {
+async function downloadScheduleDoc() {
   const date = document.getElementById('sched-date-filter').value || todayStr();
-  const blob = new Blob(['﻿', buildScheduleReportHtml(date)], { type: 'application/msword' });
+  const blob = new Blob(['﻿', await buildScheduleReportHtml(date)], { type: 'application/msword' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
