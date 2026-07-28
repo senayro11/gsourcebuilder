@@ -37,6 +37,7 @@
         <div class="nav-sub">
           <a class="nav-sub-item" data-page="employee-list"  href="#" onclick="navigate('employee-list');return false">Employee List</a>
           <a class="nav-sub-item" data-page="departments"    href="#" onclick="navigate('departments');return false">Department</a>
+          <a class="nav-sub-item" data-page="positions"      href="#" onclick="navigate('positions');return false">Position</a>
           <a class="nav-sub-item" data-page="holidays"       href="#" onclick="navigate('holidays');return false">Holidays</a>
         </div>
       </div>
@@ -803,6 +804,32 @@
     </div>
 
     <!-- =========================================
+         PAGE: POSITIONS
+    ========================================= -->
+    <div id="page-positions" class="page-section" style="display:none">
+      <div class="page-header-row">
+        <div class="page-header"><h1>🧑‍💼 Position</h1><p class="subtitle">Manage job positions/titles. Only the Head Admin (Super Administrator) can change an existing employee's position.</p></div>
+        <button class="btn btn-primary" onclick="openAddPosition()">+ Add Position</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;margin-bottom:12px">
+        <span class="card-title" style="flex-shrink:0">Position List</span>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;flex:1;min-width:0;justify-content:flex-end">
+          <button class="btn btn-ghost btn-icon" style="height:38px;box-sizing:border-box;flex-shrink:0" onclick="loadPositions()">🔄</button>
+          <div class="search-bar" style="width:240px;height:38px;box-sizing:border-box"><span class="search-icon">🔍</span><input type="text" id="pos-search" placeholder="Search..." oninput="filterPositions()"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>No</th><th>Position Title</th><th>Employees</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="pos-tbody"></tbody>
+          </table>
+        </div>
+        <div id="pos-pagination"></div>
+      </div>
+    </div>
+
+    <!-- =========================================
          PAGE: SHIFTS
     ========================================= -->
     <div id="page-shifts" class="page-section" style="display:none">
@@ -1025,6 +1052,24 @@
   </div>
 </div>
 
+<!-- Position Modal -->
+<div class="modal-backdrop" id="position-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="position-modal-title">+ Add Position</span>
+      <button class="modal-close" onclick="Modal.close('position-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Position Title *</label><input type="text" id="posf-title" placeholder="e.g. Cashier, Supervisor"></div>
+      <div class="form-group"><label>Status</label><select id="posf-status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="Modal.close('position-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePosition()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Shift Modal -->
 <div class="modal-backdrop" id="shift-modal">
   <div class="modal modal-lg">
@@ -1226,7 +1271,11 @@
         <div class="form-group"><label>Phone</label><input type="text" id="ef-phone"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Position *</label><input type="text" id="ef-pos"></div>
+        <div class="form-group">
+          <label>Position *</label>
+          <select id="ef-pos"></select>
+          <small id="ef-pos-lock-note" style="display:none;color:var(--text3)">🔒 Only the Head Admin (Super Administrator) can change an employee's position.</small>
+        </div>
         <div class="form-group"><label>Department *</label><select id="ef-dept"></select></div>
       </div>
       <div class="form-row">
@@ -1520,13 +1569,13 @@ function updateBreadcrumb(pageId) {
     'leave-team':'Team Approvals','leave-settings':'Leave Settings','leave-payout':'Year-End Payout',
     'att-hr':'Attendance (HR)','att-main':'Main Attendance',
     'payroll-report':'Payroll Report','payroll-generate':'Generate Payroll','payslip':'Payslip',
-    'departments':'Department','shifts':'Shift Types','schedules':'Employee Schedule',
+    'departments':'Department','positions':'Position','shifts':'Shift Types','schedules':'Employee Schedule',
     'announcements':'Announcements','user-mgmt':'User Management',
     'thirteenth-month':'13th Month & Bonus','timein-terminal':'Time In/Out Terminal',
     'edit-profile':'Edit Profile','change-password':'Change Password'
   };
   const parents = {
-    'employee-list':'HR Management','holidays':'HR Management',
+    'employee-list':'HR Management','holidays':'HR Management','positions':'HR Management',
     'leave-by-emp':'Leave Manage','leave-add-emp':'Leave Manage',
     'leave-by-hr':'Leave Manage','leave-add-hr':'Leave Manage',
     'leave-team':'Leave Manage','leave-settings':'Leave Manage','leave-payout':'Leave Manage',
@@ -1563,6 +1612,7 @@ async function loadPage(pageId) {
     case 'payroll-generate':await initGeneratePayroll(); break;
     case 'payslip':         await initPayslip(); break;
     case 'departments':      await loadDepartments(); break;
+    case 'positions':        await loadPositions(); break;
     case 'shifts':           await loadShifts(); break;
     case 'schedules':        await loadSchedules(); break;
     case 'announcements':    await loadAnnouncements(); break;
@@ -1686,9 +1736,9 @@ function renderEmpLeaveTypeCheckboxes(selectedTypes) {
   const selected=new Set(selectedTypes||[]);
   document.getElementById('ef-leave-types').innerHTML=HR_LEAVE_TYPES.map(t=>`<label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer"><input type="checkbox" class="ef-leave-type-cb" value="${t}" ${selected.has(t)?'checked':''} style="width:16px;height:16px">${t}</label>`).join('');
 }
-function openAddEmployee() {
+async function openAddEmployee() {
   editEmpId = null;
-  ['ef-name','ef-empid','ef-email','ef-phone','ef-pos','ef-sss','ef-ph','ef-pi'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['ef-name','ef-empid','ef-email','ef-phone','ef-sss','ef-ph','ef-pi'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('ef-rate').value='';
   document.getElementById('ef-hire').value='';
   document.getElementById('ef-status').value='active';
@@ -1696,18 +1746,30 @@ function openAddEmployee() {
   // Populate dept
   const df = document.getElementById('ef-dept');
   df.innerHTML = HR_DEPARTMENTS.map(d=>`<option>${d}</option>`).join('');
+  // New hire -- any HR admin can pick the starting position; only changing
+  // an existing employee's position later is locked to the Head Admin.
+  const posTitles=await getActivePositionTitles();
+  document.getElementById('ef-pos').innerHTML='<option value="">Select Position</option>'+posTitles.map(t=>`<option>${t}</option>`).join('');
+  document.getElementById('ef-pos').disabled=false;
+  document.getElementById('ef-pos-lock-note').style.display='none';
   renderEmpLeaveTypeCheckboxes([]);
   document.getElementById('emp-modal-title').textContent='+ Add Employee';
   Modal.open('emp-modal');
 }
-function editEmployee(id) {
+async function editEmployee(id) {
   const e=allEmployees.find(x=>x.id===id); if(!e) return;
   editEmpId=id;
   document.getElementById('ef-name').value=e.name;
   document.getElementById('ef-empid').value=e.employee_id;
   document.getElementById('ef-email').value=e.email||'';
   document.getElementById('ef-phone').value=e.phone||'';
-  document.getElementById('ef-pos').value=e.position;
+  const posTitles=await getActivePositionTitles();
+  if(e.position && !posTitles.includes(e.position)) posTitles.push(e.position); // keep their current (possibly retired) title selectable
+  const posSel=document.getElementById('ef-pos');
+  posSel.innerHTML=posTitles.map(t=>`<option ${t===e.position?'selected':''}>${t}</option>`).join('');
+  const isHeadAdmin=getSession().role==='superadmin';
+  posSel.disabled=!isHeadAdmin;
+  document.getElementById('ef-pos-lock-note').style.display=isHeadAdmin?'none':'';
   document.getElementById('ef-rate').value=e.daily_rate;
   document.getElementById('ef-hire').value=e.hire_date||'';
   document.getElementById('ef-sss').value=e.sss||'';
@@ -2548,6 +2610,91 @@ function deleteDept(id) {
     catch(e){Toast.show('Error: '+e.message,'error');}
     Loading.hide();
   });
+}
+
+// ============================================================
+//  POSITIONS
+// ============================================================
+let allPositions = [], editPositionId = null;
+async function loadPositions() {
+  Loading.show();
+  try {
+    allPositions = await HRDB.read('positionsDB', true);
+    allEmployees = await HRDB.read('employeesDB');
+    filterPositions();
+  } catch(e) { Toast.show('Error: '+e.message,'error'); }
+  Loading.hide();
+}
+function filterPositions() {
+  const q = (document.getElementById('pos-search')?.value||'').toLowerCase();
+  const rows = q ? allPositions.filter(p=>p.title.toLowerCase().includes(q)) : allPositions;
+  renderPositionsTable(rows, 1);
+}
+let posPage=1;
+function renderPositionsTable(rows, page) {
+  posPage=page;
+  const paged = paginate(rows, page, 10);
+  document.getElementById('pos-tbody').innerHTML = paged.rows.map((p, i) => {
+    const count = (allEmployees||[]).filter(e=>e.position===p.title && e.status==='active').length;
+    return `<tr>
+    <td>${paged.start+i+1}</td>
+    <td><strong>${p.title}</strong></td>
+    <td><span class="badge badge-blue">${count}</span></td>
+    <td>${Fmt.statusBadge(p.status)}</td>
+    <td><div style="display:flex;gap:4px">
+      <button class="btn btn-ghost btn-xs" onclick="editPosition('${p.id}')">✏️</button>
+      <button class="btn btn-danger btn-xs" onclick="deletePosition('${p.id}')">🗑</button>
+    </div></td>
+  </tr>`;
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:32px">No positions</td></tr>';
+  renderPager('pos-pagination', paged, p=>renderPositionsTable(rows,p));
+}
+function openAddPosition() {
+  editPositionId = null;
+  document.getElementById('posf-title').value='';
+  document.getElementById('posf-status').value='active';
+  document.getElementById('position-modal-title').textContent='+ Add Position';
+  Modal.open('position-modal');
+}
+function editPosition(id) {
+  const p=allPositions.find(x=>x.id===id); if(!p) return;
+  editPositionId=id;
+  document.getElementById('posf-title').value=p.title;
+  document.getElementById('posf-status').value=p.status;
+  document.getElementById('position-modal-title').textContent='✏️ Edit Position';
+  Modal.open('position-modal');
+}
+async function savePosition() {
+  const title=document.getElementById('posf-title').value.trim();
+  if(!title){Toast.show('Position title is required','warning');return;}
+  Loading.show();
+  try {
+    const data={title,status:document.getElementById('posf-status').value};
+    if(editPositionId){
+      await HRDB.update('positionsDB',r=>r.id===editPositionId,data);
+      Toast.show('Position updated ✅','success');
+    } else {
+      const all=await HRDB.read('positionsDB',true);
+      if(all.find(p=>p.title.toLowerCase()===title.toLowerCase())){Toast.show('This position already exists','warning');Loading.hide();return;}
+      await HRDB.insert('positionsDB',{id:HRDB.nextId(all,'id','POS'),...data});
+      Toast.show('Position added ✅','success');
+    }
+    Modal.close('position-modal'); await loadPositions();
+  } catch(e){Toast.show('Error: '+e.message,'error');}
+  Loading.hide();
+}
+function deletePosition(id) {
+  Modal.confirm('Delete this position?', async()=>{
+    Loading.show();
+    try{await HRDB.remove('positionsDB',r=>r.id===id);Toast.show('Deleted','success');await loadPositions();}
+    catch(e){Toast.show('Error: '+e.message,'error');}
+    Loading.hide();
+  });
+}
+// Used by the Employee Add/Edit modal's Position dropdown.
+async function getActivePositionTitles() {
+  const rows = await HRDB.read('positionsDB');
+  return rows.filter(p=>p.status==='active').map(p=>p.title);
 }
 
 // ============================================================
