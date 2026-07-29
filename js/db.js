@@ -134,20 +134,30 @@ const DB = (() => {
       return { ok: true, queued: false };
     }
     try {
-      try {
-        return await attempt();
-      } catch (e) {
-        // Someone else committed a newer version of this file between our
-        // last read and this write (stale sha) -- e.g. a fast double-tap
-        // on Save, or another tab/device writing at the same time. Re-fetch
-        // the current sha and retry once with the same payload (last-write-
-        // wins, the same semantics this app already documents for offline
-        // sync) instead of surfacing a raw GitHub API error to the user.
-        const isShaConflict = e.status === 409 || /does not match/i.test(e.message || '');
-        if (!isShaConflict) throw e;
-        await read(dbName, true);
-        return await attempt();
+      // Someone else committed a newer version of this file between our
+      // last read and this write (stale sha) -- e.g. a fast double-tap on
+      // Save, or another tab/device/session writing at the same time.
+      // Re-fetch the current sha and retry with the same payload
+      // (last-write-wins, the same semantics this app already documents
+      // for offline sync) instead of surfacing a raw GitHub API error to
+      // the user. A single retry isn't always enough under a burst of
+      // concurrent writers, so this allows a couple of extra attempts
+      // with a short backoff before giving up.
+      let lastErr;
+      for (let i = 0; i < 3; i++) {
+        try {
+          return await attempt();
+        } catch (e) {
+          const isShaConflict = e.status === 409 || /does not match/i.test(e.message || '');
+          if (!isShaConflict) throw e;
+          lastErr = e;
+          if (i < 2) {
+            await new Promise(r => setTimeout(r, 300 * (i + 1)));
+            await read(dbName, true);
+          }
+        }
       }
+      throw lastErr;
     } catch (e) {
       if (typeof Sync !== 'undefined' && Sync.isConnectivityError(e)) {
         // Offline — save locally first, queue it for auto-sync later
