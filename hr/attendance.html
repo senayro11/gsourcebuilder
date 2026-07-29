@@ -61,7 +61,7 @@
         <div class="nav-sub">
           <a class="nav-sub-item" data-page="leave-by-emp"   href="#" onclick="navigate('leave-by-emp');return false">My Leave Requests</a>
           <a class="nav-sub-item" data-page="leave-add-emp"  href="#" onclick="navigate('leave-add-emp');return false">Apply Leave</a>
-          <a class="nav-sub-item" data-page="leave-team"      href="#" onclick="navigate('leave-team');return false" data-restrict="dept-head" style="display:none">Team Approvals</a>
+          <a class="nav-sub-item" data-page="leave-team"      href="#" onclick="navigate('leave-team');return false" data-restrict="dept-head" style="display:none">Team Approvals<span class="nav-badge" id="team-approvals-badge" style="display:none">0</span></a>
           <a class="nav-sub-item" data-page="leave-by-hr"    href="#" onclick="navigate('leave-by-hr');return false" data-restrict="admin">By HR<span class="nav-badge" id="by-hr-badge" style="display:none">0</span></a>
           <a class="nav-sub-item" data-page="leave-add-hr"   href="#" onclick="navigate('leave-add-hr');return false" data-restrict="admin">Add Leave (HR)</a>
           <a class="nav-sub-item" data-page="leave-settings" href="#" onclick="navigate('leave-settings');return false" data-restrict="admin">Leave Settings</a>
@@ -2558,6 +2558,25 @@ async function loadNotifications() {
       const actionable = leaves.filter(l=>HR_ACTIONABLE_STATUSES.includes(l.status)).length;
       if (actionable > 0) { byHrBadge.textContent = actionable; byHrBadge.style.display = ''; }
       else { byHrBadge.style.display = 'none'; }
+    }
+    // "Team Approvals" nav badge -- count of leave requests waiting on
+    // this person specifically, as the head of one or more departments
+    // (role-independent: a department head can be staff or admin).
+    const teamBadge = document.getElementById('team-approvals-badge');
+    if (teamBadge && session && session.employee_id) {
+      const depts = await HRDB.read('departmentsDB');
+      const myDeptNames = depts.filter(d=>d.head_employee_id===session.employee_id).map(d=>d.name);
+      if (myDeptNames.length) {
+        const emps = await HRDB.read('employeesDB');
+        const leaves = await HRDB.read('leavesDB');
+        const waiting = leaves.filter(l=>{
+          if (l.status!=='pending_manager') return false;
+          const emp = emps.find(e=>e.id===l.employee_id);
+          return emp && myDeptNames.includes(emp.department);
+        }).length;
+        if (waiting > 0) { teamBadge.textContent = waiting; teamBadge.style.display = ''; }
+        else { teamBadge.style.display = 'none'; }
+      }
     }
     // Render notif list
     const list = document.getElementById('notif-list');
