@@ -62,7 +62,7 @@
           <a class="nav-sub-item" data-page="leave-by-emp"   href="#" onclick="navigate('leave-by-emp');return false">My Leave Requests</a>
           <a class="nav-sub-item" data-page="leave-add-emp"  href="#" onclick="navigate('leave-add-emp');return false">Apply Leave</a>
           <a class="nav-sub-item" data-page="leave-team"      href="#" onclick="navigate('leave-team');return false" data-restrict="dept-head" style="display:none">Team Approvals</a>
-          <a class="nav-sub-item" data-page="leave-by-hr"    href="#" onclick="navigate('leave-by-hr');return false" data-restrict="admin">By HR</a>
+          <a class="nav-sub-item" data-page="leave-by-hr"    href="#" onclick="navigate('leave-by-hr');return false" data-restrict="admin">By HR<span class="nav-badge" id="by-hr-badge" style="display:none">0</span></a>
           <a class="nav-sub-item" data-page="leave-add-hr"   href="#" onclick="navigate('leave-add-hr');return false" data-restrict="admin">Add Leave (HR)</a>
           <a class="nav-sub-item" data-page="leave-settings" href="#" onclick="navigate('leave-settings');return false" data-restrict="admin">Leave Settings</a>
           <a class="nav-sub-item" data-page="leave-payout"   href="#" onclick="navigate('leave-payout');return false" data-restrict="admin">Year-End Payout</a>
@@ -414,8 +414,8 @@
             </div>
             <select id="hr-lv-status-filter" style="padding:7px 10px" onchange="filterHRLeaves()">
               <option value="">All Status</option>
-              <option value="new">New</option>
-              <option value="pending">Pending</option>
+              <option value="pending_manager">Pending Manager</option>
+              <option value="pending_hr">Pending HR</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
             </select>
@@ -2547,6 +2547,17 @@ async function loadNotifications() {
     if (anns.length > 0 && annBadge) {
       annBadge.textContent = anns.filter(a=>a.status==='active').length;
       annBadge.style.display = '';
+    }
+    // "By HR" nav badge -- count of leave requests actually waiting on
+    // HR's final approval right now (admin/superadmin only; the nav item
+    // itself is hidden for everyone else).
+    const session = getSession();
+    const byHrBadge = document.getElementById('by-hr-badge');
+    if (byHrBadge && session && (session.role==='admin' || session.role==='superadmin')) {
+      const leaves = await HRDB.read('leavesDB');
+      const actionable = leaves.filter(l=>HR_ACTIONABLE_STATUSES.includes(l.status)).length;
+      if (actionable > 0) { byHrBadge.textContent = actionable; byHrBadge.style.display = ''; }
+      else { byHrBadge.style.display = 'none'; }
     }
     // Render notif list
     const list = document.getElementById('notif-list');
