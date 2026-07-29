@@ -119,7 +119,7 @@ const Fmt = {
   date(s)    { return s ? new Date(s + 'T00:00:00').toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'; },
   hours(h)   { return parseFloat(h || 0).toFixed(2) + ' hrs'; },
   roleBadge(r) {
-    const m = { admin: 'badge-blue', staff: 'badge-success', ojt: 'badge-warning', guest: 'badge-gray', superadmin: 'badge-purple' };
+    const m = { admin: 'badge-blue', user: 'badge-info', staff: 'badge-success', ojt: 'badge-warning', guest: 'badge-gray', superadmin: 'badge-purple' };
     return `<span class="badge ${m[r] || 'badge-gray'}">${(r || '').toUpperCase()}</span>`;
   },
   statusBadge(s) {

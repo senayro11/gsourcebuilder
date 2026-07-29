@@ -61,7 +61,7 @@ const UI = (() => {
   function dateTimeStr(s){ return s?new Date(s).toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'short'}):'—'; }
 
   function roleBadge(role) {
-    const map={superadmin:'badge-purple',admin:'badge-info',staff:'badge-success',ojt:'badge-warning',guest:'badge-gray'};
+    const map={superadmin:'badge-purple',admin:'badge-info',user:'badge-gray',staff:'badge-success',ojt:'badge-warning',guest:'badge-gray'};
     return `<span class="badge ${map[role]||'badge-gray'}">${role.toUpperCase()}</span>`;
   }
   function statusBadge(status) {
