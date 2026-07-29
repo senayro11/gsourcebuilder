@@ -5,3 +5,4 @@ POS003|Supervisor|active
 POS004|Accountant|active
 POS005|Driver|active
 POS006|Tech|active
+POS007|IT|active
