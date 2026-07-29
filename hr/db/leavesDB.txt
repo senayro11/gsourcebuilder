@@ -5,6 +5,6 @@ LV004|EMP004|Medical Leave|2025-06-20|2025-06-22|3|Full-Day|Medical procedure|pe
 LV005|EMP005|Vacation Leave|2025-07-01|2025-07-05|5|Full-Day|Vacation|new||2025-06-09|2025|||
 LV007|EMP001|Vacation Leave|2026-07-29|2026-07-30|2|Full-Day Leave||approved|Attendance Administrator|2026-07-28|2026|Paid||
 LV008|EMP001|Vacation Leave|2026-07-30|2026-07-30|1|Full-Day Leave||approved|Melanie gupong|2026-07-28|2026|Paid||
-LV010|EMP007|Unpaid leave|2026-07-31|2026-07-31|1|Full-Day Leave||approved|Melanie gupong|2026-07-29|2026|Unpaid||
+LV010|EMP007|Unpaid leave5|2026-07-31|2026-07-31|1|Full-Day Leave||approved|Melanie gupong|2026-07-29|2026|Unpaid||
 LV011|EMP001|Sick Leave|2026-07-30|2026-07-30|1|Full-Day Leave|Hchyfyf|pending_hr||2026-07-29|2026|Paid||
-LV012|EMP001|Unpaid leave|2026-07-29|2026-07-31|3|Full-Day Leave||approved|Melanie gupong|2026-07-29|2026|Unpaid||
+LV012|EMP001|Unpaid leave5|2026-07-29|2026-07-31|3|Full-Day Leave||approved|Melanie gupong|2026-07-29|2026|Unpaid||
