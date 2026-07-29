@@ -305,16 +305,13 @@
          PAGE: LEAVE BY EMPLOYEE (self-service)
     ========================================= -->
     <div id="page-leave-by-emp" class="page-section" style="display:none">
-      <div class="page-header">
-        <h1>📅 My Leave Requests</h1>
-        <p class="subtitle">View and manage your leave applications</p>
+      <div class="page-header-row">
+        <div class="page-header"><h1>📅 My Leave Requests</h1><p class="subtitle">View and manage your leave applications</p></div>
+        <button class="btn btn-primary" onclick="navigate('leave-add-emp')">+ Add Leave</button>
       </div>
       <div class="stats-grid" id="leave-stats"></div>
+      <div style="margin-bottom:12px"><span class="card-title">Leave History</span></div>
       <div class="card">
-        <div class="card-header">
-          <span class="card-title">Leave History</span>
-          <button class="btn btn-primary btn-sm" onclick="navigate('leave-add-emp')">+ Add Leave</button>
-        </div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>No</th><th>Leave Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Date Filed</th><th>Approved By</th><th>Paid?</th><th>Status</th><th>Action</th></tr></thead>
