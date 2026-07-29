@@ -221,6 +221,20 @@ body {
 .nav-sub-item.active { color: var(--accent2); background: var(--accent-glow); }
 .nav-sub-item::before { content: '·'; font-size: 16px; color: var(--border2); margin-right: 2px; }
 .nav-sub-item.active::before { color: var(--accent); }
+.nav-badge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
 
 .sidebar-bottom {
   padding: 12px;
