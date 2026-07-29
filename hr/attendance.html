@@ -532,14 +532,14 @@
          PAGE: LEAVE SETTINGS (HR only)
     ========================================= -->
     <div id="page-leave-settings" class="page-section" style="display:none">
-      <div class="page-header">
-        <h1>⚙️ Leave Settings</h1>
-        <p class="subtitle">Set the yearly allocation per leave type, and whether unused days are convertible to cash at year-end</p>
+      <div class="page-header-row">
+        <div class="page-header"><h1>⚙️ Leave Settings</h1><p class="subtitle">Set the yearly allocation per leave type, and whether unused days are convertible to cash at year-end</p></div>
+        <button class="btn btn-primary" onclick="addLeaveSettingsRow()">+ Add Leave Type</button>
       </div>
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Leave Type</th><th>Yearly Allocation (days)</th><th>Convertible to Cash</th></tr></thead>
+            <thead><tr><th>Leave Type</th><th>Yearly Allocation (days)</th><th>Convertible to Cash</th><th>Actions</th></tr></thead>
             <tbody id="leave-settings-tbody"></tbody>
           </table>
         </div>
@@ -1878,15 +1878,22 @@ async function getLeavePolicy(force){
   if(_leavePolicyCache && !force) return _leavePolicyCache;
   const rows=await HRDB.read('hrconfigDB',force);
   const row=rows.find(r=>r.key==='leave_policy');
-  let saved={};
-  if(row && row.value){ try{ saved=JSON.parse(row.value); }catch(e){ saved={}; } }
+  let saved=null;
+  if(row && row.value){ try{ saved=JSON.parse(row.value); }catch(e){ saved=null; } }
   const policy={};
-  HR_LEAVE_TYPES.forEach(t=>{
-    policy[t]={
-      allocation: saved[t]?.allocation!=null ? Number(saved[t].allocation) : HR_LEAVE_ALLOCATIONS[t],
-      convertible: saved[t]?.convertible!=null ? !!saved[t].convertible : !!HR_LEAVE_CONVERTIBLE[t]
-    };
-  });
+  if(saved && Object.keys(saved).length){
+    // A saved policy is authoritative once it exists -- HR may have
+    // added, renamed, or removed types via Leave Settings, so this is
+    // not just an override layer on top of the hardcoded defaults.
+    Object.entries(saved).forEach(([t,p])=>{
+      policy[t]={ allocation:Number(p.allocation)||0, convertible:!!p.convertible };
+    });
+  } else {
+    // First run, nothing saved yet -- seed from hr-config.js defaults.
+    HR_LEAVE_TYPES.forEach(t=>{
+      policy[t]={ allocation:HR_LEAVE_ALLOCATIONS[t], convertible:!!HR_LEAVE_CONVERTIBLE[t] };
+    });
+  }
   _leavePolicyCache=policy;
   return policy;
 }
@@ -1898,30 +1905,67 @@ async function saveLeavePolicyValue(policy){
   else await HRDB.insert('hrconfigDB',{key:'leave_policy',value});
   _leavePolicyCache=policy;
 }
+function leaveSettingsRowHtml(type, allocation, convertible){
+  return `<tr data-row data-type="${type}">
+    <td><input type="text" class="ls-title" value="${type}" placeholder="Leave type name" style="width:100%"></td>
+    <td><input type="number" min="0" class="ls-alloc" value="${allocation}" style="width:90px"></td>
+    <td><input type="checkbox" class="ls-conv" ${convertible?'checked':''} style="width:18px;height:18px"></td>
+    <td><button class="btn btn-danger btn-xs" onclick="this.closest('tr').remove()">🗑</button></td>
+  </tr>`;
+}
+function addLeaveSettingsRow(){
+  document.getElementById('leave-settings-tbody').insertAdjacentHTML('beforeend', leaveSettingsRowHtml('', 0, false));
+}
+let _loadedLeaveTypes=[];
 async function loadLeaveSettings(){
   Loading.show();
   try{
     const policy=await getLeavePolicy(true);
-    document.getElementById('leave-settings-tbody').innerHTML=HR_LEAVE_TYPES.map(t=>`<tr>
-      <td>${t}</td>
-      <td><input type="number" min="0" id="ls-alloc-${t}" value="${policy[t].allocation}" style="width:90px"></td>
-      <td><input type="checkbox" id="ls-conv-${t}" ${policy[t].convertible?'checked':''} style="width:18px;height:18px"></td>
-    </tr>`).join('');
+    _loadedLeaveTypes=Object.keys(policy);
+    document.getElementById('leave-settings-tbody').innerHTML=_loadedLeaveTypes.map(t=>leaveSettingsRowHtml(t, policy[t].allocation, policy[t].convertible)).join('');
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
 }
 async function saveLeaveSettings(){
   Loading.show();
   try{
+    const trs=[...document.querySelectorAll('#leave-settings-tbody tr[data-row]')];
     const policy={};
-    HR_LEAVE_TYPES.forEach(t=>{
-      policy[t]={
-        allocation: Math.max(0, parseInt(document.getElementById(`ls-alloc-${t}`).value)||0),
-        convertible: document.getElementById(`ls-conv-${t}`).checked
-      };
+    const renames=[];
+    trs.forEach(tr=>{
+      const title=tr.querySelector('.ls-title').value.trim();
+      if(!title) return; // blank row (e.g. an unfinished "Add Leave Type") -- skip it
+      const originalType=tr.dataset.type||'';
+      const allocation=Math.max(0, parseInt(tr.querySelector('.ls-alloc').value)||0);
+      const convertible=tr.querySelector('.ls-conv').checked;
+      policy[title]={allocation,convertible};
+      if(originalType && originalType!==title) renames.push({from:originalType, to:title});
     });
+    if(!Object.keys(policy).length){ Toast.show('Kailangan ng hindi bababa sa isang leave type','warning'); Loading.hide(); return; }
+
+    const keptOriginalTypes=trs.map(tr=>tr.dataset.type).filter(Boolean);
+    const removedTypes=_loadedLeaveTypes.filter(t=>!keptOriginalTypes.includes(t));
+
     await saveLeavePolicyValue(policy);
+
+    // Cascade renames into historical leave records + employee entitlements
+    // so nothing silently disappears from a type just being relabeled.
+    for(const r of renames){
+      await HRDB.update('leavesDB', row=>row.leave_type===r.from, {leave_type:r.to});
+    }
+    if(renames.length || removedTypes.length){
+      const emps=await HRDB.read('employeesDB',true);
+      const updatedEmps=emps.map(emp=>{
+        let types=getEmployeeLeaveTypes(emp);
+        renames.forEach(r=>{ const i=types.indexOf(r.from); if(i>=0) types[i]=r.to; });
+        types=types.filter(t=>!removedTypes.includes(t));
+        return { ...emp, leave_types: types.join(',') };
+      });
+      await HRDB.write('employeesDB', updatedEmps, 'Leave type rename/removal cascade');
+    }
+
     Toast.show('Leave settings saved ✅','success');
+    await loadLeaveSettings();
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
 }
