@@ -15,6 +15,5 @@ const HR_LEAVE_TYPES = ['Vacation Leave','Sick Leave','Medical Leave','Casual Le
 // change allocations / convertible-to-cash per leave type without a redeploy.
 const HR_LEAVE_ALLOCATIONS = { 'Vacation Leave':12, 'Sick Leave':5, 'Medical Leave':4, 'Casual Leave':8, 'Emergency Leave':3, 'Maternity Leave':60, 'Paternity Leave':7 };
 const HR_LEAVE_CONVERTIBLE = { 'Vacation Leave':true, 'Sick Leave':false, 'Medical Leave':false, 'Casual Leave':false, 'Emergency Leave':false, 'Maternity Leave':false, 'Paternity Leave':false };
-const HR_DEPARTMENTS = ['Sales','Inventory','Operations','Finance','Logistics','HR','IT','Management'];
 const REGULAR_HOURS = 8;
 const OT_MULTIPLIER = 1.25;

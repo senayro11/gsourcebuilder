@@ -1760,7 +1760,8 @@ async function openAddEmployee() {
   document.getElementById('ef-emptype').value='Regular';
   // Populate dept
   const df = document.getElementById('ef-dept');
-  df.innerHTML = HR_DEPARTMENTS.map(d=>`<option>${d}</option>`).join('');
+  const deptNames = await getActiveDepartmentNames();
+  df.innerHTML = deptNames.map(d=>`<option>${d}</option>`).join('');
   // New hire -- any HR admin can pick the starting position; only changing
   // an existing employee's position later is locked to the Head Admin.
   const posTitles=await getActivePositionTitles();
@@ -1793,7 +1794,9 @@ async function editEmployee(id) {
   document.getElementById('ef-status').value=e.status;
   document.getElementById('ef-emptype').value=e.employment_type||'Regular';
   const df=document.getElementById('ef-dept');
-  df.innerHTML=HR_DEPARTMENTS.map(d=>`<option ${d===e.department?'selected':''}>${d}</option>`).join('');
+  let deptNames=await getActiveDepartmentNames();
+  if(e.department && !deptNames.includes(e.department)) deptNames.push(e.department); // keep their current (possibly renamed/retired) department selectable
+  df.innerHTML=deptNames.map(d=>`<option ${d===e.department?'selected':''}>${d}</option>`).join('');
   await renderEmpLeaveTypeCheckboxes(getEmployeeLeaveTypes(e));
   document.getElementById('emp-modal-title').textContent='✏️ Edit Employee';
   Modal.open('emp-modal');
@@ -2764,6 +2767,15 @@ function deletePosition(id) {
 async function getActivePositionTitles() {
   const rows = await HRDB.read('positionsDB');
   return rows.filter(p=>p.status==='active').map(p=>p.title);
+}
+// Used by the Employee Add/Edit modal's Department dropdown. Must source
+// from the real departmentsDB (not a hardcoded list) -- the multi-level
+// leave approval routing matches an employee's `department` string against
+// departmentsDB.name, so any mismatch (e.g. "HR" vs "Human Resources")
+// silently skips the department-head approval step.
+async function getActiveDepartmentNames() {
+  const rows = await HRDB.read('departmentsDB');
+  return rows.filter(d=>d.status==='active').map(d=>d.name);
 }
 
 // ============================================================
