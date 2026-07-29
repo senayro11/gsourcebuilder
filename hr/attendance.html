@@ -1749,9 +1749,10 @@ function getEmployeeLeaveTypes(emp) {
   if (!emp || !emp.leave_types) return [];
   return emp.leave_types.split(',').map(s=>s.trim()).filter(Boolean);
 }
-function renderEmpLeaveTypeCheckboxes(selectedTypes) {
+async function renderEmpLeaveTypeCheckboxes(selectedTypes) {
   const selected=new Set(selectedTypes||[]);
-  document.getElementById('ef-leave-types').innerHTML=HR_LEAVE_TYPES.map(t=>`<label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer"><input type="checkbox" class="ef-leave-type-cb" value="${t}" ${selected.has(t)?'checked':''} style="width:16px;height:16px">${t}</label>`).join('');
+  const policy=await getLeavePolicy();
+  document.getElementById('ef-leave-types').innerHTML=Object.keys(policy).map(t=>`<label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer"><input type="checkbox" class="ef-leave-type-cb" value="${t}" ${selected.has(t)?'checked':''} style="width:16px;height:16px">${t}</label>`).join('');
 }
 async function openAddEmployee() {
   editEmpId = null;
@@ -1769,7 +1770,7 @@ async function openAddEmployee() {
   document.getElementById('ef-pos').innerHTML='<option value="">Select Position</option>'+posTitles.map(t=>`<option>${t}</option>`).join('');
   document.getElementById('ef-pos').disabled=false;
   document.getElementById('ef-pos-lock-note').style.display='none';
-  renderEmpLeaveTypeCheckboxes([]);
+  await renderEmpLeaveTypeCheckboxes([]);
   document.getElementById('emp-modal-title').textContent='+ Add Employee';
   Modal.open('emp-modal');
 }
@@ -1796,7 +1797,7 @@ async function editEmployee(id) {
   document.getElementById('ef-emptype').value=e.employment_type||'Regular';
   const df=document.getElementById('ef-dept');
   df.innerHTML=HR_DEPARTMENTS.map(d=>`<option ${d===e.department?'selected':''}>${d}</option>`).join('');
-  renderEmpLeaveTypeCheckboxes(getEmployeeLeaveTypes(e));
+  await renderEmpLeaveTypeCheckboxes(getEmployeeLeaveTypes(e));
   document.getElementById('emp-modal-title').textContent='✏️ Edit Employee';
   Modal.open('emp-modal');
 }
