@@ -8,7 +8,7 @@ ojt01|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|ojt|inven
 guest01|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|guest|pos|Guest User|guest@company.com|active|2024-01-01|
 redmat|9fa7b1c3f5ae1bbcd5a9a444acbeba2c0ce3eeecea3508d25964dac2fb29bd64|superadmin|all|Red Matienzo|redmatienzo@gmail.com|active|2026-06-13|
 melaniepos|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|admin|pos|Melanie Gupong|melanie@gmail.com|active|2026-06-13|
-hradmin|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|admin|attendance|Melanie gupong|hradmin@company.com|active|2026-07-28|EMP007
+hradmin|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|admin|attendance|Melanie gupong|hradmin@company.com|active|2026-07-28|EMP008
 hrstaff|10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6|staff|attendance|Red Matienzo|redf@gmail.com|active|2026-07-28|EMP001
 maria|10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6|staff|attendance|Maria|maria.hr@company.com|active|2026-07-28|EMP002
 anag|10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6|staff|attendance|Ana Garcia|anag@company.com|active|2026-07-28|EMP004
