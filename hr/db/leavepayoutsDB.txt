@@ -2,3 +2,4 @@ id|employee_id|year|leave_type|unused_days|daily_rate|amount|status|processed_by
 LP001|EMP001|2025|Vacation Leave|12|650.00|7800.00|pending|Edz|
 LP002|EMP001|2026|Vacation Leave|7|650.00|4550.00|released|Melanie gupong|2026-07-29
 LP003|EMP002|2026|Vacation Leave|12|550.00|6600.00|pending|Melanie gupong|
+LP004|EMP003|2026|Vacation Leave|12|850.00|10200.00|pending|Melanie gupong|
