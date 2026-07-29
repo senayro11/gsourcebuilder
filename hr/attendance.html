@@ -2045,7 +2045,7 @@ async function loadEmpLeaves() {
       });
       statsEl.innerHTML=perType.map(p=>p.allocation>0
         ? `<div class="stat-card"><div class="stat-icon green">📆</div><div><div class="stat-value">${p.remaining}<span style="font-size:14px;color:var(--text3)">/${p.allocation}</span></div><div class="stat-label">${p.type}</div></div></div>`
-        : `<div class="stat-card"><div class="stat-icon green">📆</div><div><div class="stat-value">${p.approvedCount}</div><div class="stat-label">${p.type} (approved, ${year})</div></div></div>`
+        : `<div class="stat-card"><div class="stat-icon green">📆</div><div><div class="stat-value">${p.approvedCount}</div><div class="stat-label">${p.type}</div></div></div>`
       ).join('');
     }
   }catch(e){Toast.show('Error: '+e.message,'error');}
