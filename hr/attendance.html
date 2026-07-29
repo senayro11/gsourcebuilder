@@ -2040,9 +2040,16 @@ async function loadEmpLeaves() {
       const perType=myTypes.map(t=>{
         const allocation=policy[t]?.allocation||0;
         const used=myLeaves.filter(l=>l.leave_type===t && l.year===String(year) && leaveCountsAgainstBalance(l)).reduce((s,l)=>s+(parseInt(l.days)||0),0);
-        return {type:t, allocation, remaining:Math.max(0,allocation-used)};
+        // A type with no yearly allocation (e.g. "Unpaid Leave") isn't a
+        // bank you draw down -- "remaining/total" is meaningless there
+        // (always 0/0). Show a running count of approved days instead.
+        const approvedCount=myLeaves.filter(l=>l.leave_type===t && l.year===String(year) && l.status==='approved').reduce((s,l)=>s+(parseInt(l.days)||0),0);
+        return {type:t, allocation, remaining:Math.max(0,allocation-used), approvedCount};
       });
-      statsEl.innerHTML=perType.map(p=>`<div class="stat-card"><div class="stat-icon green">📆</div><div><div class="stat-value">${p.remaining}<span style="font-size:14px;color:var(--text3)">/${p.allocation}</span></div><div class="stat-label">${p.type}</div></div></div>`).join('');
+      statsEl.innerHTML=perType.map(p=>p.allocation>0
+        ? `<div class="stat-card"><div class="stat-icon green">📆</div><div><div class="stat-value">${p.remaining}<span style="font-size:14px;color:var(--text3)">/${p.allocation}</span></div><div class="stat-label">${p.type}</div></div></div>`
+        : `<div class="stat-card"><div class="stat-icon green">📆</div><div><div class="stat-value">${p.approvedCount}</div><div class="stat-label">${p.type} (approved, ${year})</div></div></div>`
+      ).join('');
     }
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
