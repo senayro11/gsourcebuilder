@@ -1991,10 +1991,20 @@ async function renderLeaveInfoPanel(elId, allowedTypes){
 
 // ---- Per-year balance + paid/unpaid split ----
 function leaveCountsAgainstBalance(l){ return l.status!=='rejected'; }
+// Days already cashed out via Year-End Payout no longer count as available
+// balance -- once HR processes a payout (even before the final Release),
+// those days are spoken for and can't also be taken as actual leave.
+function payoutCountsAgainstBalance(p){ return p.status==='pending' || p.status==='released'; }
+async function payoutDaysThisYear(empId,type,year,payouts){
+  const rows=payouts||await HRDB.read('leavepayoutsDB');
+  return rows.filter(p=>p.employee_id===empId && p.leave_type===type && p.year===String(year) && payoutCountsAgainstBalance(p))
+    .reduce((s,p)=>s+(parseInt(p.unused_days)||0),0);
+}
 async function usedDaysThisYear(empId,type,year,leaves){
   const rows=leaves||await HRDB.read('leavesDB');
-  return rows.filter(l=>l.employee_id===empId && l.leave_type===type && l.year===String(year) && leaveCountsAgainstBalance(l))
+  const fromLeaves=rows.filter(l=>l.employee_id===empId && l.leave_type===type && l.year===String(year) && leaveCountsAgainstBalance(l))
     .reduce((s,l)=>s+ (parseInt(l.days)||0),0);
+  return fromLeaves + await payoutDaysThisYear(empId,type,year);
 }
 async function computePaidSplit(empId,type,year,requestedDays){
   const policy=await getLeavePolicy();
@@ -2033,13 +2043,19 @@ async function loadEmpLeaves() {
     const myTypes=getEmployeeLeaveTypes(emp);
     const policy=await getLeavePolicy();
     const year=new Date().getFullYear();
+    const myPayouts=session.employee_id ? (await HRDB.read('leavepayoutsDB')).filter(p=>p.employee_id===session.employee_id) : [];
     const statsEl=document.getElementById('leave-stats');
     if(!myTypes.length){
       statsEl.innerHTML='<div class="stat-card" style="grid-column:1/-1"><div><div class="stat-label" style="color:var(--text3)">No leave entitlements configured yet. Ask HR to set them up in Employee List.</div></div></div>';
     } else {
       const perType=myTypes.map(t=>{
         const allocation=policy[t]?.allocation||0;
-        const used=myLeaves.filter(l=>l.leave_type===t && l.year===String(year) && leaveCountsAgainstBalance(l)).reduce((s,l)=>s+(parseInt(l.days)||0),0);
+        const usedFromLeaves=myLeaves.filter(l=>l.leave_type===t && l.year===String(year) && leaveCountsAgainstBalance(l)).reduce((s,l)=>s+(parseInt(l.days)||0),0);
+        // Days already cashed out via Year-End Payout are no longer
+        // available -- subtract those too, so a paid-out balance can't
+        // also be used as actual leave.
+        const usedFromPayouts=myPayouts.filter(p=>p.leave_type===t && p.year===String(year) && payoutCountsAgainstBalance(p)).reduce((s,p)=>s+(parseInt(p.unused_days)||0),0);
+        const used=usedFromLeaves+usedFromPayouts;
         // A type with no yearly allocation (e.g. "Unpaid Leave") isn't a
         // bank you draw down -- "remaining/total" is meaningless there
         // (always 0/0). Show a running count of approved days instead.
@@ -2280,11 +2296,23 @@ async function initLeavePayout(){
     const rows=[];
     for(const emp of activeEmps){
       for(const type of convertibleTypes){
-        const used=await usedDaysThisYear(emp.id,type,year,leaves);
-        const unused=Math.max(0,policy[type].allocation-used);
+        const existing=payouts.find(p=>p.employee_id===emp.id&&p.year===String(year)&&p.leave_type===type);
+        // Already-processed rows keep showing their originally recorded
+        // unused_days/amount (a frozen snapshot), regardless of anything
+        // that happens to the live leave balance afterward -- otherwise
+        // usedDaysThisYear() now counting the payout itself as "used"
+        // would make the row's unused total drop to 0 and vanish here.
+        // Not-yet-processed rows are computed fresh from actual leave
+        // usage only (there's no payout yet to double-count).
+        let unused;
+        if(existing){
+          unused=parseInt(existing.unused_days)||0;
+        } else {
+          const usedFromLeaves=leaves.filter(l=>l.employee_id===emp.id && l.leave_type===type && l.year===String(year) && leaveCountsAgainstBalance(l)).reduce((s,l)=>s+(parseInt(l.days)||0),0);
+          unused=Math.max(0,policy[type].allocation-usedFromLeaves);
+        }
         if(unused<=0) continue;
         const dailyRate=parseFloat(emp.daily_rate||0);
-        const existing=payouts.find(p=>p.employee_id===emp.id&&p.year===String(year)&&p.leave_type===type);
         rows.push({emp,type,unused,dailyRate,amount:unused*dailyRate,existing});
       }
     }
