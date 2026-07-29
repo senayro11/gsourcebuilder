@@ -2323,7 +2323,11 @@ async function initLeavePayout(){
       <td>${Fmt.peso(r.dailyRate)}</td>
       <td><strong>${Fmt.peso(r.amount)}</strong></td>
       <td>${r.existing?Fmt.statusBadge(r.existing.status):'<span class="badge badge-gray">Not processed</span>'}</td>
-      <td>${!r.existing?`<button class="btn btn-primary btn-xs" onclick="processPayout('${r.emp.id}','${r.type}',${r.unused},${r.dailyRate},'${year}')">Process</button>`:(r.existing.status==='pending'?`<button class="btn btn-success btn-xs" onclick="releasePayout('${r.existing.id}')">Release</button>`:'—')}</td>
+      <td><div style="display:flex;gap:4px">${!r.existing
+        ?`<button class="btn btn-primary btn-xs" onclick="processPayout('${r.emp.id}','${r.type}',${r.unused},${r.dailyRate},'${year}')">Process</button>`
+        :(r.existing.status==='pending'?`<button class="btn btn-success btn-xs" onclick="releasePayout('${r.existing.id}')">Release</button>`:'')
+          +`<button class="btn btn-danger btn-xs" onclick="voidPayout('${r.existing.id}')">Void</button>`
+      }</div></td>
     </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:32px">No unused convertible leave found for active employees in this year</td></tr>';
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
@@ -2345,6 +2349,22 @@ function releasePayout(id){
     try{
       await HRDB.update('leavepayoutsDB',r=>r.id===id,{status:'released',released_date:new Date().toISOString().split('T')[0]});
       Toast.show('Payout released ✅','success');
+      await initLeavePayout();
+    }catch(e){Toast.show('Error: '+e.message,'error');}
+    Loading.hide();
+  });
+}
+// Voiding removes the payout record entirely (not just a status change) --
+// this both restores the employee's leave balance right away (it stops
+// counting against usedDaysThisYear/loadEmpLeaves) and frees up that
+// employee/type/year to be Processed again if needed, e.g. to correct a
+// mistake even after it was already Released.
+function voidPayout(id){
+  Modal.confirm('Void this payout? This restores the unused days back to the employee\'s leave balance and cannot be undone.',async()=>{
+    Loading.show();
+    try{
+      await HRDB.remove('leavepayoutsDB',r=>r.id===id);
+      Toast.show('Payout voided — leave balance restored','success');
       await initLeavePayout();
     }catch(e){Toast.show('Error: '+e.message,'error');}
     Loading.hide();
