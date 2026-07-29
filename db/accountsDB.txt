@@ -1,7 +1,7 @@
 username|password_hash|role|assigned_system|full_name|email|status|created_at|employee_id
 superadmin|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|superadmin|all|Super Administrator|superadmin@company.com|active|2024-01-01|
 admin_inv|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|admin|inventory|Inventory Administrator|admin.inv@company.com|active|2024-01-01|
-admin_att|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|admin|attendance|Edz|admin.att@gmail.com|active|2024-01-01|EMP007
+admin_att|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|admin|attendance|Edz|admin.att@gmail.com|active|2024-01-01|EMP008
 admin_bud|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|admin|budget|Budget Administrator|admin.bud@company.com|active|2024-01-01|
 staff01|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|staff|pos|Juan dela Cruz|juan@company.com|active|2024-01-01|
 ojt01|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|ojt|inventory|Maria Santos|maria@company.com|active|2024-01-01|
