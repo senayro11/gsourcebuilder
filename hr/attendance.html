@@ -28,8 +28,8 @@
         </a>
       </div>
 
-      <!-- HR Management (admin only) -->
-      <div class="nav-group" data-restrict="admin">
+      <!-- HR Management (admin, plus "user" role in view-only mode) -->
+      <div class="nav-group" data-restrict="admin" id="nav-group-hr-mgmt">
         <div class="nav-group-label">HR Management</div>
         <div class="nav-item nav-parent">
           <span class="nav-icon">🏢</span>HR Management<span class="chevron">›</span>
@@ -243,7 +243,7 @@
           <h1>👥 Employee List</h1>
           <p class="subtitle">Manage all employees in the organization</p>
         </div>
-        <button class="btn btn-primary only-desktop" onclick="openAddEmployee()">+ Add Employee</button>
+        <button class="btn btn-primary only-desktop" data-restrict="can-edit" onclick="openAddEmployee()">+ Add Employee</button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
         <div class="emp-toolbar-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;flex:1;min-width:0">
@@ -252,7 +252,7 @@
             <span class="search-icon">🔍</span>
             <input type="text" id="emp-search" placeholder="Search employees..." oninput="filterEmployees()">
           </div>
-          <button class="btn btn-primary only-mobile" style="flex-shrink:0;height:38px;box-sizing:border-box" onclick="openAddEmployee()">+ Add Employee</button>
+          <button class="btn btn-primary only-mobile" style="flex-shrink:0;height:38px;box-sizing:border-box" data-restrict="can-edit" onclick="openAddEmployee()">+ Add Employee</button>
         </div>
         <select id="emp-dept-filter" class="emp-dept-filter" style="padding:7px 10px;height:38px;box-sizing:border-box" onchange="filterEmployees()">
           <option value="">All Departments</option>
@@ -278,7 +278,7 @@
           <h1>🎉 Holidays</h1>
           <p class="subtitle">Manage company holidays</p>
         </div>
-        <button class="btn btn-primary" onclick="openAddHoliday()">+ Add Holiday</button>
+        <button class="btn btn-primary" data-restrict="can-edit" onclick="openAddHoliday()">+ Add Holiday</button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;margin-bottom:12px">
         <span class="card-title" style="flex-shrink:0">Holidays 2025</span>
@@ -782,7 +782,7 @@
     <div id="page-departments" class="page-section" style="display:none">
       <div class="page-header-row">
         <div class="page-header"><h1>🏢 Departments</h1><p class="subtitle">Manage company departments</p></div>
-        <button class="btn btn-primary" onclick="openAddDept()">+ Add Department</button>
+        <button class="btn btn-primary" data-restrict="can-edit" onclick="openAddDept()">+ Add Department</button>
       </div>
       <div class="stats-grid" id="dept-stats" style="grid-template-columns:repeat(3,1fr)"></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;margin-bottom:12px">
@@ -809,7 +809,7 @@
     <div id="page-positions" class="page-section" style="display:none">
       <div class="page-header-row">
         <div class="page-header"><h1>🧑‍💼 Position</h1><p class="subtitle">Manage job positions/titles. Only the Head Admin (Super Administrator) can change an existing employee's position.</p></div>
-        <button class="btn btn-primary" onclick="openAddPosition()">+ Add Position</button>
+        <button class="btn btn-primary" data-restrict="can-edit" onclick="openAddPosition()">+ Add Position</button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;margin-bottom:12px">
         <span class="card-title" style="flex-shrink:0">Position List</span>
@@ -896,13 +896,14 @@
         <div class="page-header"><h1>👥 User Management</h1><p class="subtitle">Manage HR system user accounts</p></div>
         <button class="btn btn-primary" onclick="openAddUser()">+ Add User</button>
       </div>
-      <div class="stats-grid" id="user-stats" style="grid-template-columns:repeat(4,1fr)"></div>
+      <div class="stats-grid" id="user-stats" style="grid-template-columns:repeat(5,1fr)"></div>
       <div class="card">
         <div class="card-header">
           <div class="search-bar" style="width:260px"><span class="search-icon">🔍</span><input type="text" id="user-search" placeholder="Search users..." oninput="filterUsers()"></div>
           <select id="user-role-filter" style="padding:7px 10px" onchange="filterUsers()">
             <option value="">All Roles</option>
             <option value="admin">Admin</option>
+            <option value="user">User</option>
             <option value="staff">Staff</option>
             <option value="ojt">OJT</option>
             <option value="guest">Guest</option>
@@ -1205,6 +1206,7 @@
           <label>Role *</label>
           <select id="uf-role">
             <option value="admin">Admin</option>
+            <option value="user">User (view-only HR assistant)</option>
             <option value="staff">Staff</option>
             <option value="ojt">OJT</option>
             <option value="guest">Guest</option>
@@ -1517,10 +1519,20 @@ function handleLogoUpload(e) {
 // pages below auto-lock to the logged-in employee.
 let isDeptHead = false;
 function isEssSession(session) { return session.role !== 'admin' && session.role !== 'superadmin'; }
+// "user" role: a view-only HR assistant -- can browse HR Management
+// (Employee List / Department / Position / Holidays) but never add/edit/
+// delete anything there. See renderEmpTable/renderDeptTable/
+// renderPositionsTable/renderHolTable for the per-row button checks.
+function isViewOnlySession(session) { return session.role === 'user'; }
 
 async function applyAccessRestrictions(session) {
   const isAdmin = !isEssSession(session);
   document.querySelectorAll('[data-restrict="admin"]').forEach(el => { if (!isAdmin) el.style.display = 'none'; });
+  if (!isAdmin) document.querySelectorAll('[data-restrict="can-edit"]').forEach(el => { el.style.display = 'none'; });
+  if (isViewOnlySession(session)) {
+    const hrMgmt = document.getElementById('nav-group-hr-mgmt');
+    if (hrMgmt) hrMgmt.style.display = '';
+  }
 
   // Dept-head status is independent of role -- an admin who is also linked
   // to an employee record can legitimately be a department head too, so
@@ -1712,6 +1724,7 @@ function filterEmployees() {
 function renderEmpTable(rows, page) {
   empPage = page;
   const paged = paginate(rows, page);
+  const viewOnly = isViewOnlySession(getSession());
   document.getElementById('emp-tbody').innerHTML = paged.rows.map(e=>`<tr>
     <td><span class="badge badge-blue mono">${e.employee_id}</span></td>
     <td><div class="emp-card">${Fmt.avatarHtml(e.name,'32')}<div><div class="emp-name">${e.name}</div><div class="emp-pos">${e.position}</div></div></div></td>
@@ -1720,10 +1733,10 @@ function renderEmpTable(rows, page) {
     <td>${Fmt.employmentTypeBadge(e.employment_type)}</td>
     <td><strong>${Fmt.peso(e.daily_rate)}</strong><span class="text-small text-muted">/day</span></td>
     <td>${Fmt.statusBadge(e.status)}</td>
-    <td><div style="display:flex;gap:4px">
+    <td>${viewOnly?'—':`<div style="display:flex;gap:4px">
       <button class="btn btn-ghost btn-xs" onclick="editEmployee('${e.id}')">✏️</button>
       <button class="btn btn-danger btn-xs" onclick="deleteEmployee('${e.id}')">🗑</button>
-    </div></td>
+    </div>`}</td>
   </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">No employees found</td></tr>';
   renderPager('emp-pagination', paged, p=>renderEmpTable(rows,p));
 }
@@ -1831,16 +1844,17 @@ function filterHolidays() {
 function renderHolTable(rows,page) {
   holPage=page;
   const paged=paginate(rows,page,10);
+  const viewOnly = isViewOnlySession(getSession());
   document.getElementById('holiday-tbody').innerHTML=paged.rows.map((h,i)=>`<tr>
     <td>${paged.start+i+1}</td>
     <td><strong>${h.name}</strong></td>
     <td>${Fmt.date(h.date)}</td>
     <td>${h.day}</td>
     <td><span class="badge ${h.type==='Regular'?'badge-blue':h.type==='Special'?'badge-warning':'badge-purple'}">${h.type}</span></td>
-    <td><div style="display:flex;gap:4px">
+    <td>${viewOnly?'—':`<div style="display:flex;gap:4px">
       <button class="btn btn-ghost btn-xs" onclick="editHoliday('${h.id}')">✏️</button>
       <button class="btn btn-danger btn-xs" onclick="deleteHoliday('${h.id}')">🗑</button>
-    </div></td>
+    </div>`}</td>
   </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:32px">No holidays</td></tr>';
   renderPager('holiday-pagination',paged,p=>renderHolTable(rows,p));
 }
@@ -2551,6 +2565,7 @@ function filterDepts() {
 
 function renderDeptTable(rows, page) {
   const paged = paginate(rows, page, 10);
+  const viewOnly = isViewOnlySession(getSession());
   document.getElementById('dept-tbody').innerHTML = paged.rows.map((d, i) => `<tr>
     <td>${paged.start+i+1}</td>
     <td><strong>${d.name}</strong></td>
@@ -2559,10 +2574,10 @@ function renderDeptTable(rows, page) {
     <td>${d.email||'—'}</td>
     <td><span class="badge badge-blue">${d.employee_count||0}</span></td>
     <td>${Fmt.statusBadge(d.status)}</td>
-    <td><div style="display:flex;gap:4px">
+    <td>${viewOnly?'—':`<div style="display:flex;gap:4px">
       <button class="btn btn-ghost btn-xs" onclick="editDept('${d.id}')">✏️</button>
       <button class="btn btn-danger btn-xs" onclick="deleteDept('${d.id}')">🗑</button>
-    </div></td>
+    </div>`}</td>
   </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">No departments</td></tr>';
   renderPager('dept-pagination', paged, p=>renderDeptTable(rows,p));
 }
@@ -2638,6 +2653,7 @@ let posPage=1;
 function renderPositionsTable(rows, page) {
   posPage=page;
   const paged = paginate(rows, page, 10);
+  const viewOnly = isViewOnlySession(getSession());
   document.getElementById('pos-tbody').innerHTML = paged.rows.map((p, i) => {
     const count = (allEmployees||[]).filter(e=>e.position===p.title && e.status==='active').length;
     return `<tr>
@@ -2645,10 +2661,10 @@ function renderPositionsTable(rows, page) {
     <td><strong>${p.title}</strong></td>
     <td><span class="badge badge-blue">${count}</span></td>
     <td>${Fmt.statusBadge(p.status)}</td>
-    <td><div style="display:flex;gap:4px">
+    <td>${viewOnly?'—':`<div style="display:flex;gap:4px">
       <button class="btn btn-ghost btn-xs" onclick="editPosition('${p.id}')">✏️</button>
       <button class="btn btn-danger btn-xs" onclick="deletePosition('${p.id}')">🗑</button>
-    </div></td>
+    </div>`}</td>
   </tr>`;
   }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:32px">No positions</td></tr>';
   renderPager('pos-pagination', paged, p=>renderPositionsTable(rows,p));
@@ -3020,7 +3036,7 @@ async function loadUsers() {
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
 }
-function renderUserStats(){const roles=['admin','staff','ojt','guest'];document.getElementById('user-stats').innerHTML=roles.map(r=>`<div class="stat-card"><div><div class="stat-value">${allUsers.filter(u=>u.role===r).length}</div><div class="stat-label">${r.toUpperCase()}</div></div></div>`).join('');}
+function renderUserStats(){const roles=['admin','user','staff','ojt','guest'];document.getElementById('user-stats').innerHTML=roles.map(r=>`<div class="stat-card"><div><div class="stat-value">${allUsers.filter(u=>u.role===r).length}</div><div class="stat-label">${r.toUpperCase()}</div></div></div>`).join('');}
 function filterUsers(){const q=(document.getElementById('user-search')?.value||'').toLowerCase();const role=document.getElementById('user-role-filter')?.value||'';let rows=allUsers;if(q)rows=rows.filter(u=>u.username.toLowerCase().includes(q)||u.full_name.toLowerCase().includes(q));if(role)rows=rows.filter(u=>u.role===role);renderUserTable(rows,1);}
 function renderUserTable(rows,page){const paged=paginate(rows,page,10);document.getElementById('user-tbody').innerHTML=paged.rows.map(u=>{const emp=allEmployees.find(e=>e.id===u.employee_id);return`<tr><td class="mono">${u.username}</td><td>${u.full_name}</td><td>${Fmt.roleBadge(u.role)}</td><td>${emp?emp.name+'<br><small class="text-muted">'+emp.employee_id+'</small>':'<span style="color:var(--text3)">—</span>'}</td><td>${Fmt.statusBadge(u.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="editUser('${u.username}')">✏️</button><button class="btn btn-${u.status==='active'?'warning':'success'} btn-xs" onclick="toggleUser('${u.username}')">${u.status==='active'?'🔒':'🔓'}</button><button class="btn btn-danger btn-xs" onclick="deleteUser('${u.username}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:32px">No users</td></tr>';renderPager('user-pagination',paged,p=>renderUserTable(rows,p));}
 
