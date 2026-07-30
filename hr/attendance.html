@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HR Management System</title>
-  <link rel="stylesheet" href="css/hr.css?v=20260730p">
+  <link rel="stylesheet" href="css/hr.css?v=20260730q">
 </head>
 <body>
 <div class="app-shell">
@@ -278,7 +278,10 @@
           <h1>🎉 Holidays</h1>
           <p class="subtitle">Manage company holidays</p>
         </div>
-        <button class="btn btn-primary" data-restrict="can-edit" onclick="openAddHoliday()">+ Add Holiday</button>
+        <div class="page-header-actions" style="display:flex;gap:8px">
+          <button class="btn btn-ghost" data-restrict="can-edit" onclick="copyHolidaysToNextYear()">📋 Copy to Next Year</button>
+          <button class="btn btn-primary" data-restrict="can-edit" onclick="openAddHoliday()">+ Add Holiday</button>
+        </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;margin-bottom:12px">
         <span class="card-title" style="flex-shrink:0" id="hol-year-label">Holidays</span>
@@ -1402,9 +1405,9 @@
 <div id="toast-container"></div>
 <div id="global-loading" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="js/hr-config.js?v=20260730p"></script>
-<script src="../js/sync.js?v=20260730p"></script>
-<script src="js/hr-core.js?v=20260730p"></script>
+<script src="js/hr-config.js?v=20260730q"></script>
+<script src="../js/sync.js?v=20260730q"></script>
+<script src="js/hr-core.js?v=20260730q"></script>
 <script>
 // ============================================================
 //  MAIN APP LOGIC
@@ -2043,6 +2046,37 @@ function editHoliday(id){const h=allHolidays.find(x=>x.id===id);if(!h)return;edi
 function updateHolidayDay(){const d=document.getElementById('hf-date').value;if(d){const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];document.getElementById('hf-day').value=days[new Date(d+'T00:00:00').getDay()];}}
 async function saveHoliday(){const name=document.getElementById('hf-name').value.trim(),date=document.getElementById('hf-date').value;if(!name||!date){Toast.show('Fill required fields','warning');return;}Loading.show();try{const data={name,date,day:document.getElementById('hf-day').value,type:document.getElementById('hf-type').value,description:document.getElementById('hf-desc').value};if(editHolId){await HRDB.update('holidaysDB',r=>r.id===editHolId,data);Toast.show('Holiday updated ✅','success');}else{const all=await HRDB.read('holidaysDB',true);await HRDB.insert('holidaysDB',{id:HRDB.nextId(all,'id','HOL'),...data});Toast.show('Holiday added ✅','success');}Modal.close('holiday-modal');await loadHolidays();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 function deleteHoliday(id){Modal.confirm('Delete this holiday?',async()=>{Loading.show();try{await HRDB.remove('holidaysDB',r=>r.id===id);Toast.show('Deleted','success');await loadHolidays();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
+// Regular holidays keep the same date every year, but Special Non-Working
+// days (and movable ones like National Heroes Day) are only confirmed once
+// Malacañang issues that year's proclamation -- so this copies last year's
+// list forward as a starting point, not a final answer HR can skip
+// reviewing.
+function copyHolidaysToNextYear(){
+  const fromYear=document.getElementById('hol-year-filter')?.value||String(new Date().getFullYear());
+  const toYear=String(parseInt(fromYear)+1);
+  const source=allHolidays.filter(h=>(h.date||'').startsWith(fromYear));
+  if(!source.length){Toast.show(`No holidays found for ${fromYear} to copy`,'warning');return;}
+  Modal.confirm(`Copy ${source.length} holiday(s) from ${fromYear} to ${toYear}? Dates shift by exactly one year -- still verify against the official Presidential Proclamation for ${toYear} once released, since movable/special holidays don't always land on the same date.`,async()=>{
+    Loading.show('Copying holidays...');
+    try{
+      const all=await HRDB.read('holidaysDB',true);
+      const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      let added=0,skipped=0;
+      for(const h of source){
+        const newDate=h.date.replace(fromYear,toYear);
+        if(all.some(e=>e.name===h.name&&e.date===newDate)){skipped++;continue;}
+        all.push({id:HRDB.nextId(all,'id','HOL'),name:h.name,date:newDate,day:days[new Date(newDate+'T00:00:00').getDay()],type:h.type,description:h.description||''});
+        added++;
+      }
+      if(added>0)await HRDB.write('holidaysDB',all,'Copy holidays to next year');
+      Toast.show(`Copied ${added} holiday(s) to ${toYear}${skipped?`, skipped ${skipped} already there`:''} ✅`,'success');
+      await loadHolidays();
+      document.getElementById('hol-year-filter').value=toYear;
+      filterHolidays();
+    }catch(e){Toast.show('Error: '+e.message,'error');}
+    Loading.hide();
+  });
+}
 
 // ============================================================
 //  LEAVE — EMPLOYEE SELF-SERVICE
