@@ -469,7 +469,12 @@ const HRDB = (() => {
       hideGithubAuthBanner();
       const json = await res.json();
       shas[name] = json.sha;
-      const content = atob(json.content.replace(/\n/g, ''));
+      // atob() alone only reverses the base64 -- it leaves each UTF-8
+      // byte as its own raw char code instead of reassembling multi-byte
+      // characters (e.g. an em dash written as "—" comes back as
+      // mojibake). escape()+decodeURIComponent() is the standard
+      // reverse of write()'s encodeURIComponent()+unescape()+btoa().
+      const content = decodeURIComponent(escape(atob(json.content.replace(/\n/g, ''))));
       cache[name] = parse(content);
       cache[`${name}_header`] = content.split('\n')[0];
       if (typeof Sync !== 'undefined') Sync.cacheSet(syncKey(name), cache[name], cache[`${name}_header`]);
@@ -690,14 +695,23 @@ async function addNotification({ audience, employeeId, type, title, message, ref
 // doesn't answer within the timeout, so a slow/denied GPS never blocks
 // attendance from being recorded.
 function getDeviceLocation() {
-  return new Promise(resolve => {
-    if (!navigator.geolocation) { resolve(null); return; }
-    navigator.geolocation.getCurrentPosition(
-      pos => resolve({ lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) }),
-      () => resolve(null),
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
-    );
-  });
+  function attempt(opts) {
+    return new Promise(resolve => {
+      if (!navigator.geolocation) { resolve(null); return; }
+      navigator.geolocation.getCurrentPosition(
+        pos => resolve({ lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) }),
+        err => { console.warn('Geolocation error:', err.code, err.message); resolve(null); },
+        opts
+      );
+    });
+  }
+  // A high-accuracy GPS fix commonly takes longer than a few seconds --
+  // or never resolves at all indoors/underground -- so a short timeout
+  // on enableHighAccuracy alone was failing silently far too often. Try
+  // it briefly first, then fall back to the much faster (if less
+  // precise) network/cell-based location instead of giving up empty.
+  return attempt({ enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 })
+    .then(loc => loc || attempt({ enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }));
 }
 
 // Is this break "paid" (not deducted from hours)? Blank/not yet
