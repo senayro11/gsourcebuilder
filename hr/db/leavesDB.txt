@@ -6,6 +6,5 @@ LV005|EMP005|Vacation Leave|2025-07-01|2025-07-05|5|Full-Day|Vacation|pending_hr
 LV007|EMP001|Vacation Leave|2026-07-29|2026-07-30|2|Full-Day Leave||approved|Attendance Administrator|2026-07-28|2026|Paid||
 LV008|EMP001|Vacation Leave|2026-07-30|2026-07-30|1|Full-Day Leave||approved|Melanie gupong|2026-07-28|2026|Paid||
 LV010|EMP007|Unpaid leave|2026-07-31|2026-07-31|1|Full-Day Leave||approved|Melanie gupong|2026-07-29|2026|Unpaid||
-LV012|EMP001|Unpaid leave|2026-07-29|2026-07-31|3|Full-Day Leave||approved|Melanie gupong|2026-07-29|2026|Unpaid||
 LV013|EMP008|Vacation Leave|2026-07-29|2026-07-31|3|Full-Day Leave|dgfjfg|pending_manager||2026-07-29|2026|Paid||
 LV014|EMP001|Vacation Leave|2026-07-30|2026-07-31|2|Full-Day Leave|Fffff|pending_hr||2026-07-29|2026|Paid||
