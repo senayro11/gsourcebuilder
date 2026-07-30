@@ -281,8 +281,9 @@
         <button class="btn btn-primary" data-restrict="can-edit" onclick="openAddHoliday()">+ Add Holiday</button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;margin-bottom:12px">
-        <span class="card-title" style="flex-shrink:0">Holidays 2025</span>
+        <span class="card-title" style="flex-shrink:0" id="hol-year-label">Holidays</span>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;flex:1;min-width:0;justify-content:flex-end">
+          <select id="hol-year-filter" style="width:90px;height:38px;box-sizing:border-box;flex-shrink:0" onchange="filterHolidays()"></select>
           <button class="btn btn-ghost btn-icon" style="height:38px;box-sizing:border-box;flex-shrink:0" onclick="loadHolidays()">🔄</button>
           <div class="search-bar hol-search-bar" style="width:240px;height:38px;box-sizing:border-box">
             <span class="search-icon">🔍</span>
@@ -1995,13 +1996,28 @@ function deleteEmployee(id) {
 let holPage = 1;
 async function loadHolidays() {
   Loading.show();
-  try { allHolidays=await HRDB.read('holidaysDB',true); filterHolidays(); }
+  try { allHolidays=await HRDB.read('holidaysDB',true); populateHolYearFilter(); filterHolidays(); }
   catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
 }
+// Years present in the data, plus the current year so it's always
+// selectable even before any holidays have been added for it yet.
+function populateHolYearFilter() {
+  const sel=document.getElementById('hol-year-filter');
+  const currentYear=String(new Date().getFullYear());
+  const years=new Set(allHolidays.map(h=>h.date?.substring(0,4)).filter(Boolean));
+  years.add(currentYear);
+  const sorted=[...years].sort();
+  const keepVal=sel.value||currentYear;
+  sel.innerHTML=sorted.map(y=>`<option ${y===keepVal?'selected':''}>${y}</option>`).join('');
+  if(!sel.value) sel.value=currentYear;
+}
 function filterHolidays() {
   const q=(document.getElementById('holiday-search')?.value||'').toLowerCase();
-  const rows=q?allHolidays.filter(h=>h.name.toLowerCase().includes(q)):allHolidays;
+  const year=document.getElementById('hol-year-filter')?.value||String(new Date().getFullYear());
+  document.getElementById('hol-year-label').textContent=`Holidays ${year}`;
+  let rows=allHolidays.filter(h=>(h.date||'').startsWith(year));
+  if(q) rows=rows.filter(h=>h.name.toLowerCase().includes(q));
   renderHolTable(rows,1);
 }
 function renderHolTable(rows,page) {
