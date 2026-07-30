@@ -1424,6 +1424,22 @@ function setSession(u) {
   sessionStorage.setItem(HR_SESSION_KEY, JSON.stringify(u));
 }
 
+// The logged-in session only carries name/role, not a photo -- look up
+// the linked employee record (if any) for their uploaded photo, used to
+// fill in the sidebar/topbar/profile-page avatars.
+async function getSessionEmployeePhoto(session) {
+  if (!session?.employee_id) return '';
+  try {
+    const emps = await HRDB.read('employeesDB');
+    return emps.find(e => e.id === session.employee_id)?.photo || '';
+  } catch (e) { return ''; }
+}
+function applyAvatarPhoto(el, name, photoUrl) {
+  if (!el) return;
+  if (photoUrl) el.innerHTML = `<img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  else el.textContent = (name || 'A').charAt(0).toUpperCase();
+}
+
 // ---- Init ----
 document.addEventListener('DOMContentLoaded', async () => {
   // Load token from localStorage (set by superadmin in index.html)
@@ -1451,7 +1467,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Update UI with session info
   document.getElementById('sidebar-name').textContent   = session.full_name;
   document.getElementById('sidebar-role').textContent   = session.role.toUpperCase();
-  document.getElementById('sidebar-avatar').textContent = session.full_name.charAt(0).toUpperCase();
+  applyAvatarPhoto(document.getElementById('sidebar-avatar'), session.full_name, await getSessionEmployeePhoto(session));
   document.getElementById('dash-welcome-name').textContent = session.full_name.split(' ')[0];
 
   initSidebar();
@@ -1708,7 +1724,7 @@ async function loadPage(pageId) {
     case 'user-mgmt':        await loadUsers(); break;
     case 'thirteenth-month': await load13thMonth(); break;
     case 'timein-terminal':  break; // static page
-    case 'edit-profile':     loadEditProfile(); break;
+    case 'edit-profile':     await loadEditProfile(); break;
     case 'change-password':  break;
   }
 }
@@ -3392,14 +3408,14 @@ async function release13m(id){Modal.confirm('Release 13th month pay for this emp
 // ============================================================
 //  PROFILE (edit profile, change password)
 // ============================================================
-function loadEditProfile(){const s=getSession();if(!s)return;document.getElementById('pf-fullname').value=s.full_name||'';document.getElementById('pf-email').value=s.email||'';document.getElementById('pf-phone').value=s.phone||'';document.getElementById('profile-avatar-big').textContent=s.full_name?.charAt(0)||'A';}
+async function loadEditProfile(){const s=getSession();if(!s)return;document.getElementById('pf-fullname').value=s.full_name||'';document.getElementById('pf-email').value=s.email||'';document.getElementById('pf-phone').value=s.phone||'';applyAvatarPhoto(document.getElementById('profile-avatar-big'),s.full_name,await getSessionEmployeePhoto(s));}
 async function saveProfile(){const name=document.getElementById('pf-fullname').value.trim();if(!name){Toast.show('Name required','warning');return;}Loading.show();try{const session=getSession();await rootDB(()=>HRDB.update('accountsDB',r=>r.username===session.username,{full_name:name,email:document.getElementById('pf-email').value}));const updSession={...session,full_name:name,email:document.getElementById('pf-email').value};sessionStorage.setItem('ent_session',JSON.stringify(updSession));sessionStorage.setItem('hr_session',JSON.stringify(updSession));document.getElementById('sidebar-name').textContent=name;document.getElementById('topbar-name').textContent=name;Toast.show('Profile updated ✅','success');}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 async function changePassword(){const curr=document.getElementById('cp-current').value,nw=document.getElementById('cp-new').value,conf=document.getElementById('cp-confirm').value;if(!curr||!nw||!conf){Toast.show('Fill all fields','warning');return;}if(nw!==conf){Toast.show('Passwords do not match','error');return;}if(nw.length<6){Toast.show('Minimum 6 characters','warning');return;}Loading.show('Changing password...');try{const session=getSession();const hash=async p=>{const d=new TextEncoder().encode(p);const h=await crypto.subtle.digest('SHA-256',d);return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');};const currHash=await hash(curr);const users=await rootDB(()=>HRDB.read('accountsDB',true));const user=users.find(u=>u.username===session.username&&u.password_hash===currHash);if(!user){Toast.show('Current password is incorrect','error');Loading.hide();return;}const newHash=await hash(nw);await rootDB(()=>HRDB.update('accountsDB',r=>r.username===session.username,{password_hash:newHash}));Toast.show('Password changed ✅','success');['cp-current','cp-new','cp-confirm'].forEach(id=>document.getElementById(id).value='');}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 
 // Load notifications after main init
 document.addEventListener('DOMContentLoaded', () => {
   // Patch topbar profile from session (called after main init)
-  setTimeout(() => {
+  setTimeout(async () => {
     const session = getSession();
     if (!session) return;
     const nameEl = document.getElementById('topbar-name');
@@ -3409,7 +3425,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pmRole = document.getElementById('pm-role');
     if (nameEl) nameEl.textContent = session.full_name;
     if (roleEl) roleEl.textContent = session.role?.toUpperCase() || '';
-    if (avEl)   avEl.textContent   = session.full_name?.charAt(0)?.toUpperCase() || 'A';
+    applyAvatarPhoto(avEl, session.full_name, await getSessionEmployeePhoto(session));
     if (pmName) pmName.textContent = session.full_name;
     if (pmRole) pmRole.textContent = session.role || '';
     loadNotifications();
