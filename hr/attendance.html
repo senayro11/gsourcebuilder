@@ -1569,7 +1569,11 @@ async function uploadEmployeePhoto(employeeId, dataUri) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || `Photo upload error ${res.status}`);
   }
-  return `photos/${fileName}`;
+  const json = await res.json();
+  // Same filename every time a photo is replaced -- append the new blob's
+  // sha as a cache-buster so the browser (and GitHub Pages' CDN) fetch the
+  // fresh image instead of serving what they already cached for that URL.
+  return `photos/${fileName}?v=${json.content.sha.substring(0, 8)}`;
 }
 
 function handleEmployeePhotoSelect(e) {
