@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HR Management System</title>
-  <link rel="stylesheet" href="css/hr.css?v=20260730u">
+  <link rel="stylesheet" href="css/hr.css?v=20260730v">
   <script>
     // Applied before first paint so a saved dark-mode preference doesn't
     // flash light first -- default (no saved value) is light mode.
@@ -1494,9 +1494,9 @@
 <div id="toast-container"></div>
 <div id="global-loading" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="js/hr-config.js?v=20260730u"></script>
-<script src="../js/sync.js?v=20260730u"></script>
-<script src="js/hr-core.js?v=20260730u"></script>
+<script src="js/hr-config.js?v=20260730v"></script>
+<script src="../js/sync.js?v=20260730v"></script>
+<script src="js/hr-core.js?v=20260730v"></script>
 <script>
 // ============================================================
 //  MAIN APP LOGIC
@@ -2569,7 +2569,11 @@ async function submitLeaveEmployee(){
     const year=from.slice(0,4);
     const split=await computePaidSplit(session.employee_id,type,year,days);
     const status=await determineApprovalStart(session.employee_id);
-    await HRDB.insert('leavesDB',{id:HRDB.nextId(all,'id','LV'),employee_id:session.employee_id,leave_type:type,from_date:from,to_date:to,days,leave_day_type:document.getElementById('alf-daytype').value,reason,status,approved_by:'',created_at:new Date().toISOString().split('T')[0],year,paid:split.label,manager_by:'',manager_at:''});
+    const leaveId=HRDB.nextId(all,'id','LV');
+    await HRDB.insert('leavesDB',{id:leaveId,employee_id:session.employee_id,leave_type:type,from_date:from,to_date:to,days,leave_day_type:document.getElementById('alf-daytype').value,reason,status,approved_by:'',created_at:new Date().toISOString().split('T')[0],year,paid:split.label,manager_by:'',manager_at:''});
+    const emps=await HRDB.read('employeesDB');
+    const empName=emps.find(e=>e.id===session.employee_id)?.name||session.full_name||session.employee_id;
+    addNotification({audience:'admin',type:'leave_request',title:'New Leave Request',message:`${empName} applied for ${type}`,referenceId:leaveId});
     Toast.show('Leave application submitted! ✅','success');resetLeaveForm();navigate('leave-by-emp');
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
@@ -3037,10 +3041,25 @@ document.addEventListener('click', e => {
   if (!e.target.closest('#notif-panel') && !e.target.closest('#notif-btn')) closeNotifPanel();
 });
 
+// A notification is visible to this session if it's for everyone, for
+// admins only (and this session is an admin), or addressed to this
+// specific employee. Rows with no audience at all (shouldn't normally
+// happen, but covers any stray/legacy data) default to visible so
+// nothing silently disappears.
+function isNotifVisible(n, session, isAdmin) {
+  if (!n.audience) return true;
+  if (n.audience === 'all') return true;
+  if (n.audience === 'admin') return isAdmin;
+  if (n.audience === 'employee') return !!session.employee_id && n.employee_id === session.employee_id;
+  return true;
+}
+
 // ---- Load notifications ----
 async function loadNotifications() {
   try {
-    const notifs = await HRDB.read('notificationsDB');
+    const session = getSession();
+    const isAdmin = !isEssSession(session);
+    const notifs = (await HRDB.read('notificationsDB')).filter(n => isNotifVisible(n, session, isAdmin));
     const unread = notifs.filter(n => n.is_read === 'false');
     const badge  = document.getElementById('notif-dot');
     const annBadge = document.getElementById('ann-badge');
@@ -3056,7 +3075,6 @@ async function loadNotifications() {
     // "By HR" nav badge -- count of leave requests actually waiting on
     // HR's final approval right now (admin/superadmin only; the nav item
     // itself is hidden for everyone else).
-    const session = getSession();
     const byHrBadge = document.getElementById('by-hr-badge');
     if (byHrBadge && session && (session.role==='admin' || session.role==='superadmin')) {
       const leaves = await HRDB.read('leavesDB');
@@ -3109,8 +3127,10 @@ async function loadNotifications() {
 
 async function markAllRead() {
   try {
+    const session = getSession();
+    const isAdmin = !isEssSession(session);
     const notifs = await HRDB.read('notificationsDB', true);
-    const updated = notifs.map(n => ({ ...n, is_read: 'true' }));
+    const updated = notifs.map(n => isNotifVisible(n, session, isAdmin) ? { ...n, is_read: 'true' } : n);
     await HRDB.write('notificationsDB', updated);
     document.getElementById('notif-dot').style.display = 'none';
     Toast.show('All notifications marked as read','success');
@@ -3615,7 +3635,7 @@ async function loadAnnouncements() {
 }
 function openAddAnnouncement(){editAnnId=null;['annf-title','annf-content'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});document.getElementById('annf-priority').value='normal';document.getElementById('annf-target').value='all';document.getElementById('ann-modal-title').textContent='📢 Post Announcement';Modal.open('ann-modal');}
 function editAnn(id){const a=allAnns.find(x=>x.id===id);if(!a)return;editAnnId=id;document.getElementById('annf-title').value=a.title;document.getElementById('annf-content').value=a.content;document.getElementById('annf-priority').value=a.priority;document.getElementById('annf-target').value=a.target;document.getElementById('ann-modal-title').textContent='✏️ Edit Announcement';Modal.open('ann-modal');}
-async function saveAnnouncement(){const title=document.getElementById('annf-title').value.trim(),content=document.getElementById('annf-content').value.trim();if(!title||!content){Toast.show('Fill required fields','warning');return;}Loading.show();try{const session=getSession();const data={title,content,priority:document.getElementById('annf-priority').value,target:document.getElementById('annf-target').value,posted_by:session?.username||'admin',date:new Date().toISOString().split('T')[0],status:'active'};if(editAnnId){await HRDB.update('announcementsDB',r=>r.id===editAnnId,data);Toast.show('Updated ✅','success');}else{const all=await HRDB.read('announcementsDB',true);await HRDB.insert('announcementsDB',{id:HRDB.nextId(all,'id','ANN'),...data});Toast.show('Announcement posted! 📢','success');}Modal.close('ann-modal');await loadAnnouncements();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+async function saveAnnouncement(){const title=document.getElementById('annf-title').value.trim(),content=document.getElementById('annf-content').value.trim();if(!title||!content){Toast.show('Fill required fields','warning');return;}Loading.show();try{const session=getSession();const data={title,content,priority:document.getElementById('annf-priority').value,target:document.getElementById('annf-target').value,posted_by:session?.username||'admin',date:new Date().toISOString().split('T')[0],status:'active'};if(editAnnId){await HRDB.update('announcementsDB',r=>r.id===editAnnId,data);Toast.show('Updated ✅','success');}else{const all=await HRDB.read('announcementsDB',true);const annId=HRDB.nextId(all,'id','ANN');await HRDB.insert('announcementsDB',{id:annId,...data});addNotification({audience:'all',type:'announcement',title:'Announcement Posted',message:title,referenceId:annId});Toast.show('Announcement posted! 📢','success');}Modal.close('ann-modal');await loadAnnouncements();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 function deleteAnn(id){Modal.confirm('Delete this announcement?',async()=>{Loading.show();try{await HRDB.remove('announcementsDB',r=>r.id===id);Toast.show('Deleted','success');await loadAnnouncements();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
 
 // ============================================================

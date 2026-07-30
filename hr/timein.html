@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Time In / Out — HR System</title>
-  <link rel="stylesheet" href="css/hr.css?v=20260730u">
+  <link rel="stylesheet" href="css/hr.css?v=20260730v">
   <script>
     // Applied before first paint so a saved dark-mode preference doesn't
     // flash light first -- default (no saved value) is light mode.
@@ -151,9 +151,9 @@
 <div id="toast-container"></div>
 <div id="global-loading" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="js/hr-config.js?v=20260730u"></script>
-<script src="../js/sync.js?v=20260730u"></script>
-<script src="js/hr-core.js?v=20260730u"></script>
+<script src="js/hr-config.js?v=20260730v"></script>
+<script src="../js/sync.js?v=20260730v"></script>
+<script src="js/hr-core.js?v=20260730v"></script>
 <script>
 // ---- Clock ----
 function tick() {
@@ -305,6 +305,9 @@ async function doTimeIn() {
         ? `Late by ${lateMin(timeIn, shift?.start_time)} min` + (defaultNote ? ` (${defaultNote})` : '')
         : defaultNote
     });
+    if (status === 'late') {
+      addNotification({ audience: 'admin', type: 'attendance', title: 'Late Arrival', message: `${verifiedEmp.name} arrived late today`, referenceId: id });
+    }
     showSuccess('🟢', 'Time In Recorded!', `${verifiedEmp.name} — ${timeIn}${status === 'late' ? ' (Late)' : ''}`);
     Toast.show(`Time In: ${timeIn} ✅`, 'success');
   } catch(e) { Toast.show('Error: ' + e.message, 'error'); }

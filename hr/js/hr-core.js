@@ -661,6 +661,30 @@ function guessShiftForTime(shifts, timeStr) {
   return best;
 }
 
+// Write one row to notificationsDB -- shared by attendance.html and the
+// timein.html kiosk (a late arrival is detected there, not in the main
+// app). Best-effort: a failure here should never block the real action
+// (leave submitted, announcement posted, etc.) that triggered it, so
+// errors are swallowed and just logged.
+// audience: 'admin' (HR/admin only), 'all' (everyone), or 'employee'
+// (only the given employeeId).
+async function addNotification({ audience, employeeId, type, title, message, referenceId }) {
+  try {
+    const rows = await HRDB.read('notificationsDB', true);
+    await HRDB.insert('notificationsDB', {
+      id: HRDB.nextId(rows, 'id', 'NOTIF'),
+      audience: audience || 'admin',
+      employee_id: employeeId || '',
+      type: type || '',
+      title: title || '',
+      message: message || '',
+      reference_id: referenceId || '',
+      is_read: 'false',
+      date: new Date().toISOString().split('T')[0]
+    });
+  } catch (e) { console.error('addNotification error:', e); }
+}
+
 // Is this break "paid" (not deducted from hours)? Blank/not yet
 // configured = 'false' (unpaid/deducted), so the computation for
 // schedules set up before the paid/unpaid option was added doesn't
