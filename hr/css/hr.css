@@ -610,23 +610,23 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
   .stats-grid { grid-template-columns: 1fr; }
   #leave-stats, #hrlv-stats, #ma-stats, #payroll-stats, #user-stats { grid-template-columns: 1fr !important; }
   .topbar-date { display: none; }
-  /* The breadcrumb (parent > current page) squeezed between the menu
-     toggle and the bell/avatar icons on a narrow phone, wrapping the
-     current-page text onto a second line and overlapping the icons.
-     Drop it to its own full-width row below the icon row instead --
-     redeclaring --topbar-h keeps .main-content's margin-top in sync
-     with the now-taller two-row topbar automatically. */
-  :root { --topbar-h: 88px; }
+  /* The breadcrumb sits next to the menu toggle, same row as before,
+     but stacked internally -- parent line (e.g. "Attendance ›") on top,
+     current page title below it -- instead of squeezed onto one line.
+     Redeclaring --topbar-h keeps .main-content's margin-top in sync
+     with the now slightly-taller two-line row automatically. flex-wrap
+     stays on .topbar as a fallback for anything narrower still. */
+  :root { --topbar-h: 68px; }
   .topbar { padding: 8px 12px; flex-wrap: wrap; height: auto; row-gap: 6px; }
-  .topbar-toggle { order: 1; }
-  .topbar-right { order: 2; }
-  /* Stack the breadcrumb: parent line (e.g. "Attendance ›") on top,
-     current page title below it -- rather than squeezed onto one line.
-     When there's no parent (a top-level page like Dashboard), the lone
-     current-page line centers itself instead of sitting left-aligned. */
-  .topbar-breadcrumb { order: 3; flex: 1 1 100%; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .topbar-breadcrumb {
+    flex-direction: column; align-items: flex-start; gap: 2px;
+    min-width: 0; flex: 1 1 auto; overflow: hidden;
+  }
   .topbar-breadcrumb.no-parent { align-items: center; text-align: center; }
-  .breadcrumb-parent-line { display: flex; align-items: center; gap: 6px; }
+  .breadcrumb-parent-line { display: flex; align-items: center; gap: 6px; max-width: 100%; }
+  .topbar-breadcrumb .current, #breadcrumb-parent {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  }
   /* Page-header-row action button (e.g. "+ Add") drops to its own line
      under the title on a narrow phone -- keep it right-aligned there
      instead of the default flex-start. */
