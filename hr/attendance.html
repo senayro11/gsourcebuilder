@@ -393,9 +393,12 @@
          PAGE: LEAVE BY HR
     ========================================= -->
     <div id="page-leave-by-hr" class="page-section" style="display:none">
-      <div class="page-header">
-        <h1>📋 Leave Manage (HR)</h1>
-        <p class="subtitle">Manage all employee leave requests</p>
+      <div class="page-header-row">
+        <div class="page-header">
+          <h1>📋 Leave Manage (HR)</h1>
+          <p class="subtitle">Manage all employee leave requests</p>
+        </div>
+        <button class="btn btn-primary" onclick="navigate('leave-add-hr')">+ Add Leave</button>
       </div>
       <div class="stats-grid" id="hrlv-stats" style="grid-template-columns:repeat(4,1fr)">
         <div class="stat-card"><div class="stat-icon blue">📊</div><div><div class="stat-value" id="hr-lv-today">—</div><div class="stat-label">Today / Presents Leave</div></div></div>
@@ -403,23 +406,20 @@
         <div class="stat-card"><div class="stat-icon red">⚠️</div><div><div class="stat-value" id="hr-lv-unplanned">—</div><div class="stat-label">Unplanned Leaves</div></div></div>
         <div class="stat-card"><div class="stat-icon purple">⏳</div><div><div class="stat-value" id="hr-lv-pending">—</div><div class="stat-label">Pending Leaves</div></div></div>
       </div>
-      <div class="card">
-        <div class="card-header">
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <div class="search-bar" style="width:240px">
-              <span class="search-icon">🔍</span>
-              <input type="text" id="hr-lv-search" placeholder="Search..." oninput="filterHRLeaves()">
-            </div>
-            <select id="hr-lv-status-filter" style="padding:7px 10px" onchange="filterHRLeaves()">
-              <option value="">All Status</option>
-              <option value="pending_manager">Pending Manager</option>
-              <option value="pending_hr">Pending HR</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="navigate('leave-add-hr')">+ Add Leave</button>
+      <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px">
+        <div class="search-bar" style="width:240px">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="hr-lv-search" placeholder="Search..." oninput="filterHRLeaves()">
         </div>
+        <select id="hr-lv-status-filter" style="padding:7px 10px;width:180px;flex:0 0 auto" onchange="filterHRLeaves()">
+          <option value="">All Status</option>
+          <option value="pending_manager">Pending Manager</option>
+          <option value="pending_hr">Pending HR</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+      <div class="card">
         <div class="table-wrap">
           <table>
             <thead><tr><th>No</th><th>Employee</th><th>Leave Type</th><th>Reason</th><th>Days</th><th>From</th><th>To</th><th>Date Filed</th><th>Paid?</th><th>Status</th><th>Action</th></tr></thead>
@@ -1669,8 +1669,15 @@ async function autoRefreshTick() {
     if (currentPage === 'att-hr') {
       // initAttHR() would reset the employee dropdown/month field back
       // to blank/current -- only re-pull the already-selected employee's
-      // records, if any, instead of the full page init.
-      if (attEmpId) await loadEmpAttendance();
+      // records, if any, instead of the full page init. Force the select
+      // back to the selected employee afterward too, as a guard against
+      // anything visually resetting it to the placeholder option.
+      const sel = document.getElementById('att-hr-emp');
+      const selectedId = attEmpId || (sel ? sel.value : '');
+      if (selectedId) {
+        await loadEmpAttendance();
+        if (sel && sel.value !== selectedId) sel.value = selectedId;
+      }
     } else if (currentPage && !AUTO_REFRESH_SKIP_PAGES.has(currentPage)) {
       await loadPage(currentPage);
     }
