@@ -126,7 +126,12 @@ const DB = (() => {
       hideGithubAuthBanner();
       const json = await res.json();
       shas[dbName]  = json.sha;
-      const content = atob(json.content.replace(/\n/g, ''));
+      // atob() alone only reverses the base64 -- it leaves each UTF-8
+      // byte as its own raw char code instead of reassembling multi-byte
+      // characters (e.g. an em dash written as "—" comes back as
+      // mojibake). escape()+decodeURIComponent() is the standard
+      // reverse of write()'s encodeURIComponent()+unescape()+btoa().
+      const content = decodeURIComponent(escape(atob(json.content.replace(/\n/g, ''))));
       cache[dbName] = parseTxt(content);
       cache[`${dbName}_header`] = content.split('\n')[0];
       if (typeof Sync !== 'undefined') Sync.cacheSet(dbName, cache[dbName], cache[`${dbName}_header`]);
