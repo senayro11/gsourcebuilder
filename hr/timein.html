@@ -16,6 +16,7 @@
       font-size:26px; font-weight:800; color:white;
       margin:0 auto 12px;
     }
+    .timein-logo .logo-box.has-logo { background:transparent; }
     .timein-logo h1 { font-size:22px; font-weight:800; color:var(--white); }
     .timein-logo p  { color:var(--text2); font-size:13px; margin-top:4px; }
     .timein-card {
@@ -86,7 +87,7 @@
 <body>
 <div class="timein-wrap">
   <div class="timein-logo">
-    <div class="logo-box">HR</div>
+    <div class="logo-box" id="timein-logo-icon">HR</div>
     <h1>Time In / Out</h1>
     <p>Employee Attendance Terminal</p>
   </div>
@@ -160,6 +161,19 @@ tick(); setInterval(tick, 1000);
 // Load token
 const savedToken = localStorage.getItem('ent_gh_token');
 if (savedToken) GITHUB_CONFIG.token = savedToken;
+
+// Show the company logo (set via superadmin in the HR System sidebar)
+// instead of the default "HR" badge, if one has been uploaded.
+(async function loadTimeinLogo() {
+  try {
+    const rows = await HRDB.read('hrconfigDB');
+    const row = rows.find(r => r.key === 'logo');
+    if (row && row.value) {
+      const el = document.getElementById('timein-logo-icon');
+      if (el) { el.innerHTML = `<img src="${row.value}" style="width:100%;height:100%;object-fit:contain;border-radius:inherit">`; el.classList.add('has-logo'); }
+    }
+  } catch (e) { /* keep default "HR" text if the config can't be read */ }
+})();
 
 let verifiedEmp = null, todayRecord = null, activeSchedule = null;
 
