@@ -558,6 +558,13 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
    ===================================================== */
 .leave-add-layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; }
 .att-hr-layout { display: grid; grid-template-columns: 260px 1fr; gap: 16px; }
+/* Grid items default to min-width:auto, which refuses to shrink below
+   the intrinsic width of their content (here, a wide data table) --
+   that stretches the whole grid track wider than the viewport, so the
+   *entire page* becomes horizontally scrollable instead of just the
+   table itself. min-width:0 lets the column shrink to the track's
+   actual width so .table-wrap's own overflow-x:auto can take over. */
+.leave-add-layout > div, .att-hr-layout > div { min-width: 0; }
 @media (max-width: 1024px) {
   .main-content { padding: 16px; }
   .form-row, .form-row-3, .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
