@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HR Management System</title>
-  <link rel="stylesheet" href="css/hr.css?v=20260730g">
+  <link rel="stylesheet" href="css/hr.css?v=20260730h">
 </head>
 <body>
 <div class="app-shell">
@@ -131,9 +131,11 @@
   <!-- ===== TOPBAR ===== -->
   <header class="topbar" id="topbar">
     <button class="topbar-toggle sidebar-toggle-btn">☰</button>
-    <div class="topbar-breadcrumb">
-      <span id="breadcrumb-parent" style="display:none"></span>
-      <span class="sep" id="breadcrumb-sep" style="display:none">›</span>
+    <div class="topbar-breadcrumb" id="topbar-breadcrumb">
+      <div class="breadcrumb-parent-line" id="breadcrumb-parent-line" style="display:none">
+        <span id="breadcrumb-parent"></span>
+        <span class="sep" id="breadcrumb-sep">›</span>
+      </div>
       <span class="current" id="breadcrumb-current">Dashboard</span>
     </div>
     <div class="topbar-right">
@@ -1388,9 +1390,9 @@
 <div id="toast-container"></div>
 <div id="global-loading" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="js/hr-config.js?v=20260730g"></script>
-<script src="../js/sync.js?v=20260730g"></script>
-<script src="js/hr-core.js?v=20260730g"></script>
+<script src="js/hr-config.js?v=20260730h"></script>
+<script src="../js/sync.js?v=20260730h"></script>
+<script src="js/hr-core.js?v=20260730h"></script>
 <script>
 // ============================================================
 //  MAIN APP LOGIC
@@ -1609,12 +1611,17 @@ function updateBreadcrumb(pageId) {
   };
   const cur = document.getElementById('breadcrumb-current');
   const par = document.getElementById('breadcrumb-parent');
-  const sep = document.getElementById('breadcrumb-sep');
+  const parentLine = document.getElementById('breadcrumb-parent-line');
+  const wrap = document.getElementById('topbar-breadcrumb');
   cur.textContent = labels[pageId] || pageId;
   if (parents[pageId]) {
     par.textContent = parents[pageId];
-    par.style.display = ''; sep.style.display = '';
-  } else { par.style.display='none'; sep.style.display='none'; }
+    parentLine.style.display = '';
+    wrap.classList.remove('no-parent');
+  } else {
+    parentLine.style.display = 'none';
+    wrap.classList.add('no-parent');
+  }
 }
 
 async function loadPage(pageId) {
