@@ -610,13 +610,15 @@
         </div>
         <!-- Attendance table -->
         <div>
-          <div style="margin-bottom:12px"><span class="card-title">Attendance Records</span></div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-            <input type="month" id="att-hr-month" style="padding:6px 10px" onchange="loadEmpAttendance()">
-            <span id="att-hr-actions" style="display:flex;gap:8px">
-              <button class="btn btn-success btn-sm" onclick="approveAllAtt()">✅ Approve All</button>
-              <button class="btn btn-danger btn-sm" onclick="rejectAllAtt()">❌ Reject All</button>
-            </span>
+          <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px">
+            <span class="card-title">Attendance Records</span>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input type="month" id="att-hr-month" style="padding:6px 10px" onchange="loadEmpAttendance()">
+              <span id="att-hr-actions" style="display:flex;gap:8px">
+                <button class="btn btn-success btn-sm" onclick="approveAllAtt()">✅ Approve All</button>
+                <button class="btn btn-danger btn-sm" onclick="rejectAllAtt()">❌ Reject All</button>
+              </span>
+            </div>
           </div>
           <div class="card">
             <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin:0;padding:16px;border-bottom:1px solid var(--border)">
