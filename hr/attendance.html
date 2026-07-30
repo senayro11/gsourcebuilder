@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HR Management System</title>
-  <link rel="stylesheet" href="css/hr.css?v=20260730f">
+  <link rel="stylesheet" href="css/hr.css?v=20260730g">
 </head>
 <body>
 <div class="app-shell">
@@ -610,11 +610,11 @@
         <div>
           <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px">
             <span class="card-title">Attendance Records</span>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <div id="att-hr-toolbar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <input type="month" id="att-hr-month" style="padding:6px 10px;width:160px;flex:0 0 auto" onchange="loadEmpAttendance()">
               <span id="att-hr-actions" style="display:flex;gap:8px">
-                <button class="btn btn-success btn-sm" onclick="approveAllAtt()">✅ Approve All</button>
-                <button class="btn btn-danger btn-sm" onclick="rejectAllAtt()">❌ Reject All</button>
+                <button class="btn btn-success btn-sm" onclick="approveAllAtt()">✅ Approve<span class="only-desktop"> All</span></button>
+                <button class="btn btn-danger btn-sm" onclick="rejectAllAtt()">❌ Reject<span class="only-desktop"> All</span></button>
               </span>
             </div>
           </div>
@@ -1388,9 +1388,9 @@
 <div id="toast-container"></div>
 <div id="global-loading" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="js/hr-config.js?v=20260730f"></script>
-<script src="../js/sync.js?v=20260730f"></script>
-<script src="js/hr-core.js?v=20260730f"></script>
+<script src="js/hr-config.js?v=20260730g"></script>
+<script src="../js/sync.js?v=20260730g"></script>
+<script src="js/hr-core.js?v=20260730g"></script>
 <script>
 // ============================================================
 //  MAIN APP LOGIC
