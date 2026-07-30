@@ -301,12 +301,20 @@ function renderBreakSummary(rec) {
 
 async function doTimeIn() {
   if (!verifiedEmp) return;
-  if (todayRecord) {
-    Toast.show(todayRecord.time_out ? 'Kumpleto na ang attendance mo ngayong araw.' : 'Naka-time-in ka na ngayong araw — piliin ang Time Out.', 'warning');
+  // Re-check against freshly-fetched data right before acting -- the
+  // todayRecord set at verify time can go stale by the time Submit is
+  // actually pressed (e.g. the employee steps away for a bit), so don't
+  // trust it alone for a check this important.
+  const today = localDateStr();
+  const freshAtts = await HRDB.read('attendanceDB', true);
+  const existing = freshAtts.find(a => a.employee_id === verifiedEmp.id && a.date === today);
+  if (existing) {
+    todayRecord = existing;
+    renderActionButtons(activeSchedule, todayRecord);
+    Toast.show(existing.time_out ? 'Kumpleto na ang attendance mo ngayong araw.' : 'Naka-time-in ka na ngayong araw — piliin ang Time Out.', 'warning');
     return;
   }
   const now    = new Date();
-  const today  = localDateStr(now);
   const timeIn = now.toTimeString().substring(0, 5);
 
   // Get shift to check if late -- if this employee has no schedule
@@ -382,8 +390,24 @@ async function doBreakIn(key) {
 
 async function doTimeOut() {
   if (!verifiedEmp) return;
-  if (!todayRecord) { Toast.show('Kailangan mo munang mag-Time In.', 'warning'); return; }
-  if (todayRecord.time_out) { Toast.show('Mayroon ka nang Time Out ngayong araw.', 'warning'); return; }
+  // Re-check against freshly-fetched data right before acting -- see
+  // the same note in doTimeIn().
+  const today = localDateStr();
+  const freshAtts = await HRDB.read('attendanceDB', true);
+  const rec = freshAtts.find(a => a.employee_id === verifiedEmp.id && a.date === today);
+  if (!rec) {
+    todayRecord = null;
+    renderActionButtons(activeSchedule, null);
+    Toast.show('Kailangan mo munang mag-Time In.', 'warning');
+    return;
+  }
+  if (rec.time_out) {
+    todayRecord = rec;
+    renderActionButtons(activeSchedule, todayRecord);
+    Toast.show('Mayroon ka nang Time Out ngayong araw.', 'warning');
+    return;
+  }
+  todayRecord = rec;
   const now     = new Date();
   const timeOut = now.toTimeString().substring(0, 5);
   const timeIn  = todayRecord.time_in;
