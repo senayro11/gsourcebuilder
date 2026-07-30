@@ -607,6 +607,10 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
   .emp-toolbar-actions { flex: 0 1 auto !important; min-width: auto !important; margin-left: auto; }
 }
 @media (max-width: 640px) {
+  /* The name/role text next to the topbar avatar is already shown when
+     the profile chip is tapped open -- hide it here to free up room in
+     the topbar row, leaving just the avatar circle + dropdown arrow. */
+  .topbar-user-info { display: none; }
   .stats-grid { grid-template-columns: 1fr; }
   #hrlv-stats, #ma-stats, #payroll-stats, #user-stats { grid-template-columns: 1fr !important; }
   /* My Leave Requests' balance cards (Vacation Leave, Sick Leave, etc.)
