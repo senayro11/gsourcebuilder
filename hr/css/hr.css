@@ -557,6 +557,7 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
    RESPONSIVE
    ===================================================== */
 .leave-add-layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; }
+.att-hr-layout { display: grid; grid-template-columns: 260px 1fr; gap: 16px; }
 @media (max-width: 1024px) {
   .main-content { padding: 16px; }
   .form-row, .form-row-3, .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
@@ -577,6 +578,9 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
      balance info off-screen below the fold. */
   .leave-add-layout { grid-template-columns: 1fr; }
   .leave-add-layout .leave-info-card { order: -1; }
+  /* Stack Select Employee above Attendance Records instead of squeezing
+     a 260px column next to the table on a phone-width screen. */
+  .att-hr-layout { grid-template-columns: 1fr; }
   .sched-search-bar { flex: 1 1 140px; width: auto; min-width: 0; }
   .emp-search-bar { flex: 1 1 100px; width: auto; min-width: 0; }
   .dept-search-bar { flex: 1 1 80px; width: auto !important; min-width: 0; }
