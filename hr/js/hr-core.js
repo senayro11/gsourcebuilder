@@ -631,11 +631,25 @@ function timeToMin(t) {
   return h * 60 + (m || 0);
 }
 
+// "Today" (or the given Date) as YYYY-MM-DD in the browser's LOCAL
+// timezone. NOT toISOString(), which is UTC -- for any timezone ahead
+// of UTC (e.g. the Philippines, UTC+8), that silently rolls back to
+// "yesterday" any time before 8:00 AM local, breaking every same-day
+// lookup (kiosk time-out disappearing, "on leave today", etc.) during
+// those hours.
+function localDateStr(d) {
+  d = d || new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 // Pick the schedule row applicable to the employee on the given date —
 // the most recent among schedules already in effect and not yet
 // expired. Null if there's no assigned schedule.
 function getActiveSchedule(schedules, employeeId, dateStr) {
-  const date = dateStr || new Date().toISOString().split('T')[0];
+  const date = dateStr || localDateStr();
   const candidates = (schedules || []).filter(s =>
     s.employee_id === employeeId &&
     s.effective_date && s.effective_date <= date &&
@@ -685,7 +699,7 @@ async function addNotification({ audience, employeeId, type, title, message, ref
       message: message || '',
       reference_id: referenceId || '',
       is_read: 'false',
-      date: new Date().toISOString().split('T')[0]
+      date: localDateStr()
     });
   } catch (e) { console.error('addNotification error:', e); }
 }
