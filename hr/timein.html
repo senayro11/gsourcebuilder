@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Time In / Out — HR System</title>
-  <link rel="stylesheet" href="css/hr.css?v=20260730x">
+  <link rel="stylesheet" href="css/hr.css?v=20260730y">
   <script>
     // Applied before first paint so a saved dark-mode preference doesn't
     // flash light first -- default (no saved value) is light mode.
@@ -151,9 +151,9 @@
 <div id="toast-container"></div>
 <div id="global-loading" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="js/hr-config.js?v=20260730x"></script>
-<script src="../js/sync.js?v=20260730x"></script>
-<script src="js/hr-core.js?v=20260730x"></script>
+<script src="js/hr-config.js?v=20260730y"></script>
+<script src="../js/sync.js?v=20260730y"></script>
+<script src="js/hr-core.js?v=20260730y"></script>
 <script>
 // ---- Clock ----
 function tick() {
@@ -229,7 +229,7 @@ async function verifyEmployee() {
     document.getElementById('emp-result').classList.add('show');
 
     // Check today's record
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDateStr();
     todayRecord = atts.find(a => a.employee_id === emp.id && a.date === today);
 
     if (todayRecord) {
@@ -285,7 +285,7 @@ function renderBreakSummary(rec) {
 async function doTimeIn() {
   if (!verifiedEmp) return;
   const now    = new Date();
-  const today  = now.toISOString().split('T')[0];
+  const today  = localDateStr(now);
   const timeIn = now.toTimeString().substring(0, 5);
 
   // Get shift to check if late -- if this employee has no schedule
