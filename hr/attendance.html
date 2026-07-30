@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HR Management System</title>
-  <link rel="stylesheet" href="css/hr.css?v=20260730n">
+  <link rel="stylesheet" href="css/hr.css?v=20260730o">
 </head>
 <body>
 <div class="app-shell">
@@ -1271,6 +1271,13 @@
         <div class="form-group"><label>Full Name *</label><input type="text" id="ef-name"></div>
         <div class="form-group"><label>Employee ID *</label><input type="text" id="ef-empid" placeholder="KH-0001"></div>
       </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div id="ef-photo-preview" style="width:56px;height:56px;border-radius:50%;flex-shrink:0;overflow:hidden"></div>
+        <div>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('ef-photo-input').click()">📷 Change Photo</button>
+          <input type="file" id="ef-photo-input" accept="image/*" style="display:none" onchange="handleEmployeePhotoSelect(event)">
+        </div>
+      </div>
       <div class="form-row">
         <div class="form-group"><label>Email</label><input type="email" id="ef-email"></div>
         <div class="form-group"><label>Phone</label><input type="text" id="ef-phone"></div>
@@ -1390,9 +1397,9 @@
 <div id="toast-container"></div>
 <div id="global-loading" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="js/hr-config.js?v=20260730n"></script>
-<script src="../js/sync.js?v=20260730n"></script>
-<script src="js/hr-core.js?v=20260730n"></script>
+<script src="js/hr-config.js?v=20260730o"></script>
+<script src="../js/sync.js?v=20260730o"></script>
+<script src="js/hr-core.js?v=20260730o"></script>
 <script>
 // ============================================================
 //  MAIN APP LOGIC
@@ -1509,6 +1516,61 @@ function handleLogoUpload(e) {
         Toast.show('Error: ' + err.message, 'error');
       }
       Loading.hide();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Employee photos are stored as their own small file under hr/photos/
+// (not embedded as base64 inside employeesDB.txt) -- at a few hundred
+// employees, a base64 photo per row would blow past GitHub's ~1MB
+// Contents API read/write ceiling and make every single-field edit
+// re-upload every employee's photo. Only employeesDB.txt gets a short
+// path string like "photos/GS-0001.jpg".
+async function uploadEmployeePhoto(employeeId, dataUri) {
+  const { owner, repo, branch, token } = GITHUB_CONFIG;
+  const fileName = employeeId.replace(/[^a-zA-Z0-9_-]/g, '_') + '.jpg';
+  const path = `hr/photos/${fileName}`;
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  const headers = {
+    'Authorization': `token ${token}`,
+    'Accept': 'application/vnd.github.v3+json',
+    'Content-Type': 'application/json'
+  };
+  const base64 = dataUri.split(',')[1];
+  let sha;
+  const existing = await fetch(`${url}?ref=${branch}`, { headers });
+  if (existing.ok) { sha = (await existing.json()).sha; }
+  const body = { message: `Update photo for ${employeeId}`, content: base64, branch };
+  if (sha) body.sha = sha;
+  const res = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Photo upload error ${res.status}`);
+  }
+  return `photos/${fileName}`;
+}
+
+function handleEmployeePhotoSelect(e) {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { Toast.show('Please select an image file', 'warning'); return; }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      // Center-crop to a square so it fills the circular avatar cleanly.
+      const size = 200;
+      const side = Math.min(img.width, img.height);
+      const sx = (img.width - side) / 2, sy = (img.height - side) / 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+      pendingEmpPhotoDataUri = canvas.toDataURL('image/jpeg', 0.85);
+      document.getElementById('ef-photo-preview').innerHTML = `<img src="${pendingEmpPhotoDataUri}" style="width:100%;height:100%;object-fit:cover">`;
     };
     img.src = ev.target.result;
   };
@@ -1731,7 +1793,7 @@ async function loadDashboard() {
     document.getElementById('dash-leave-tbody').innerHTML = recentLeaves.map(l => {
       const emp = emps.find(e=>e.id===l.employee_id);
       return `<tr>
-        <td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td>
+        <td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28',emp?.photo)}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td>
         <td><span class="text-small">${l.leave_type}</span></td>
         <td>${l.days}</td>
         <td>${Fmt.statusBadge(l.status)}</td>
@@ -1743,7 +1805,7 @@ async function loadDashboard() {
     document.getElementById('dash-att-tbody').innerHTML = todayList.map(a => {
       const emp = emps.find(e=>e.id===a.employee_id);
       return `<tr>
-        <td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||a.employee_id}</div></div></div></td>
+        <td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28',emp?.photo)}<div><div class="emp-name">${emp?.name||a.employee_id}</div></div></div></td>
         <td><span class="mono" style="font-size:12px">${a.time_in||'—'}</span></td>
         <td>${Fmt.statusBadge(a.status)}</td>
       </tr>`;
@@ -1782,7 +1844,7 @@ function renderEmpTable(rows, page) {
   const viewOnly = isViewOnlySession(getSession());
   document.getElementById('emp-tbody').innerHTML = paged.rows.map(e=>`<tr>
     <td><span class="badge badge-blue mono">${e.employee_id}</span></td>
-    <td><div class="emp-card">${Fmt.avatarHtml(e.name,'32')}<div><div class="emp-name">${e.name}</div><div class="emp-pos">${e.position}</div></div></div></td>
+    <td><div class="emp-card">${Fmt.avatarHtml(e.name,'32',e.photo)}<div><div class="emp-name">${e.name}</div><div class="emp-pos">${e.position}</div></div></div></td>
     <td>${e.position}</td>
     <td>${e.department}</td>
     <td>${Fmt.employmentTypeBadge(e.employment_type)}</td>
@@ -1797,6 +1859,13 @@ function renderEmpTable(rows, page) {
 }
 
 let editEmpId = null;
+// A freshly-picked photo waiting to be uploaded on Save (not yet
+// committed) -- null means "no change," so editing an employee without
+// touching the photo field preserves whatever photo they already have.
+let pendingEmpPhotoDataUri = null;
+function renderEmpPhotoPreview(name, photoUrl) {
+  document.getElementById('ef-photo-preview').innerHTML = Fmt.avatarHtml(name, '56', photoUrl);
+}
 // Leave types this employee is entitled to. Blank/unset (e.g. a brand new
 // employee HR hasn't configured yet) means none -- forces a deliberate
 // opt-in per employee instead of silently defaulting to "everything".
@@ -1811,6 +1880,8 @@ async function renderEmpLeaveTypeCheckboxes(selectedTypes) {
 }
 async function openAddEmployee() {
   editEmpId = null;
+  pendingEmpPhotoDataUri = null;
+  renderEmpPhotoPreview('', '');
   ['ef-name','ef-empid','ef-email','ef-phone','ef-sss','ef-ph','ef-pi'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('ef-rate').value='';
   document.getElementById('ef-hire').value='';
@@ -1833,6 +1904,8 @@ async function openAddEmployee() {
 async function editEmployee(id) {
   const e=allEmployees.find(x=>x.id===id); if(!e) return;
   editEmpId=id;
+  pendingEmpPhotoDataUri = null;
+  renderEmpPhotoPreview(e.name, e.photo);
   document.getElementById('ef-name').value=e.name;
   document.getElementById('ef-empid').value=e.employee_id;
   document.getElementById('ef-email').value=e.email||'';
@@ -1869,7 +1942,14 @@ async function saveEmployee() {
   try {
     const monthly=(parseFloat(rate)*22).toFixed(2);
     const leaveTypes=Array.from(document.querySelectorAll('.ef-leave-type-cb:checked')).map(cb=>cb.value).join(',');
-    const data={name,employee_id:empid,email:document.getElementById('ef-email').value,phone:document.getElementById('ef-phone').value,position:pos,department:document.getElementById('ef-dept').value,daily_rate:rate,monthly_rate:monthly,sss:document.getElementById('ef-sss').value,philhealth:document.getElementById('ef-ph').value,pagibig:document.getElementById('ef-pi').value,tin:'',hire_date:document.getElementById('ef-hire').value,status:document.getElementById('ef-status').value,photo:'',employment_type:document.getElementById('ef-emptype').value,leave_types:leaveTypes};
+    let photoPath=editEmpId?(allEmployees.find(x=>x.id===editEmpId)?.photo||''):'';
+    if(pendingEmpPhotoDataUri){
+      Loading.show('Uploading photo...');
+      photoPath=await uploadEmployeePhoto(empid,pendingEmpPhotoDataUri);
+      pendingEmpPhotoDataUri=null;
+      Loading.show('Saving...');
+    }
+    const data={name,employee_id:empid,email:document.getElementById('ef-email').value,phone:document.getElementById('ef-phone').value,position:pos,department:document.getElementById('ef-dept').value,daily_rate:rate,monthly_rate:monthly,sss:document.getElementById('ef-sss').value,philhealth:document.getElementById('ef-ph').value,pagibig:document.getElementById('ef-pi').value,tin:'',hire_date:document.getElementById('ef-hire').value,status:document.getElementById('ef-status').value,photo:photoPath,employment_type:document.getElementById('ef-emptype').value,leave_types:leaveTypes};
     if(editEmpId){await HRDB.update('employeesDB',r=>r.id===editEmpId,data);Toast.show('Employee updated ✅','success');}
     else{const all=await HRDB.read('employeesDB',true);await HRDB.insert('employeesDB',{id:HRDB.nextId(all,'id','EMP'),...data});Toast.show('Employee added ✅','success');}
     Modal.close('emp-modal'); await loadEmployees();
@@ -2203,7 +2283,7 @@ async function loadTeamApprovals(){
     }).sort((a,b)=>b.created_at.localeCompare(a.created_at));
     document.getElementById('team-lv-tbody').innerHTML=rows.map((l,i)=>{
       const emp=allEmployees.find(e=>e.id===l.employee_id);
-      return `<tr><td>${i+1}</td><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td><td>${l.leave_type}</td><td><button class="btn btn-ghost btn-xs" onclick="viewLeave('${l.id}')">👁 View</button></td><td>${l.days}</td><td style="font-size:12px">${Fmt.date(l.from_date)}</td><td style="font-size:12px">${Fmt.date(l.to_date)}</td><td style="font-size:12px">${Fmt.date(l.created_at)}</td><td>${Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="viewLeave('${l.id}')">👁</button><button class="btn btn-success btn-xs" onclick="approveManagerLeave('${l.id}')">✅</button><button class="btn btn-danger btn-xs" onclick="rejectManagerLeave('${l.id}')">❌</button></div></td></tr>`;
+      return `<tr><td>${i+1}</td><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28',emp?.photo)}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td><td>${l.leave_type}</td><td><button class="btn btn-ghost btn-xs" onclick="viewLeave('${l.id}')">👁 View</button></td><td>${l.days}</td><td style="font-size:12px">${Fmt.date(l.from_date)}</td><td style="font-size:12px">${Fmt.date(l.to_date)}</td><td style="font-size:12px">${Fmt.date(l.created_at)}</td><td>${Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="viewLeave('${l.id}')">👁</button><button class="btn btn-success btn-xs" onclick="approveManagerLeave('${l.id}')">✅</button><button class="btn btn-danger btn-xs" onclick="rejectManagerLeave('${l.id}')">❌</button></div></td></tr>`;
     }).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">No leave requests waiting for your approval</td></tr>';
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
@@ -2217,7 +2297,7 @@ async function rejectManagerLeave(id){Loading.show();try{const session=getSessio
 let hrLvPage=1;
 async function loadHRLeaves(){Loading.show();try{allLeaves=await HRDB.read('leavesDB',true);allEmployees=await HRDB.read('employeesDB');const today=new Date().toISOString().split('T')[0];const todayLeaves=allLeaves.filter(l=>l.from_date<=today&&l.to_date>=today);document.getElementById('hr-lv-today').textContent=`${todayLeaves.filter(l=>l.status==='approved').length}/${allEmployees.filter(e=>e.status==='active').length}`;document.getElementById('hr-lv-today2').textContent=todayLeaves.length;document.getElementById('hr-lv-unplanned').textContent=allLeaves.filter(l=>l.status==='new').length;document.getElementById('hr-lv-pending').textContent=allLeaves.filter(l=>HR_ACTIONABLE_STATUSES.includes(l.status)||l.status==='pending_manager').length;filterHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 function filterHRLeaves(){const q=(document.getElementById('hr-lv-search')?.value||'').toLowerCase();const st=document.getElementById('hr-lv-status-filter')?.value||'';let rows=allLeaves;if(q)rows=rows.filter(l=>{const e=allEmployees.find(x=>x.id===l.employee_id);return(e?.name||'').toLowerCase().includes(q)||l.leave_type.toLowerCase().includes(q);});if(st)rows=rows.filter(l=>l.status===st);rows.sort((a,b)=>b.created_at.localeCompare(a.created_at));renderHRLeaveTable(rows,1);}
-function renderHRLeaveTable(rows,page){hrLvPage=page;const paged=paginate(rows,page);document.getElementById('hr-lv-tbody').innerHTML=paged.rows.map((l,i)=>{const emp=allEmployees.find(e=>e.id===l.employee_id);const actionable=HR_ACTIONABLE_STATUSES.includes(l.status);return`<tr><td>${paged.start+i+1}</td><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td><td>${l.leave_type}</td><td><button class="btn btn-ghost btn-xs" onclick="viewLeave('${l.id}')">👁 View</button></td><td>${l.days}</td><td style="font-size:12px">${Fmt.date(l.from_date)}</td><td style="font-size:12px">${Fmt.date(l.to_date)}</td><td style="font-size:12px">${Fmt.date(l.created_at)}</td><td>${l.paid?`<span class="badge ${l.paid==='Paid'?'badge-success':l.paid==='Unpaid'?'badge-danger':'badge-warning'}">${l.paid}</span>`:'—'}</td><td>${l.status==='pending_manager'?'<span class="badge badge-warning">Waiting: Manager</span>':Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="viewLeave('${l.id}')">👁</button>${actionable?`<button class="btn btn-success btn-xs" onclick="approveLeave('${l.id}')">✅</button><button class="btn btn-danger btn-xs" onclick="rejectLeave('${l.id}')">❌</button>`:''}<button class="btn btn-ghost btn-xs" onclick="deleteLeave('${l.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:32px">No leave records</td></tr>';renderPager('hr-lv-pagination',paged,p=>renderHRLeaveTable(rows,p));}
+function renderHRLeaveTable(rows,page){hrLvPage=page;const paged=paginate(rows,page);document.getElementById('hr-lv-tbody').innerHTML=paged.rows.map((l,i)=>{const emp=allEmployees.find(e=>e.id===l.employee_id);const actionable=HR_ACTIONABLE_STATUSES.includes(l.status);return`<tr><td>${paged.start+i+1}</td><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28',emp?.photo)}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td><td>${l.leave_type}</td><td><button class="btn btn-ghost btn-xs" onclick="viewLeave('${l.id}')">👁 View</button></td><td>${l.days}</td><td style="font-size:12px">${Fmt.date(l.from_date)}</td><td style="font-size:12px">${Fmt.date(l.to_date)}</td><td style="font-size:12px">${Fmt.date(l.created_at)}</td><td>${l.paid?`<span class="badge ${l.paid==='Paid'?'badge-success':l.paid==='Unpaid'?'badge-danger':'badge-warning'}">${l.paid}</span>`:'—'}</td><td>${l.status==='pending_manager'?'<span class="badge badge-warning">Waiting: Manager</span>':Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="viewLeave('${l.id}')">👁</button>${actionable?`<button class="btn btn-success btn-xs" onclick="approveLeave('${l.id}')">✅</button><button class="btn btn-danger btn-xs" onclick="rejectLeave('${l.id}')">❌</button>`:''}<button class="btn btn-ghost btn-xs" onclick="deleteLeave('${l.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:32px">No leave records</td></tr>';renderPager('hr-lv-pagination',paged,p=>renderHRLeaveTable(rows,p));}
 async function approveLeave(id){Loading.show();try{const session=getSession();await HRDB.update('leavesDB',r=>r.id===id,{status:'approved',approved_by:session.full_name||'HR Admin'});Toast.show('Leave approved ✅','success');await loadHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 async function rejectLeave(id){Loading.show();try{const session=getSession();await HRDB.update('leavesDB',r=>r.id===id,{status:'rejected',approved_by:session.full_name||'HR Admin'});Toast.show('Leave rejected','warning');await loadHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 async function deleteLeave(id){Modal.confirm('Delete this leave record?',async()=>{Loading.show();try{await HRDB.remove('leavesDB',r=>r.id===id);Toast.show('Deleted','success');if(currentPage==='leave-by-hr')await loadHRLeaves();else if(currentPage==='leave-team')await loadTeamApprovals();else await loadEmpLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
@@ -2375,7 +2455,7 @@ async function initLeavePayout(){
       }
     }
     document.getElementById('lp-tbody').innerHTML = rows.map(r=>`<tr>
-      <td><div class="emp-card">${Fmt.avatarHtml(r.emp.name,'28')}<div><div class="emp-name">${r.emp.name}</div></div></div></td>
+      <td><div class="emp-card">${Fmt.avatarHtml(r.emp.name,'28',r.emp.photo)}<div><div class="emp-name">${r.emp.name}</div></div></div></td>
       <td>${r.type}</td>
       <td>${r.unused}</td>
       <td>${Fmt.peso(r.dailyRate)}</td>
@@ -2449,7 +2529,7 @@ async function initAttHR(){
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
 }
-async function loadEmpAttendance(){attEmpId=document.getElementById('att-hr-emp').value;if(!attEmpId){document.getElementById('att-emp-profile').style.display='none';return;}const emp=allEmployees.find(e=>e.id===attEmpId);if(emp){document.getElementById('att-emp-profile').style.display='';document.getElementById('att-emp-avatar').textContent=emp.name.charAt(0);document.getElementById('att-emp-name2').textContent=emp.name;document.getElementById('att-emp-pos').textContent=emp.position;document.getElementById('att-emp-id2').textContent=emp.employee_id;document.getElementById('att-emp-dept').textContent=emp.department;document.getElementById('att-emp-hire').textContent=Fmt.date(emp.hire_date);}Loading.show();try{const schedules=await HRDB.read('schedulesDB');attEmpSchedule=getActiveSchedule(schedules,attEmpId);allAttendance=await HRDB.read('attendanceDB',true);const month=document.getElementById('att-hr-month').value;const rows=allAttendance.filter(a=>a.employee_id===attEmpId&&a.date.startsWith(month));const approvedHrs=rows.reduce((s,a)=>s+parseFloat(a.work_hours||0),0);const otHrs=rows.reduce((s,a)=>s+parseFloat(a.overtime_hours||0),0);document.getElementById('att-approved-hrs').textContent=approvedHrs.toFixed(2)+' hrs';document.getElementById('att-rejected-hrs').textContent='0 hrs';document.getElementById('att-ot-hrs').textContent=otHrs.toFixed(2)+' hrs';renderAttHRTable(rows,1);}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+async function loadEmpAttendance(){attEmpId=document.getElementById('att-hr-emp').value;if(!attEmpId){document.getElementById('att-emp-profile').style.display='none';return;}const emp=allEmployees.find(e=>e.id===attEmpId);if(emp){document.getElementById('att-emp-profile').style.display='';document.getElementById('att-emp-avatar').innerHTML=emp.photo?`<img src="${emp.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:emp.name.charAt(0);document.getElementById('att-emp-name2').textContent=emp.name;document.getElementById('att-emp-pos').textContent=emp.position;document.getElementById('att-emp-id2').textContent=emp.employee_id;document.getElementById('att-emp-dept').textContent=emp.department;document.getElementById('att-emp-hire').textContent=Fmt.date(emp.hire_date);}Loading.show();try{const schedules=await HRDB.read('schedulesDB');attEmpSchedule=getActiveSchedule(schedules,attEmpId);allAttendance=await HRDB.read('attendanceDB',true);const month=document.getElementById('att-hr-month').value;const rows=allAttendance.filter(a=>a.employee_id===attEmpId&&a.date.startsWith(month));const approvedHrs=rows.reduce((s,a)=>s+parseFloat(a.work_hours||0),0);const otHrs=rows.reduce((s,a)=>s+parseFloat(a.overtime_hours||0),0);document.getElementById('att-approved-hrs').textContent=approvedHrs.toFixed(2)+' hrs';document.getElementById('att-rejected-hrs').textContent='0 hrs';document.getElementById('att-ot-hrs').textContent=otHrs.toFixed(2)+' hrs';renderAttHRTable(rows,1);}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 function renderAttHRTable(rows,page){attHRPage=page;const paged=paginate(rows,page,20);const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];document.getElementById('att-hr-tbody').innerHTML=paged.rows.map(a=>{const d=new Date(a.date+'T00:00:00');const brkText=breakSummaryText(a);return`<tr><td><strong class="mono">${a.date}</strong></td><td><span class="badge badge-gray">${days[d.getDay()]}</span></td><td>${a.time_in||'—'}</td><td>${a.time_out||'—'}</td><td style="font-size:11px" title="${brkText||(a.break_minutes||0)+' min (flat)'}">${brkText||((a.break_minutes||0)+' min')}</td><td><strong>${parseFloat(a.work_hours||0).toFixed(2)} hrs</strong></td><td>${parseFloat(a.overtime_hours||0)>0?`<span style="color:var(--warning)">${parseFloat(a.overtime_hours).toFixed(2)} hrs</span>`:'—'}</td><td>${Fmt.statusBadge(a.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-success btn-xs" onclick="approveAtt('${a.id}')" title="Approve">✅</button><button class="btn btn-ghost btn-xs" onclick="editAtt('${a.id}')">✏️</button><button class="btn btn-danger btn-xs" onclick="delAtt('${a.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">No attendance records for this period</td></tr>';renderPager('att-hr-pagination',paged,p=>renderAttHRTable(rows,p));}
 async function approveAtt(id){Loading.show();try{await HRDB.update('attendanceDB',r=>r.id===id,{status:'present'});Toast.show('Approved ✅','success');await loadEmpAttendance();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 async function approveAllAtt(){if(!attEmpId)return;Modal.confirm('Approve all attendance for this employee this month?',async()=>{Loading.show();try{const month=document.getElementById('att-hr-month').value;await HRDB.update('attendanceDB',r=>r.employee_id===attEmpId&&r.date.startsWith(month),{status:'present'});Toast.show('All approved ✅','success');await loadEmpAttendance();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
@@ -2513,7 +2593,7 @@ function buildMatrix(emps, days, yr, mo, atts, leaves, holidays) {
       if(att.status==='present'||att.status==='late') return`<td><span class="att-dot present" title="${att.time_in||''}">P</span></td>`;
       return`<td><span class="att-dot absent">A</span></td>`;
     }).join('');
-    return`<tr><td class="emp-name"><div class="emp-card">${Fmt.avatarHtml(emp.name,'26')}<div><div style="font-size:12px;font-weight:600">${emp.name}</div></div></div></td>${cells}</tr>`;
+    return`<tr><td class="emp-name"><div class="emp-card">${Fmt.avatarHtml(emp.name,'26',emp.photo)}<div><div style="font-size:12px;font-weight:600">${emp.name}</div></div></div></td>${cells}</tr>`;
   }).join('')||'<tr><td colspan="33" style="text-align:center;color:var(--text3);padding:32px">No employees</td></tr>';
 }
 function filterMainAtt(){const q=(document.getElementById('main-att-search')?.value||'').toLowerCase();const filtered=q?matrixEmps.filter(e=>e.name.toLowerCase().includes(q)):matrixEmps;const month=document.getElementById('main-att-month').value||new Date().toISOString().substring(0,7);const[yr,mo]=month.split('-').map(Number);const daysInMonth=new Date(yr,mo,0).getDate();const days=[];for(let d=1;d<=daysInMonth;d++)days.push(d);buildMatrix(filtered,days,yr,mo,matrixAtts,allLeaves,allHolidays);}
@@ -2531,7 +2611,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 let prPage=1;
 async function loadPayroll(){Loading.show();try{allPayroll=await HRDB.read('payrollDB',true);allEmployees=await HRDB.read('employeesDB');filterPayroll();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 function filterPayroll(){const month=document.getElementById('pr-month-filter')?.value||'';const st=document.getElementById('pr-status-filter')?.value||'';let rows=allPayroll;if(month)rows=rows.filter(p=>p.period_start.startsWith(month.substring(0,7))||p.period_end.startsWith(month.substring(0,7)));if(st)rows=rows.filter(p=>p.status===st);const gross=rows.reduce((s,p)=>s+parseFloat(p.gross_pay||0),0);const deduct=rows.reduce((s,p)=>s+parseFloat(p.total_deductions||0),0);const net=rows.reduce((s,p)=>s+parseFloat(p.net_pay||0),0);document.getElementById('pr-gross').textContent=Fmt.peso(gross);document.getElementById('pr-deduct').textContent=Fmt.peso(deduct);document.getElementById('pr-net').textContent=Fmt.peso(net);document.getElementById('pr-count').textContent=rows.length;renderPayrollTable(rows,1);}
-function renderPayrollTable(rows,page){prPage=page;const paged=paginate(rows,page,10);document.getElementById('payroll-tbody').innerHTML=paged.rows.map(p=>{const emp=allEmployees.find(e=>e.id===p.employee_id);return`<tr><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||p.employee_id}</div><div class="emp-pos">${emp?.position||''}</div></div></div></td><td style="font-size:11px"><span class="mono">${p.period_start}</span><br><span class="mono">${p.period_end}</span></td><td>${p.days_worked}</td><td>${Fmt.peso(p.basic_pay)}</td><td>${Fmt.peso(p.overtime_pay)}</td><td><strong>${Fmt.peso(p.gross_pay)}</strong></td><td style="color:var(--danger)">${Fmt.peso(p.total_deductions)}</td><td><strong style="color:var(--success)">${Fmt.peso(p.net_pay)}</strong></td><td>${Fmt.statusBadge(p.status)}</td><td><div style="display:flex;gap:4px">${p.status!=='released'?`<button class="btn btn-success btn-xs" onclick="releasePayroll('${p.id}')">💵 Release</button>`:'<span style="color:var(--text3);font-size:11px">Released</span>'}<button class="btn btn-ghost btn-xs" onclick="viewPayslipDirect('${p.id}')">🧾</button><button class="btn btn-danger btn-xs" onclick="delPayroll('${p.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">No payroll records</td></tr>';renderPager('payroll-pagination',paged,p=>renderPayrollTable(rows,p));}
+function renderPayrollTable(rows,page){prPage=page;const paged=paginate(rows,page,10);document.getElementById('payroll-tbody').innerHTML=paged.rows.map(p=>{const emp=allEmployees.find(e=>e.id===p.employee_id);return`<tr><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28',emp?.photo)}<div><div class="emp-name">${emp?.name||p.employee_id}</div><div class="emp-pos">${emp?.position||''}</div></div></div></td><td style="font-size:11px"><span class="mono">${p.period_start}</span><br><span class="mono">${p.period_end}</span></td><td>${p.days_worked}</td><td>${Fmt.peso(p.basic_pay)}</td><td>${Fmt.peso(p.overtime_pay)}</td><td><strong>${Fmt.peso(p.gross_pay)}</strong></td><td style="color:var(--danger)">${Fmt.peso(p.total_deductions)}</td><td><strong style="color:var(--success)">${Fmt.peso(p.net_pay)}</strong></td><td>${Fmt.statusBadge(p.status)}</td><td><div style="display:flex;gap:4px">${p.status!=='released'?`<button class="btn btn-success btn-xs" onclick="releasePayroll('${p.id}')">💵 Release</button>`:'<span style="color:var(--text3);font-size:11px">Released</span>'}<button class="btn btn-ghost btn-xs" onclick="viewPayslipDirect('${p.id}')">🧾</button><button class="btn btn-danger btn-xs" onclick="delPayroll('${p.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">No payroll records</td></tr>';renderPager('payroll-pagination',paged,p=>renderPayrollTable(rows,p));}
 async function releasePayroll(id){Modal.confirm('Release payroll for this employee?',async()=>{Loading.show();try{await HRDB.update('payrollDB',r=>r.id===id,{status:'released'});Toast.show('Payroll released 💵','success');await loadPayroll();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
 async function delPayroll(id){Modal.confirm('Delete this payroll record?',async()=>{Loading.show();try{await HRDB.remove('payrollDB',r=>r.id===id);Toast.show('Deleted','success');await loadPayroll();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
 
@@ -3118,7 +3198,7 @@ function renderSchedulesTable(rows) {
     const emp=allEmployees.find(e=>e.id===s.employee_id);
     const shift=allShifts.find(sh=>sh.id===s.shift_id);
     return `<tr>
-      <td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||s.employee_id}</div><div class="emp-pos">${emp?.position||''}</div></div></div></td>
+      <td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28',emp?.photo)}<div><div class="emp-name">${emp?.name||s.employee_id}</div><div class="emp-pos">${emp?.position||''}</div></div></div></td>
       <td class="mono" style="font-size:11px">${s.effective_date}</td>
       <td class="mono" style="font-size:12px">${shift?fmtTime12(shift.start_time)||'Flexible':'—'}</td>
       <td class="mono" style="font-size:12px">${shift?fmtTime12(shift.end_time)||'Flexible':'—'}</td>
@@ -3303,7 +3383,7 @@ async function load13thMonth(){Loading.show();try{all13m=await HRDB.read('thirte
 
 async function generate13thMonth(){const year=document.getElementById('13m-year').value;if(!year){Toast.show('Enter year','warning');return;}Loading.show('Computing 13th month...');try{allPayroll=await HRDB.read('payrollDB');allEmployees=await HRDB.read('employeesDB');const existing=await HRDB.read('thirteenthmonthDB',true);const newRows=[];for(const emp of allEmployees.filter(e=>e.status==='active')){if(existing.find(r=>r.employee_id===emp.id&&r.year===year)){continue;}const empPayrolls=allPayroll.filter(p=>p.employee_id===emp.id&&p.period_start.startsWith(year)&&p.status==='released');const months={jan:0,feb:0,mar:0,apr:0,may:0,jun:0,jul:0,aug:0,sep:0,oct:0,nov:0,dec:0};const monthMap={'-01-':'jan','-02-':'feb','-03-':'mar','-04-':'apr','-05-':'may','-06-':'jun','-07-':'jul','-08-':'aug','-09-':'sep','-10-':'oct','-11-':'nov','-12-':'dec'};empPayrolls.forEach(p=>{Object.entries(monthMap).forEach(([k,v])=>{if(p.period_start.includes(k))months[v]+=parseFloat(p.basic_pay||0)/2;});});const totalBasic=Object.values(months).reduce((s,v)=>s+v,0);const thirteenth=totalBasic/12;newRows.push({id:'',employee_id:emp.id,year,jan:months.jan.toFixed(2),feb:months.feb.toFixed(2),mar:months.mar.toFixed(2),apr:months.apr.toFixed(2),may:months.may.toFixed(2),jun:months.jun.toFixed(2),jul:months.jul.toFixed(2),aug:months.aug.toFixed(2),sep:months.sep.toFixed(2),oct:months.oct.toFixed(2),nov:months.nov.toFixed(2),dec:months.dec.toFixed(2),total_basic:totalBasic.toFixed(2),thirteenth_month:thirteenth.toFixed(2),bonus:'0.00',status:'pending',released_date:''});}if(newRows.length){const all=await HRDB.read('thirteenthmonthDB',true);for(const r of newRows){r.id=HRDB.nextId(all,'id','13M');await HRDB.insert('thirteenthmonthDB',r);all.push(r);}Toast.show(`Computed 13th month for ${newRows.length} employees ✅`,'success');await load13thMonth();}else{Toast.show('All employees already have records for this year','warning');}}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 
-function render13mTable(){document.getElementById('13m-tbody').innerHTML=all13m.map(r=>{const emp=allEmployees.find(e=>e.id===r.employee_id);const total=(parseFloat(r.thirteenth_month||0)+parseFloat(r.bonus||0)).toFixed(2);return`<tr><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28')}<div><div class="emp-name">${emp?.name||r.employee_id}</div><div class="emp-pos">${emp?.position||''}</div></div></div></td><td><strong>${Fmt.peso(r.total_basic)}</strong></td><td><strong style="color:var(--success)">${Fmt.peso(r.thirteenth_month)}</strong></td><td>${Fmt.peso(r.bonus)} <button class="btn btn-ghost btn-xs" style="margin-left:4px" onclick="openBonusModal('${r.id}')">✏️</button></td><td><strong style="color:var(--accent2)">${Fmt.peso(total)}</strong></td><td>${Fmt.statusBadge(r.status)}</td><td><div style="display:flex;gap:4px">${r.status!=='released'?`<button class="btn btn-success btn-xs" onclick="release13m('${r.id}')">💵 Release</button>`:'<span style="color:var(--text3);font-size:11px">Released</span>'}</div></td></tr>`;}).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:32px">No records. Click "Compute 13th Month" to generate.</td></tr>';}
+function render13mTable(){document.getElementById('13m-tbody').innerHTML=all13m.map(r=>{const emp=allEmployees.find(e=>e.id===r.employee_id);const total=(parseFloat(r.thirteenth_month||0)+parseFloat(r.bonus||0)).toFixed(2);return`<tr><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28',emp?.photo)}<div><div class="emp-name">${emp?.name||r.employee_id}</div><div class="emp-pos">${emp?.position||''}</div></div></div></td><td><strong>${Fmt.peso(r.total_basic)}</strong></td><td><strong style="color:var(--success)">${Fmt.peso(r.thirteenth_month)}</strong></td><td>${Fmt.peso(r.bonus)} <button class="btn btn-ghost btn-xs" style="margin-left:4px" onclick="openBonusModal('${r.id}')">✏️</button></td><td><strong style="color:var(--accent2)">${Fmt.peso(total)}</strong></td><td>${Fmt.statusBadge(r.status)}</td><td><div style="display:flex;gap:4px">${r.status!=='released'?`<button class="btn btn-success btn-xs" onclick="release13m('${r.id}')">💵 Release</button>`:'<span style="color:var(--text3);font-size:11px">Released</span>'}</div></td></tr>`;}).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:32px">No records. Click "Compute 13th Month" to generate.</td></tr>';}
 
 function openBonusModal(id){edit13mId=id;const r=all13m.find(x=>x.id===id);const emp=allEmployees.find(e=>e.id===r?.employee_id);document.getElementById('bonus-emp-info').textContent=emp?`Employee: ${emp.name}`:'';document.getElementById('bf-bonus').value=r?.bonus||'0';document.getElementById('bf-notes').value='';Modal.open('bonus-modal');}
 async function saveBonus(){const amount=document.getElementById('bf-bonus').value;Loading.show();try{await HRDB.update('thirteenthmonthDB',r=>r.id===edit13mId,{bonus:parseFloat(amount).toFixed(2)});Toast.show('Bonus updated ✅','success');Modal.close('bonus-modal');await load13thMonth();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
