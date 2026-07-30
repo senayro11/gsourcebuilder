@@ -1648,6 +1648,39 @@ async function loadPage(pageId) {
 }
 
 // ============================================================
+//  AUTO-REFRESH -- periodically re-pull the current page's data so
+//  changes made elsewhere (a kiosk time-in, another HR user's edit, a
+//  new leave request) show up without a manual reload.
+//  Skipped while the tab is hidden, while any modal is open, and on
+//  pages that are active data-entry forms -- re-running those would
+//  wipe out whatever the user is in the middle of typing.
+// ============================================================
+const AUTO_REFRESH_MS = 20000;
+const AUTO_REFRESH_SKIP_PAGES = new Set([
+  'leave-add-emp', 'leave-add-hr', 'payroll-generate', 'payslip',
+  'leave-settings', 'edit-profile', 'change-password', 'timein-terminal'
+]);
+async function autoRefreshTick() {
+  if (document.visibilityState !== 'visible') return;
+  if (document.querySelector('.modal-backdrop.active')) return;
+  if (!getSession()) return;
+  try {
+    HRDB.clearCache();
+    if (currentPage === 'att-hr') {
+      // initAttHR() would reset the employee dropdown/month field back
+      // to blank/current -- only re-pull the already-selected employee's
+      // records, if any, instead of the full page init.
+      if (attEmpId) await loadEmpAttendance();
+    } else if (currentPage && !AUTO_REFRESH_SKIP_PAGES.has(currentPage)) {
+      await loadPage(currentPage);
+    }
+    // Badges/notifications stay live even on pages skipped above.
+    await loadNotifications();
+  } catch (e) { /* transient network hiccup -- don't interrupt the page */ }
+}
+setInterval(autoRefreshTick, AUTO_REFRESH_MS);
+
+// ============================================================
 //  DASHBOARD
 // ============================================================
 async function loadDashboard() {
