@@ -52,6 +52,19 @@ const Toast = {
   }
 };
 
+// ---- Theme (light/dark) ----
+// Default is light mode. The inline <head> script in attendance.html/
+// timein.html already applied any saved choice before first paint --
+// these just handle switching it afterward. Saved per-browser
+// (localStorage), on purpose, so each device keeps its own preference.
+const THEME_KEY = 'hr_theme';
+function getTheme() { return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'; }
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+  localStorage.setItem(THEME_KEY, theme === 'dark' ? 'dark' : 'light');
+}
+function toggleTheme(isDark) { setTheme(isDark ? 'dark' : 'light'); }
+
 // ---- GitHub token/auth banner ----
 // A raw "DB read error 403" toast means nothing to a non-technical user and
 // disappears in a few seconds before they can even read it. When the saved
