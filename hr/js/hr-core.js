@@ -54,7 +54,12 @@ const Toast = {
 
 // ---- Loading ----
 const Loading = {
+  // Set by silent background refreshes (see autoRefreshTick in
+  // attendance.html) so re-used page-load functions don't flash the
+  // full-screen spinner for a poll the user never asked for.
+  suppressed: false,
   show(msg = 'Loading...') {
+    if (Loading.suppressed) return;
     let o = document.getElementById('global-loading');
     if (o) {
       o.querySelector('div:last-child').textContent = msg;
