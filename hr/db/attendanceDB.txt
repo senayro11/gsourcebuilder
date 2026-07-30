@@ -20,5 +20,4 @@ ATT019|EMP002|2026-07-27|08:58||60|0|0|present|||||||||||
 ATT021|EMP002|2026-07-30|06:04||0|0|0|present|No schedule assigned — auto-matched to Split Shift||||||||||
 ATT022|EMP007|2026-07-30|06:23||0|0|0|present|No schedule assigned — auto-matched to Split Shift||||||||||
 ATT023|EMP001|2026-07-30|06:24||0|0|0|present|No schedule assigned — auto-matched to Split Shift||||||||||
-ATT024|EMP001|2026-07-31|06:34|06:57|0|0.38|0.00|present|No schedule assigned — auto-matched to Split Shift|||||||||14.711827|121.012614
 ATT025|EMP007|2026-07-31|06:46||0|0|0|present|No schedule assigned — auto-matched to Split Shift|||||||14.711827|121.012614||
