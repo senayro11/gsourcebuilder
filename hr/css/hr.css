@@ -621,6 +621,15 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
   .topbar-toggle { order: 1; }
   .topbar-right { order: 2; }
   .topbar-breadcrumb { order: 3; flex: 1 1 100%; }
+  /* Page-header-row action button (e.g. "+ Add") drops to its own line
+     under the title on a narrow phone -- keep it right-aligned there
+     instead of the default flex-start. */
+  .page-header-row > .btn { margin-left: auto; }
+  /* Shrink the month picker and drop "All" from the Approve/Reject
+     labels (see .only-desktop on those buttons) so the date and both
+     buttons fit on one row instead of the buttons wrapping below it.
+     flex-wrap stays on as a fallback for anything narrower still. */
+  #att-hr-month { width: 120px !important; }
 }
 
 /* Print styles */
