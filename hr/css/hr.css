@@ -608,7 +608,15 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 }
 @media (max-width: 640px) {
   .stats-grid { grid-template-columns: 1fr; }
-  #leave-stats, #hrlv-stats, #ma-stats, #payroll-stats, #user-stats { grid-template-columns: 1fr !important; }
+  #hrlv-stats, #ma-stats, #payroll-stats, #user-stats { grid-template-columns: 1fr !important; }
+  /* My Leave Requests' balance cards (Vacation Leave, Sick Leave, etc.)
+     stay 2 per row even on a narrow phone -- per request, unlike the
+     other stats-grids above which collapse to a single column. */
+  #leave-stats { grid-template-columns: 1fr 1fr !important; gap: 10px; }
+  #leave-stats .stat-card { padding: 12px 14px; gap: 10px; }
+  #leave-stats .stat-icon { width: 36px; height: 36px; font-size: 16px; border-radius: 8px; }
+  #leave-stats .stat-value { font-size: 18px; }
+  #leave-stats .stat-label { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .topbar-date { display: none; }
   /* The breadcrumb sits next to the menu toggle, same row as before,
      but stacked internally -- parent line (e.g. "Attendance ›") on top,
@@ -628,8 +636,11 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
   }
   /* Page-header-row action button (e.g. "+ Add") drops to its own line
      under the title on a narrow phone -- keep it right-aligned there
-     instead of the default flex-start. */
+     instead of the default flex-start, and give the row itself some
+     breathing room below so the button doesn't sit flush against
+     whatever card/grid comes right after it. */
   .page-header-row > .btn { margin-left: auto; }
+  .page-header-row { margin-bottom: 16px; }
   /* Shrink the month picker and drop "All" from the Approve/Reject
      labels (see .only-desktop on those buttons) so the date and both
      buttons fit on one row instead of the buttons wrapping below it.
