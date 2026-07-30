@@ -92,6 +92,7 @@
           <a class="nav-sub-item" data-page="payroll-generate" href="#" onclick="navigate('payroll-generate');return false" data-restrict="admin">Generate Payroll</a>
           <a class="nav-sub-item" data-page="payslip"          href="#" onclick="navigate('payslip');return false" id="nav-payslip">Payslip</a>
           <a class="nav-sub-item" data-page="thirteenth-month" href="#" onclick="navigate('thirteenth-month');return false" data-restrict="admin">13th Month & Bonus</a>
+          <a class="nav-sub-item" data-page="holiday-pay-settings" href="#" onclick="navigate('holiday-pay-settings');return false" data-restrict="admin">Holiday Pay Settings</a>
         </div>
       </div>
 
@@ -775,7 +776,7 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Employee</th><th>Days</th><th>Regular Hrs</th><th>OT Hrs</th><th>Basic Pay</th><th>OT Pay</th><th>Gross</th><th>Deductions</th><th>Net Pay</th></tr></thead>
+              <thead><tr><th>Employee</th><th>Days</th><th>Regular Hrs</th><th>OT Hrs</th><th>Basic Pay</th><th>OT Pay</th><th>Holiday Pay</th><th>Gross</th><th>Deductions</th><th>Net Pay</th></tr></thead>
               <tbody id="gen-preview-tbody"></tbody>
             </table>
           </div>
@@ -949,6 +950,44 @@
           </table>
         </div>
       </div>
+    </div>
+
+    <!-- =========================================
+         PAGE: HOLIDAY PAY SETTINGS
+    ========================================= -->
+    <div id="page-holiday-pay-settings" class="page-section" style="display:none">
+      <div class="page-header">
+        <h1>🎊 Holiday Pay Settings</h1>
+        <p class="subtitle">Configure how regular and special holidays are paid in payroll</p>
+      </div>
+      <div style="background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);border-radius:var(--radius-lg);padding:16px;margin-bottom:20px;font-size:13px;color:var(--text2)">
+        ℹ️ PH labor law defaults: <strong style="color:var(--accent2)">Regular Holiday</strong> — 100% pay if absent (present the day before required), 200% if worked. <strong style="color:var(--accent2)">Special Non-Working</strong> — "no work, no pay" (0% if absent) unless your company pays anyway, 130% if worked. Adjust below to match your company's actual policy.
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Regular Holidays</span></div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group"><label>% Paid if Absent</label><input type="number" id="hp-reg-absent" min="0" max="300" step="1"></div>
+              <div class="form-group"><label>% Paid if Worked</label><input type="number" id="hp-reg-worked" min="0" max="300" step="1"></div>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:var(--text2)"><input type="checkbox" id="hp-reg-before" style="width:16px;height:16px"> Require attendance the day <strong>before</strong> to get paid if absent</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)"><input type="checkbox" id="hp-reg-after" style="width:16px;height:16px"> Require attendance the day <strong>after</strong> to get paid if absent</label>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Special Non-Working Holidays</span></div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group"><label>% Paid if Absent</label><input type="number" id="hp-spec-absent" min="0" max="300" step="1"><small style="color:var(--text3)">0 = No Work, No Pay</small></div>
+              <div class="form-group"><label>% Paid if Worked</label><input type="number" id="hp-spec-worked" min="0" max="300" step="1"></div>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:var(--text2)"><input type="checkbox" id="hp-spec-before" style="width:16px;height:16px"> Require attendance the day <strong>before</strong> to get paid if absent</label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)"><input type="checkbox" id="hp-spec-after" style="width:16px;height:16px"> Require attendance the day <strong>after</strong> to get paid if absent</label>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:16px"><button class="btn btn-primary" onclick="saveHolidayPaySettingsForm()">💾 Save Settings</button></div>
     </div>
 
     <!-- =========================================
@@ -1687,6 +1726,7 @@ function updateBreadcrumb(pageId) {
     'departments':'Department','positions':'Position','shifts':'Shift Types','schedules':'Employee Schedule',
     'announcements':'Announcements','user-mgmt':'User Management',
     'thirteenth-month':'13th Month & Bonus','timein-terminal':'Time In/Out Terminal',
+    'holiday-pay-settings':'Holiday Pay Settings',
     'edit-profile':'Edit Profile','change-password':'Change Password'
   };
   const parents = {
@@ -1697,7 +1737,8 @@ function updateBreadcrumb(pageId) {
     'att-hr':'Attendance','att-main':'Attendance',
     'payroll-report':'Payroll','payroll-generate':'Payroll','payslip':'Payroll',
     'departments':'HR Management','shifts':'Scheduling','schedules':'Scheduling',
-    'thirteenth-month':'Payroll','timein-terminal':'Attendance'
+    'thirteenth-month':'Payroll','timein-terminal':'Attendance',
+    'holiday-pay-settings':'Payroll'
   };
   const cur = document.getElementById('breadcrumb-current');
   const par = document.getElementById('breadcrumb-parent');
@@ -1735,6 +1776,7 @@ async function loadPage(pageId) {
     case 'announcements':    await loadAnnouncements(); break;
     case 'user-mgmt':        await loadUsers(); break;
     case 'thirteenth-month': await load13thMonth(); break;
+    case 'holiday-pay-settings': await loadHolidayPaySettings(); break;
     case 'timein-terminal':  break; // static page
     case 'edit-profile':     await loadEditProfile(); break;
     case 'change-password':  break;
@@ -1752,7 +1794,8 @@ async function loadPage(pageId) {
 const AUTO_REFRESH_MS = 20000;
 const AUTO_REFRESH_SKIP_PAGES = new Set([
   'leave-add-emp', 'leave-add-hr', 'payroll-generate', 'payslip',
-  'leave-settings', 'edit-profile', 'change-password', 'timein-terminal'
+  'leave-settings', 'edit-profile', 'change-password', 'timein-terminal',
+  'holiday-pay-settings'
 ]);
 async function autoRefreshTick() {
   if (document.visibilityState !== 'visible') return;
@@ -2117,6 +2160,92 @@ async function saveLeavePolicyValue(policy){
   if(existing) await HRDB.update('hrconfigDB',r=>r.key==='leave_policy',{value});
   else await HRDB.insert('hrconfigDB',{key:'leave_policy',value});
   _leavePolicyCache=policy;
+}
+
+// ---- Holiday Pay Settings ----
+// PH labor law defaults: Regular Holiday = 100% if absent (present the day
+// before required), 200% if worked. Special Non-Working = "no work, no
+// pay" (0% if absent) unless the company chooses otherwise, 130% if
+// worked. Company policy varies (e.g. some also require attendance the
+// day *after*), so this is fully editable via Holiday Pay Settings.
+let _holidayPayPolicyCache=null;
+async function getHolidayPayPolicy(force){
+  if(_holidayPayPolicyCache && !force) return _holidayPayPolicyCache;
+  const rows=await HRDB.read('hrconfigDB',force);
+  const row=rows.find(r=>r.key==='holiday_pay_policy');
+  let saved=null;
+  if(row && row.value){ try{ saved=JSON.parse(row.value); }catch(e){ saved=null; } }
+  const defaults={
+    regular:{absent_pct:100,worked_pct:200,require_day_before:true,require_day_after:false},
+    special:{absent_pct:0,worked_pct:130,require_day_before:false,require_day_after:false}
+  };
+  _holidayPayPolicyCache=saved&&saved.regular&&saved.special?saved:defaults;
+  return _holidayPayPolicyCache;
+}
+async function saveHolidayPayPolicy(policy){
+  const rows=await HRDB.read('hrconfigDB',true);
+  const existing=rows.find(r=>r.key==='holiday_pay_policy');
+  const value=JSON.stringify(policy);
+  if(existing) await HRDB.update('hrconfigDB',r=>r.key==='holiday_pay_policy',{value});
+  else await HRDB.insert('hrconfigDB',{key:'holiday_pay_policy',value});
+  _holidayPayPolicyCache=policy;
+}
+async function loadHolidayPaySettings(){
+  const p=await getHolidayPayPolicy(true);
+  document.getElementById('hp-reg-absent').value=p.regular.absent_pct;
+  document.getElementById('hp-reg-worked').value=p.regular.worked_pct;
+  document.getElementById('hp-reg-before').checked=!!p.regular.require_day_before;
+  document.getElementById('hp-reg-after').checked=!!p.regular.require_day_after;
+  document.getElementById('hp-spec-absent').value=p.special.absent_pct;
+  document.getElementById('hp-spec-worked').value=p.special.worked_pct;
+  document.getElementById('hp-spec-before').checked=!!p.special.require_day_before;
+  document.getElementById('hp-spec-after').checked=!!p.special.require_day_after;
+}
+async function saveHolidayPaySettingsForm(){
+  Loading.show();
+  try{
+    const policy={
+      regular:{
+        absent_pct:parseFloat(document.getElementById('hp-reg-absent').value)||0,
+        worked_pct:parseFloat(document.getElementById('hp-reg-worked').value)||0,
+        require_day_before:document.getElementById('hp-reg-before').checked,
+        require_day_after:document.getElementById('hp-reg-after').checked
+      },
+      special:{
+        absent_pct:parseFloat(document.getElementById('hp-spec-absent').value)||0,
+        worked_pct:parseFloat(document.getElementById('hp-spec-worked').value)||0,
+        require_day_before:document.getElementById('hp-spec-before').checked,
+        require_day_after:document.getElementById('hp-spec-after').checked
+      }
+    };
+    await saveHolidayPayPolicy(policy);
+    Toast.show('Holiday pay settings saved ✅','success');
+  }catch(e){Toast.show('Error: '+e.message,'error');}
+  Loading.hide();
+}
+function shiftDate(dateStr,days){const d=new Date(dateStr+'T00:00:00');d.setDate(d.getDate()+days);return d.toISOString().split('T')[0];}
+// Computes the extra holiday-pay peso amount for one employee over one
+// payroll period -- on top of (not replacing) the basic pay their normal
+// days-worked count already includes.
+function computeEmpHolidayPay(dailyRate,empAtts,empApprovedLeaves,holidaysInPeriod,policy){
+  const wasPresentOrOnPaidLeave=(d)=>empAtts.some(a=>a.date===d&&(a.status==='present'||a.status==='late'))||empApprovedLeaves.some(l=>l.from_date<=d&&l.to_date>=d);
+  let total=0;
+  for(const h of holidaysInPeriod){
+    const cfg=h.type==='Special'?policy.special:policy.regular;
+    const worked=empAtts.some(a=>a.date===h.date&&(a.status==='present'||a.status==='late'));
+    if(worked){
+      const extraPct=(parseFloat(cfg.worked_pct)||0)-100;
+      if(extraPct>0) total+=dailyRate*(extraPct/100);
+    } else {
+      const beforeOk=!cfg.require_day_before||wasPresentOrOnPaidLeave(shiftDate(h.date,-1));
+      const afterOk=!cfg.require_day_after||wasPresentOrOnPaidLeave(shiftDate(h.date,1));
+      if(beforeOk&&afterOk){
+        const pct=parseFloat(cfg.absent_pct)||0;
+        if(pct>0) total+=dailyRate*(pct/100);
+      }
+    }
+  }
+  return total;
 }
 function leaveSettingsRowHtml(type, allocation, convertible){
   return `<tr data-row data-type="${type}">
@@ -2694,7 +2823,7 @@ async function delPayroll(id){Modal.confirm('Delete this payroll record?',async(
 // ============================================================
 let generatedRows=[];
 async function initGeneratePayroll(){Loading.show();try{allEmployees=await HRDB.read('employeesDB');const sel=document.getElementById('gen-emp');sel.innerHTML='<option value="">All Active Employees</option>'+allEmployees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name}</option>`).join('');document.getElementById('gen-preview').style.display='none';}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
-async function generatePayroll(){const from=document.getElementById('gen-from').value,to=document.getElementById('gen-to').value,empId=document.getElementById('gen-emp').value,otMult=parseFloat(document.getElementById('gen-ot-mult').value);if(!from||!to){Toast.show('Select a period','warning');return;}Loading.show('Computing payroll...');try{allAttendance=await HRDB.read('attendanceDB');const targetEmps=empId?allEmployees.filter(e=>e.id===empId):allEmployees.filter(e=>e.status==='active');generatedRows=targetEmps.map(emp=>{const atts=allAttendance.filter(a=>a.employee_id===emp.id&&a.date>=from&&a.date<=to&&(a.status==='present'||a.status==='late'));const days=atts.length;const regHrs=atts.reduce((s,a)=>s+Math.min(parseFloat(a.work_hours||0),REGULAR_HOURS),0);const otHrs=atts.reduce((s,a)=>s+parseFloat(a.overtime_hours||0),0);const dailyRate=parseFloat(emp.daily_rate||0);const hourlyRate=dailyRate/REGULAR_HOURS;const basicPay=days*dailyRate;const otPay=otHrs*(hourlyRate*otMult);const grossPay=basicPay+otPay;const sss=parseFloat(emp.sss||0),ph=parseFloat(emp.philhealth||0),pi=parseFloat(emp.pagibig||0);const tax=grossPay*0.1;const totalDeduct=sss+ph+pi+tax;const netPay=grossPay-totalDeduct;return{employee_id:emp.id,name:emp.name,period_start:from,period_end:to,days_worked:String(days),regular_hours:regHrs.toFixed(2),overtime_hours:otHrs.toFixed(2),basic_pay:basicPay.toFixed(2),overtime_pay:otPay.toFixed(2),allowance:'0.00',gross_pay:grossPay.toFixed(2),sss:emp.sss,philhealth:emp.philhealth,pagibig:emp.pagibig,tax:tax.toFixed(2),total_deductions:totalDeduct.toFixed(2),net_pay:netPay.toFixed(2),status:'draft',generated_date:new Date().toISOString().split('T')[0]};});document.getElementById('gen-preview-tbody').innerHTML=generatedRows.map(r=>`<tr><td><div class="emp-name">${r.name}</div></td><td>${r.days_worked}</td><td>${r.regular_hours}</td><td>${r.overtime_hours}</td><td>${Fmt.peso(r.basic_pay)}</td><td>${Fmt.peso(r.overtime_pay)}</td><td><strong>${Fmt.peso(r.gross_pay)}</strong></td><td style="color:var(--danger)">${Fmt.peso(r.total_deductions)}</td><td><strong style="color:var(--success)">${Fmt.peso(r.net_pay)}</strong></td></tr>`).join('');document.getElementById('gen-preview').style.display='';}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+async function generatePayroll(){const from=document.getElementById('gen-from').value,to=document.getElementById('gen-to').value,empId=document.getElementById('gen-emp').value,otMult=parseFloat(document.getElementById('gen-ot-mult').value);if(!from||!to){Toast.show('Select a period','warning');return;}Loading.show('Computing payroll...');try{allAttendance=await HRDB.read('attendanceDB');const allLeavesForPay=await HRDB.read('leavesDB');const allHolsForPay=await HRDB.read('holidaysDB');const holidaysInPeriod=allHolsForPay.filter(h=>h.date>=from&&h.date<=to);const hpPolicy=await getHolidayPayPolicy();const targetEmps=empId?allEmployees.filter(e=>e.id===empId):allEmployees.filter(e=>e.status==='active');generatedRows=targetEmps.map(emp=>{const atts=allAttendance.filter(a=>a.employee_id===emp.id&&a.date>=from&&a.date<=to&&(a.status==='present'||a.status==='late'));const days=atts.length;const regHrs=atts.reduce((s,a)=>s+Math.min(parseFloat(a.work_hours||0),REGULAR_HOURS),0);const otHrs=atts.reduce((s,a)=>s+parseFloat(a.overtime_hours||0),0);const dailyRate=parseFloat(emp.daily_rate||0);const hourlyRate=dailyRate/REGULAR_HOURS;const basicPay=days*dailyRate;const otPay=otHrs*(hourlyRate*otMult);const empAtts=allAttendance.filter(a=>a.employee_id===emp.id);const empApprovedLeaves=allLeavesForPay.filter(l=>l.employee_id===emp.id&&l.status==='approved');const holidayPay=computeEmpHolidayPay(dailyRate,empAtts,empApprovedLeaves,holidaysInPeriod,hpPolicy);const grossPay=basicPay+otPay+holidayPay;const sss=parseFloat(emp.sss||0),ph=parseFloat(emp.philhealth||0),pi=parseFloat(emp.pagibig||0);const tax=grossPay*0.1;const totalDeduct=sss+ph+pi+tax;const netPay=grossPay-totalDeduct;return{employee_id:emp.id,name:emp.name,period_start:from,period_end:to,days_worked:String(days),regular_hours:regHrs.toFixed(2),overtime_hours:otHrs.toFixed(2),basic_pay:basicPay.toFixed(2),overtime_pay:otPay.toFixed(2),holiday_pay:holidayPay.toFixed(2),allowance:'0.00',gross_pay:grossPay.toFixed(2),sss:emp.sss,philhealth:emp.philhealth,pagibig:emp.pagibig,tax:tax.toFixed(2),total_deductions:totalDeduct.toFixed(2),net_pay:netPay.toFixed(2),status:'draft',generated_date:new Date().toISOString().split('T')[0]};});document.getElementById('gen-preview-tbody').innerHTML=generatedRows.map(r=>`<tr><td><div class="emp-name">${r.name}</div></td><td>${r.days_worked}</td><td>${r.regular_hours}</td><td>${r.overtime_hours}</td><td>${Fmt.peso(r.basic_pay)}</td><td>${Fmt.peso(r.overtime_pay)}</td><td>${Fmt.peso(r.holiday_pay)}</td><td><strong>${Fmt.peso(r.gross_pay)}</strong></td><td style="color:var(--danger)">${Fmt.peso(r.total_deductions)}</td><td><strong style="color:var(--success)">${Fmt.peso(r.net_pay)}</strong></td></tr>`).join('');document.getElementById('gen-preview').style.display='';}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 async function saveGeneratedPayroll(){if(!generatedRows.length){Toast.show('No data','warning');return;}Loading.show('Saving payroll...');try{const all=await HRDB.read('payrollDB',true);for(const row of generatedRows){await HRDB.insert('payrollDB',{id:HRDB.nextId(all,'id','PAY'),...row});all.push(row);}Toast.show(`Payroll saved for ${generatedRows.length} employee(s) ✅`,'success');navigate('payroll-report');}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 
 // ============================================================
@@ -2722,7 +2851,7 @@ const p=records.sort((a,b)=>b.period_start.localeCompare(a.period_start))[0];
     const allPayouts=await HRDB.read('leavepayoutsDB');
     const payouts=allPayouts.filter(po=>po.employee_id===empId && po.status==='released' && po.released_date>=p.period_start && po.released_date<=p.period_end);
     renderPayslip(emp,p,payouts);}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
-function renderPayslip(emp,p,payouts){const payoutTotal=(payouts||[]).reduce((s,po)=>s+(parseFloat(po.amount)||0),0);const payoutRows=(payouts||[]).map(po=>`<div style="display:flex;justify-content:space-between;font-size:13px;color:#1e40af"><span>${po.leave_type} — ${po.unused_days} day(s) × ${Fmt.peso(po.daily_rate)}</span><span>${Fmt.peso(po.amount)}</span></div>`).join('');const leaveConversionHtml=payoutTotal>0?`<div style="background:#eff6ff;padding:16px;border-radius:8px;margin-top:12px"><div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">🎁 Leave Conversion (paid separately, not part of this payroll's Gross/Net Pay)</div>${payoutRows}<div style="display:flex;justify-content:space-between;font-weight:700;margin-top:6px;padding-top:6px;border-top:1px solid #bfdbfe;color:#1e40af"><span>Total</span><span>${Fmt.peso(payoutTotal)}</span></div></div>`:'';const html=`<div class="payslip"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px"><div><h2>🏢 Enterprise System</h2><div class="sub">Official Payslip</div></div><div style="text-align:right;font-size:12px;color:#666"><div>Payroll Period</div><div style="font-weight:700">${p.period_start} to ${p.period_end}</div><div>Generated: ${p.generated_date||new Date().toISOString().split('T')[0]}</div></div></div><hr><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px"><div><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">Employee</div><div style="font-size:15px;font-weight:700">${emp.name}</div><div style="color:#6b7280">${emp.position} — ${emp.department}</div><div style="font-family:monospace;font-size:12px;margin-top:4px">${emp.employee_id}</div></div><div style="text-align:right"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">Summary</div><div>Days Worked: <strong>${p.days_worked}</strong></div><div>Regular Hrs: <strong>${p.regular_hours}</strong></div><div>Overtime Hrs: <strong>${p.overtime_hours}</strong></div></div></div><hr><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div><table><thead><tr><th>Earnings</th><th style="text-align:right">Amount</th></tr></thead><tbody><tr><td>Basic Pay (${p.days_worked} days)</td><td style="text-align:right">${Fmt.peso(p.basic_pay)}</td></tr><tr><td>Overtime Pay</td><td style="text-align:right">${Fmt.peso(p.overtime_pay)}</td></tr><tr><td>Allowance</td><td style="text-align:right">${Fmt.peso(p.allowance||0)}</td></tr><tr class="total-row"><td><strong>Gross Pay</strong></td><td style="text-align:right"><strong>${Fmt.peso(p.gross_pay)}</strong></td></tr></tbody></table></div><div><table><thead><tr><th>Deductions</th><th style="text-align:right">Amount</th></tr></thead><tbody><tr><td>SSS</td><td style="text-align:right">${Fmt.peso(p.sss)}</td></tr><tr><td>PhilHealth</td><td style="text-align:right">${Fmt.peso(p.philhealth)}</td></tr><tr><td>Pag-IBIG</td><td style="text-align:right">${Fmt.peso(p.pagibig)}</td></tr><tr><td>Withholding Tax</td><td style="text-align:right">${Fmt.peso(p.tax)}</td></tr><tr class="total-row"><td><strong>Total Deductions</strong></td><td style="text-align:right"><strong>${Fmt.peso(p.total_deductions)}</strong></td></tr></tbody></table></div></div><hr><div style="background:#f0fdf4;padding:16px;border-radius:8px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:14px;font-weight:600;color:#166534">NET PAY</div><div style="font-size:24px;font-weight:800;color:#166534">${Fmt.peso(p.net_pay)}</div></div>${leaveConversionHtml}<div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:24px"><div style="border-top:1px solid #e5e7eb;padding-top:8px;text-align:center;font-size:11px;color:#6b7280">Employee Signature</div><div style="border-top:1px solid #e5e7eb;padding-top:8px;text-align:center;font-size:11px;color:#6b7280">HR / Authorized Signature</div></div></div>`;document.getElementById('payslip-content').innerHTML=html;document.getElementById('payslip-container').style.display='';}
+function renderPayslip(emp,p,payouts){const payoutTotal=(payouts||[]).reduce((s,po)=>s+(parseFloat(po.amount)||0),0);const payoutRows=(payouts||[]).map(po=>`<div style="display:flex;justify-content:space-between;font-size:13px;color:#1e40af"><span>${po.leave_type} — ${po.unused_days} day(s) × ${Fmt.peso(po.daily_rate)}</span><span>${Fmt.peso(po.amount)}</span></div>`).join('');const leaveConversionHtml=payoutTotal>0?`<div style="background:#eff6ff;padding:16px;border-radius:8px;margin-top:12px"><div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">🎁 Leave Conversion (paid separately, not part of this payroll's Gross/Net Pay)</div>${payoutRows}<div style="display:flex;justify-content:space-between;font-weight:700;margin-top:6px;padding-top:6px;border-top:1px solid #bfdbfe;color:#1e40af"><span>Total</span><span>${Fmt.peso(payoutTotal)}</span></div></div>`:'';const html=`<div class="payslip"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:16px"><div><h2>🏢 Enterprise System</h2><div class="sub">Official Payslip</div></div><div style="text-align:right;font-size:12px;color:#666"><div>Payroll Period</div><div style="font-weight:700">${p.period_start} to ${p.period_end}</div><div>Generated: ${p.generated_date||new Date().toISOString().split('T')[0]}</div></div></div><hr><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px"><div><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">Employee</div><div style="font-size:15px;font-weight:700">${emp.name}</div><div style="color:#6b7280">${emp.position} — ${emp.department}</div><div style="font-family:monospace;font-size:12px;margin-top:4px">${emp.employee_id}</div></div><div style="text-align:right"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">Summary</div><div>Days Worked: <strong>${p.days_worked}</strong></div><div>Regular Hrs: <strong>${p.regular_hours}</strong></div><div>Overtime Hrs: <strong>${p.overtime_hours}</strong></div></div></div><hr><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div><table><thead><tr><th>Earnings</th><th style="text-align:right">Amount</th></tr></thead><tbody><tr><td>Basic Pay (${p.days_worked} days)</td><td style="text-align:right">${Fmt.peso(p.basic_pay)}</td></tr><tr><td>Overtime Pay</td><td style="text-align:right">${Fmt.peso(p.overtime_pay)}</td></tr><tr><td>Holiday Pay</td><td style="text-align:right">${Fmt.peso(p.holiday_pay||0)}</td></tr><tr><td>Allowance</td><td style="text-align:right">${Fmt.peso(p.allowance||0)}</td></tr><tr class="total-row"><td><strong>Gross Pay</strong></td><td style="text-align:right"><strong>${Fmt.peso(p.gross_pay)}</strong></td></tr></tbody></table></div><div><table><thead><tr><th>Deductions</th><th style="text-align:right">Amount</th></tr></thead><tbody><tr><td>SSS</td><td style="text-align:right">${Fmt.peso(p.sss)}</td></tr><tr><td>PhilHealth</td><td style="text-align:right">${Fmt.peso(p.philhealth)}</td></tr><tr><td>Pag-IBIG</td><td style="text-align:right">${Fmt.peso(p.pagibig)}</td></tr><tr><td>Withholding Tax</td><td style="text-align:right">${Fmt.peso(p.tax)}</td></tr><tr class="total-row"><td><strong>Total Deductions</strong></td><td style="text-align:right"><strong>${Fmt.peso(p.total_deductions)}</strong></td></tr></tbody></table></div></div><hr><div style="background:#f0fdf4;padding:16px;border-radius:8px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:14px;font-weight:600;color:#166534">NET PAY</div><div style="font-size:24px;font-weight:800;color:#166534">${Fmt.peso(p.net_pay)}</div></div>${leaveConversionHtml}<div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:24px"><div style="border-top:1px solid #e5e7eb;padding-top:8px;text-align:center;font-size:11px;color:#6b7280">Employee Signature</div><div style="border-top:1px solid #e5e7eb;padding-top:8px;text-align:center;font-size:11px;color:#6b7280">HR / Authorized Signature</div></div></div>`;document.getElementById('payslip-content').innerHTML=html;document.getElementById('payslip-container').style.display='';}
 async function viewPayslipDirect(payId){allEmployees=await HRDB.read('employeesDB');const p=allPayroll.find(x=>x.id===payId);if(!p)return;const emp=allEmployees.find(e=>e.id===p.employee_id);const allPayouts=await HRDB.read('leavepayoutsDB');const payouts=allPayouts.filter(po=>po.employee_id===p.employee_id && po.status==='released' && po.released_date>=p.period_start && po.released_date<=p.period_end);navigate('payslip');setTimeout(()=>{if(emp&&p)renderPayslip(emp,p,payouts);},200);}
 </script>
 
