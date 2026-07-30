@@ -620,7 +620,13 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
   .topbar { padding: 8px 12px; flex-wrap: wrap; height: auto; row-gap: 6px; }
   .topbar-toggle { order: 1; }
   .topbar-right { order: 2; }
-  .topbar-breadcrumb { order: 3; flex: 1 1 100%; }
+  /* Stack the breadcrumb: parent line (e.g. "Attendance ›") on top,
+     current page title below it -- rather than squeezed onto one line.
+     When there's no parent (a top-level page like Dashboard), the lone
+     current-page line centers itself instead of sitting left-aligned. */
+  .topbar-breadcrumb { order: 3; flex: 1 1 100%; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .topbar-breadcrumb.no-parent { align-items: center; text-align: center; }
+  .breadcrumb-parent-line { display: flex; align-items: center; gap: 6px; }
   /* Page-header-row action button (e.g. "+ Add") drops to its own line
      under the title on a narrow phone -- keep it right-aligned there
      instead of the default flex-start. */
