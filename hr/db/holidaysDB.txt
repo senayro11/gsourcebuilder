@@ -11,3 +11,4 @@ HOL009|Bonifacio Day|2025-11-30|Sunday|Regular|Andres Bonifacio Day
 HOL010|Christmas Day|2025-12-25|Thursday|Regular|Christmas Day
 HOL011|Rizal Day|2025-12-30|Tuesday|Regular|Jose Rizal Day
 HOL012|Christmas Day|2026-12-25|Friday|Regular|Christmas day
+HOL013|Birthday ni ville pogi|2026-07-28|Tuesday|Regular|
