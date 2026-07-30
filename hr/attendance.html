@@ -207,7 +207,17 @@
         <div class="stat-card"><div class="stat-icon cyan">🎉</div><div><div class="stat-value" id="ds-holidays">—</div><div class="stat-label">Holidays This Month</div></div></div>
       </div>
 
-      <div class="grid-2" style="gap:16px">
+      <!-- Staff/ESS sees their own numbers instead of company-wide ones -->
+      <div class="stats-grid" id="dash-stats-ess" style="display:none">
+        <div class="stat-card"><div class="stat-icon blue">📅</div><div><div class="stat-value" id="dse-leave-balance">—</div><div class="stat-label">My Leave Balance</div></div></div>
+        <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-value" id="dse-present">—</div><div class="stat-label">Present This Month</div></div></div>
+        <div class="stat-card"><div class="stat-icon red">❌</div><div><div class="stat-value" id="dse-absent">—</div><div class="stat-label">Absent This Month</div></div></div>
+        <div class="stat-card"><div class="stat-icon purple">⏳</div><div><div class="stat-value" id="dse-pending-leave">—</div><div class="stat-label">My Pending Leaves</div></div></div>
+        <div class="stat-card"><div class="stat-icon yellow">🗓️</div><div><div class="stat-value" id="dse-approved-leave">—</div><div class="stat-label">Approved Leaves (Year)</div></div></div>
+        <div class="stat-card"><div class="stat-icon cyan">🎉</div><div><div class="stat-value" id="dse-holidays">—</div><div class="stat-label">Holidays This Month</div></div></div>
+      </div>
+
+      <div class="grid-2" style="gap:16px" id="dash-tables-admin">
         <div class="card">
           <div class="card-header">
             <span class="card-title">📋 Recent Leave Requests</span>
@@ -229,6 +239,34 @@
             <table>
               <thead><tr><th>Employee</th><th>Time In</th><th>Status</th></tr></thead>
               <tbody id="dash-att-tbody"><tr><td colspan="3" style="text-align:center;color:var(--text3)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Staff/ESS sees only their own leave requests and attendance -->
+      <div class="grid-2" style="gap:16px;display:none" id="dash-tables-ess">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📋 My Recent Leave Requests</span>
+            <button class="btn btn-ghost btn-sm" onclick="navigate('leave-by-emp')">View All</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Type</th><th>From</th><th>To</th><th>Status</th></tr></thead>
+              <tbody id="dash-my-leave-tbody"><tr><td colspan="4" style="text-align:center;color:var(--text3)">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">⏰ My Recent Attendance</span>
+            <button class="btn btn-ghost btn-sm" onclick="navigate('att-hr')">View All</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Time In</th><th>Status</th></tr></thead>
+              <tbody id="dash-my-att-tbody"><tr><td colspan="3" style="text-align:center;color:var(--text3)">Loading...</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -891,7 +929,7 @@
     <div id="page-announcements" class="page-section" style="display:none">
       <div class="page-header-row">
         <div class="page-header"><h1>📢 Announcements</h1><p class="subtitle">Post and manage company announcements</p></div>
-        <button class="btn btn-primary" onclick="openAddAnnouncement()">+ Post Announcement</button>
+        <button class="btn btn-primary" data-restrict="can-edit" onclick="openAddAnnouncement()">+ Post Announcement</button>
       </div>
       <div id="ann-list" style="display:flex;flex-direction:column;gap:12px"></div>
     </div>
@@ -1834,6 +1872,9 @@ setInterval(autoRefreshTick, AUTO_REFRESH_MS);
 async function loadDashboard() {
   Loading.show('Loading dashboard...');
   try {
+    const session = getSession();
+    const ess = isEssSession(session);
+
     // Sequential (not Promise.all) so requests to the GitHub API don't
     // burst in parallel — the secondary rate limit is more easily
     // triggered when several reads fire at once.
@@ -1844,43 +1885,95 @@ async function loadDashboard() {
     allEmployees = emps; allAttendance = atts; allLeaves = leaves; allHolidays = holidays;
 
     const today = new Date().toISOString().split('T')[0];
-    const todayAtts = atts.filter(a => a.date === today);
-    const present = todayAtts.filter(a => a.status === 'present' || a.status === 'late').length;
-    const absent  = todayAtts.filter(a => a.status === 'absent').length;
-    const onLeave = leaves.filter(l => l.from_date <= today && l.to_date >= today && l.status === 'approved').length;
-    const pending = leaves.filter(l => ['pending','new','pending_manager','pending_hr'].includes(l.status)).length;
     const thisMonth = new Date().toISOString().substring(0,7);
+    const thisYear = new Date().getFullYear();
     const monthHolidays = holidays.filter(h => h.date.startsWith(thisMonth)).length;
 
-    document.getElementById('ds-total-emp').textContent = emps.filter(e=>e.status==='active').length;
-    document.getElementById('ds-present').textContent   = present;
-    document.getElementById('ds-absent').textContent    = absent;
-    document.getElementById('ds-on-leave').textContent  = onLeave;
-    document.getElementById('ds-pending-leave').textContent = pending;
-    document.getElementById('ds-holidays').textContent  = monthHolidays;
+    document.getElementById('dash-stats').style.display = ess ? 'none' : '';
+    document.getElementById('dash-stats-ess').style.display = ess ? '' : 'none';
+    document.getElementById('dash-tables-admin').style.display = ess ? 'none' : '';
+    document.getElementById('dash-tables-ess').style.display = ess ? '' : 'none';
 
-    // Recent leaves
-    const recentLeaves = [...leaves].sort((a,b)=>b.created_at.localeCompare(a.created_at)).slice(0,5);
-    document.getElementById('dash-leave-tbody').innerHTML = recentLeaves.map(l => {
-      const emp = emps.find(e=>e.id===l.employee_id);
-      return `<tr>
-        <td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28',emp?.photo)}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td>
+    if (ess) {
+      const empId = session.employee_id;
+      const myAtts = atts.filter(a => a.employee_id === empId);
+      const myLeaves = leaves.filter(l => l.employee_id === empId);
+      const myMonthAtts = myAtts.filter(a => a.date.startsWith(thisMonth));
+      const present = myMonthAtts.filter(a => a.status==='present'||a.status==='late').length;
+      const absent  = myMonthAtts.filter(a => a.status==='absent').length;
+      const pending = myLeaves.filter(l => ['pending','new','pending_manager','pending_hr'].includes(l.status)).length;
+      const approvedYear = myLeaves.filter(l => l.status==='approved' && l.year===String(thisYear)).reduce((s,l)=>s+(parseInt(l.days)||0),0);
+
+      const emp = emps.find(e=>e.id===empId);
+      const myTypes = getEmployeeLeaveTypes(emp);
+      const policy = await getLeavePolicy();
+      let leaveBalance = 0;
+      for (const t of myTypes) {
+        const allocation = policy[t]?.allocation || 0;
+        if (allocation > 0) {
+          const used = await usedDaysThisYear(empId, t, thisYear, leaves);
+          leaveBalance += Math.max(0, allocation - used);
+        }
+      }
+
+      document.getElementById('dse-leave-balance').textContent = leaveBalance;
+      document.getElementById('dse-present').textContent = present;
+      document.getElementById('dse-absent').textContent = absent;
+      document.getElementById('dse-pending-leave').textContent = pending;
+      document.getElementById('dse-approved-leave').textContent = approvedYear;
+      document.getElementById('dse-holidays').textContent = monthHolidays;
+
+      const recentMyLeaves = [...myLeaves].sort((a,b)=>b.created_at.localeCompare(a.created_at)).slice(0,5);
+      document.getElementById('dash-my-leave-tbody').innerHTML = recentMyLeaves.map(l => `<tr>
         <td><span class="text-small">${l.leave_type}</span></td>
-        <td>${l.days}</td>
+        <td>${Fmt.date(l.from_date)}</td>
+        <td>${Fmt.date(l.to_date)}</td>
         <td>${Fmt.statusBadge(l.status)}</td>
-      </tr>`;
-    }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">No recent leaves</td></tr>';
+      </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">No leave requests yet</td></tr>';
 
-    // Today's attendance
-    const todayList = todayAtts.slice(0,6);
-    document.getElementById('dash-att-tbody').innerHTML = todayList.map(a => {
-      const emp = emps.find(e=>e.id===a.employee_id);
-      return `<tr>
-        <td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28',emp?.photo)}<div><div class="emp-name">${emp?.name||a.employee_id}</div></div></div></td>
+      const recentMyAtts = [...myAtts].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
+      document.getElementById('dash-my-att-tbody').innerHTML = recentMyAtts.map(a => `<tr>
+        <td>${Fmt.date(a.date)}</td>
         <td><span class="mono" style="font-size:12px">${a.time_in||'—'}</span></td>
         <td>${Fmt.statusBadge(a.status)}</td>
-      </tr>`;
-    }).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:20px">No attendance today</td></tr>';
+      </tr>`).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:20px">No attendance records yet</td></tr>';
+    } else {
+      const todayAtts = atts.filter(a => a.date === today);
+      const present = todayAtts.filter(a => a.status === 'present' || a.status === 'late').length;
+      const absent  = todayAtts.filter(a => a.status === 'absent').length;
+      const onLeave = leaves.filter(l => l.from_date <= today && l.to_date >= today && l.status === 'approved').length;
+      const pending = leaves.filter(l => ['pending','new','pending_manager','pending_hr'].includes(l.status)).length;
+
+      document.getElementById('ds-total-emp').textContent = emps.filter(e=>e.status==='active').length;
+      document.getElementById('ds-present').textContent   = present;
+      document.getElementById('ds-absent').textContent    = absent;
+      document.getElementById('ds-on-leave').textContent  = onLeave;
+      document.getElementById('ds-pending-leave').textContent = pending;
+      document.getElementById('ds-holidays').textContent  = monthHolidays;
+
+      // Recent leaves
+      const recentLeaves = [...leaves].sort((a,b)=>b.created_at.localeCompare(a.created_at)).slice(0,5);
+      document.getElementById('dash-leave-tbody').innerHTML = recentLeaves.map(l => {
+        const emp = emps.find(e=>e.id===l.employee_id);
+        return `<tr>
+          <td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28',emp?.photo)}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td>
+          <td><span class="text-small">${l.leave_type}</span></td>
+          <td>${l.days}</td>
+          <td>${Fmt.statusBadge(l.status)}</td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">No recent leaves</td></tr>';
+
+      // Today's attendance
+      const todayList = todayAtts.slice(0,6);
+      document.getElementById('dash-att-tbody').innerHTML = todayList.map(a => {
+        const emp = emps.find(e=>e.id===a.employee_id);
+        return `<tr>
+          <td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28',emp?.photo)}<div><div class="emp-name">${emp?.name||a.employee_id}</div></div></div></td>
+          <td><span class="mono" style="font-size:12px">${a.time_in||'—'}</span></td>
+          <td>${Fmt.statusBadge(a.status)}</td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:20px">No attendance today</td></tr>';
+    }
   } catch(e) { Toast.show('Error loading dashboard: '+e.message,'error'); }
   Loading.hide();
 }
@@ -3480,6 +3573,7 @@ async function loadAnnouncements() {
     allAnns.sort((a,b)=>b.date.localeCompare(a.date));
     const list=document.getElementById('ann-list');
     if(!list){Loading.hide();return;}
+    const ess=isEssSession(getSession());
     list.innerHTML=allAnns.map(a=>`
       <div class="ann-card ${a.priority}">
         <div class="ann-card-header">
@@ -3491,10 +3585,10 @@ async function loadAnnouncements() {
               ${a.status==='active'?'<span class="badge badge-success">Active</span>':'<span class="badge badge-gray">Archived</span>'}
             </div>
           </div>
-          <div style="display:flex;gap:4px">
+          ${ess?'':`<div style="display:flex;gap:4px">
             <button class="btn btn-ghost btn-xs" onclick="editAnn('${a.id}')">✏️</button>
             <button class="btn btn-danger btn-xs" onclick="deleteAnn('${a.id}')">🗑</button>
-          </div>
+          </div>`}
         </div>
         <div class="ann-card-body">${a.content}</div>
         <div class="ann-card-footer">
