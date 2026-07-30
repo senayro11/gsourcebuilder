@@ -3,3 +3,4 @@ NOTIF001|admin||leave_request|New Leave Request|Maria Santos applied for Sick Le
 NOTIF002|admin||leave_request|New Leave Request|Pedro Reyes applied for Casual Leave|LV003|true|2025-06-05
 NOTIF003|admin||attendance|Late Arrival|Ana Garcia arrived late today|ATT004|true|2025-06-02
 NOTIF004|all||announcement|Announcement Posted|Company Picnic announcement has been posted|ANN001|true|2025-06-10
+NOTIF005|admin||attendance|Late Arrival|Red Matienzo arrived late today|ATT026|false|2026-07-31
