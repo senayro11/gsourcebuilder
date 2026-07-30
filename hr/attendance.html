@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HR Management System</title>
-  <link rel="stylesheet" href="css/hr.css?v=20260730y">
+  <link rel="stylesheet" href="css/hr.css?v=20260730z">
   <script>
     // Applied before first paint so a saved dark-mode preference doesn't
     // flash light first -- default (no saved value) is light mode.
@@ -631,12 +631,12 @@
     <div id="page-att-hr" class="page-section" style="display:none">
       <div class="page-header-row">
         <div class="page-header">
-          <h1>⏰ Attendance (HR)</h1>
-          <p class="subtitle">Track and manage individual employee attendance</p>
+          <h1 id="att-hr-title">⏰ Attendance (HR)</h1>
+          <p class="subtitle" id="att-hr-subtitle">Track and manage individual employee attendance</p>
         </div>
         <button class="btn btn-primary" id="att-hr-add-btn" onclick="openAddAtt()">+ Add</button>
       </div>
-      <div class="att-hr-layout">
+      <div class="att-hr-layout" id="att-hr-layout">
         <!-- Employee selector + profile -->
         <div id="att-hr-emp-card">
           <div style="margin-bottom:12px"><span class="card-title">Select Employee</span></div>
@@ -1494,9 +1494,9 @@
 <div id="toast-container"></div>
 <div id="global-loading" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="js/hr-config.js?v=20260730y"></script>
-<script src="../js/sync.js?v=20260730y"></script>
-<script src="js/hr-core.js?v=20260730y"></script>
+<script src="js/hr-config.js?v=20260730z"></script>
+<script src="../js/sync.js?v=20260730z"></script>
+<script src="js/hr-core.js?v=20260730z"></script>
 <script>
 // ============================================================
 //  MAIN APP LOGIC
@@ -1796,6 +1796,10 @@ function updateBreadcrumb(pageId) {
   const par = document.getElementById('breadcrumb-parent');
   const parentLine = document.getElementById('breadcrumb-parent-line');
   cur.textContent = labels[pageId] || pageId;
+  if (pageId === 'att-hr') {
+    const session = getSession();
+    if (session && isEssSession(session)) cur.textContent = 'My Attendance';
+  }
   if (parents[pageId]) {
     par.textContent = parents[pageId];
     parentLine.style.display = '';
@@ -2834,11 +2838,14 @@ async function initAttHR(){
     const session=getSession();
     const ess=isEssSession(session);
     document.getElementById('att-hr-emp-card').style.display=ess?'none':'';
+    document.getElementById('att-hr-layout').classList.toggle('single-col',ess);
     document.getElementById('att-hr-actions').style.display=ess?'none':'';
     document.getElementById('att-hr-add-btn').style.display=ess?'none':'';
+    document.getElementById('att-hr-title').textContent=ess?'⏰ My Attendance':'⏰ Attendance (HR)';
+    document.getElementById('att-hr-subtitle').textContent=ess?'View your own attendance records':'Track and manage individual employee attendance';
     const sel=document.getElementById('att-hr-emp');
     sel.innerHTML='<option value="">Select Employee...</option>'+allEmployees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name} (${e.employee_id})</option>`).join('');
-    document.getElementById('att-hr-month').value=new Date().toISOString().substring(0,7);
+    document.getElementById('att-hr-month').value=localDateStr().substring(0,7);
     if(ess && session.employee_id){ sel.value=session.employee_id; await loadEmpAttendance(); }
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
@@ -2848,7 +2855,7 @@ async function loadEmpAttendance(){attEmpId=document.getElementById('att-hr-emp'
 // device's recorded coordinates on Google Maps -- blank if the kiosk
 // couldn't get a location that day (denied/unsupported/timed out).
 function locPin(lat,lng){return(lat&&lng)?` <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" rel="noopener" title="View location">📍</a>`:'';}
-function renderAttHRTable(rows,page){attHRPage=page;const paged=paginate(rows,page,getPerPage('att-hr-pagination',20));const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];document.getElementById('att-hr-tbody').innerHTML=paged.rows.map(a=>{const d=new Date(a.date+'T00:00:00');const brkText=breakSummaryText(a);return`<tr><td><strong class="mono">${a.date}</strong></td><td><span class="badge badge-gray">${days[d.getDay()]}</span></td><td>${a.time_in||'—'}${locPin(a.time_in_lat,a.time_in_lng)}</td><td>${a.time_out||'—'}${locPin(a.time_out_lat,a.time_out_lng)}</td><td style="font-size:11px" title="${brkText||(a.break_minutes||0)+' min (flat)'}">${brkText||((a.break_minutes||0)+' min')}</td><td><strong>${parseFloat(a.work_hours||0).toFixed(2)} hrs</strong></td><td>${parseFloat(a.overtime_hours||0)>0?`<span style="color:var(--warning)">${parseFloat(a.overtime_hours).toFixed(2)} hrs</span>`:'—'}</td><td>${Fmt.statusBadge(a.status)}</td><td>${Fmt.statusBadge(a.approval_status||'pending')}</td><td><div style="display:flex;gap:4px"><button class="btn btn-success btn-xs" onclick="approveAtt('${a.id}')" title="Approve">✅</button><button class="btn btn-danger btn-xs" onclick="rejectAtt('${a.id}')" title="Reject">❌</button><button class="btn btn-ghost btn-xs" onclick="editAtt('${a.id}')">✏️</button><button class="btn btn-danger btn-xs" onclick="delAtt('${a.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">No attendance records for this period</td></tr>';renderPager('att-hr-pagination',paged,p=>renderAttHRTable(rows,p));}
+function renderAttHRTable(rows,page){attHRPage=page;const paged=paginate(rows,page,getPerPage('att-hr-pagination',20));const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const ess=isEssSession(getSession());document.getElementById('att-hr-tbody').innerHTML=paged.rows.map(a=>{const d=new Date(a.date+'T00:00:00');const brkText=breakSummaryText(a);return`<tr><td><strong class="mono">${a.date}</strong></td><td><span class="badge badge-gray">${days[d.getDay()]}</span></td><td>${a.time_in||'—'}${locPin(a.time_in_lat,a.time_in_lng)}</td><td>${a.time_out||'—'}${locPin(a.time_out_lat,a.time_out_lng)}</td><td style="font-size:11px" title="${brkText||(a.break_minutes||0)+' min (flat)'}">${brkText||((a.break_minutes||0)+' min')}</td><td><strong>${parseFloat(a.work_hours||0).toFixed(2)} hrs</strong></td><td>${parseFloat(a.overtime_hours||0)>0?`<span style="color:var(--warning)">${parseFloat(a.overtime_hours).toFixed(2)} hrs</span>`:'—'}</td><td>${Fmt.statusBadge(a.status)}</td><td>${Fmt.statusBadge(a.approval_status||'pending')}</td><td>${ess?'—':`<div style="display:flex;gap:4px"><button class="btn btn-success btn-xs" onclick="approveAtt('${a.id}')" title="Approve">✅</button><button class="btn btn-danger btn-xs" onclick="rejectAtt('${a.id}')" title="Reject">❌</button><button class="btn btn-ghost btn-xs" onclick="editAtt('${a.id}')">✏️</button><button class="btn btn-danger btn-xs" onclick="delAtt('${a.id}')">🗑</button></div>`}</td></tr>`;}).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">No attendance records for this period</td></tr>';renderPager('att-hr-pagination',paged,p=>renderAttHRTable(rows,p));}
 async function approveAtt(id){Loading.show();try{await HRDB.update('attendanceDB',r=>r.id===id,{approval_status:'approved'});Toast.show('Approved ✅','success');await loadEmpAttendance();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 async function rejectAtt(id){Modal.confirm('Reject this attendance record?',async()=>{Loading.show();try{await HRDB.update('attendanceDB',r=>r.id===id,{approval_status:'rejected'});Toast.show('Rejected','warning');await loadEmpAttendance();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
 async function approveAllAtt(){if(!attEmpId)return;Modal.confirm('Approve all attendance for this employee this month?',async()=>{Loading.show();try{const month=document.getElementById('att-hr-month').value;await HRDB.update('attendanceDB',r=>r.employee_id===attEmpId&&r.date.startsWith(month),{approval_status:'approved'});Toast.show('All approved ✅','success');await loadEmpAttendance();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}

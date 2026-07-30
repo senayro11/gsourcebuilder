@@ -587,6 +587,10 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
    ===================================================== */
 .leave-add-layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; }
 .att-hr-layout { display: grid; grid-template-columns: 260px 1fr; gap: 16px; }
+/* Staff/ESS never sees the "Select Employee" column (it's hidden --
+   they only ever see their own attendance), so let the table take the
+   full width instead of being squeezed into the leftover 260px track. */
+.att-hr-layout.single-col { grid-template-columns: 1fr; }
 /* Grid items default to min-width:auto, which refuses to shrink below
    the intrinsic width of their content (here, a wide data table) --
    that stretches the whole grid track wider than the viewport, so the
