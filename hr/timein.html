@@ -301,17 +301,30 @@ function renderBreakSummary(rec) {
 
 async function doTimeIn() {
   if (!verifiedEmp) return;
+  // Kick off the location request immediately, as close to the click as
+  // possible, and let it run alongside the lookups below instead of
+  // after them -- some mobile browsers are stricter than desktop about
+  // geolocation calls made a noticeable while after the user's tap, and
+  // the fresh-data re-check + shift lookup were pushing it back by a
+  // couple of network round-trips.
+  Loading.show('Getting location...');
+  const locPromise = getDeviceLocation();
+
   // Re-check against freshly-fetched data right before acting -- the
   // todayRecord set at verify time can go stale by the time Submit is
   // actually pressed (e.g. the employee steps away for a bit), so don't
   // trust it alone for a check this important.
   const today = localDateStr();
-  const freshAtts = await HRDB.read('attendanceDB', true);
+  const [freshAtts, shifts] = await Promise.all([
+    HRDB.read('attendanceDB', true),
+    HRDB.read('shiftsDB')
+  ]);
   const existing = freshAtts.find(a => a.employee_id === verifiedEmp.id && a.date === today);
   if (existing) {
     todayRecord = existing;
     renderActionButtons(activeSchedule, todayRecord);
     Toast.show(existing.time_out ? 'Kumpleto na ang attendance mo ngayong araw.' : 'Naka-time-in ka na ngayong araw — piliin ang Time Out.', 'warning');
+    Loading.hide();
     return;
   }
   const now    = new Date();
@@ -321,7 +334,6 @@ async function doTimeIn() {
   // assigned, still guess a shift from their check-in time (AM check-in
   // -> a day-type shift, PM/evening -> a night-type shift) instead of
   // always marking them "present" with no basis to judge late/absent.
-  const shifts = await HRDB.read('shiftsDB');
   let shift = activeSchedule ? shifts.find(sh => sh.id === activeSchedule.shift_id) : null;
   const usedDefaultShift = !shift;
   if (!shift) shift = guessShiftForTime(shifts, timeIn);
@@ -334,9 +346,7 @@ async function doTimeIn() {
   }
   const defaultNote = usedDefaultShift && shift ? `No schedule assigned — auto-matched to ${shift.name}` : '';
 
-  Loading.show('Getting location...');
-  const loc = await getDeviceLocation();
-
+  const loc = await locPromise;
   Loading.show('Recording Time In...');
   try {
     const atts = await HRDB.read('attendanceDB', true);
@@ -390,21 +400,32 @@ async function doBreakIn(key) {
 
 async function doTimeOut() {
   if (!verifiedEmp) return;
+  // Kick off the location request immediately, as close to the click as
+  // possible -- see the note in doTimeIn() about mobile browsers being
+  // stricter about geolocation calls made a while after the user's tap.
+  Loading.show('Getting location...');
+  const locPromise = getDeviceLocation();
+
   // Re-check against freshly-fetched data right before acting -- see
   // the same note in doTimeIn().
   const today = localDateStr();
-  const freshAtts = await HRDB.read('attendanceDB', true);
+  const [freshAtts, shifts] = await Promise.all([
+    HRDB.read('attendanceDB', true),
+    HRDB.read('shiftsDB')
+  ]);
   const rec = freshAtts.find(a => a.employee_id === verifiedEmp.id && a.date === today);
   if (!rec) {
     todayRecord = null;
     renderActionButtons(activeSchedule, null);
     Toast.show('Kailangan mo munang mag-Time In.', 'warning');
+    Loading.hide();
     return;
   }
   if (rec.time_out) {
     todayRecord = rec;
     renderActionButtons(activeSchedule, todayRecord);
     Toast.show('Mayroon ka nang Time Out ngayong araw.', 'warning');
+    Loading.hide();
     return;
   }
   todayRecord = rec;
@@ -421,7 +442,6 @@ async function doTimeOut() {
   // Get shift + compute actual break deduction (from punches if present,
   // else configured window, else legacy flat minutes if no
   // schedule/break config exists at all)
-  const shifts = await HRDB.read('shiftsDB');
   let shift = activeSchedule ? shifts.find(sh => sh.id === activeSchedule.shift_id) : null;
   if (!shift) shift = guessShiftForTime(shifts, timeIn);
   const brk = computeBreakMinutes(activeSchedule, todayRecord, shift?.break_minutes || 60) / 60;
@@ -430,9 +450,7 @@ async function doTimeOut() {
   const otHrs  = Math.max(0, workHrs - (shift ? parseInt(shift.ot_after||480)/60 : 8));
   const utHrs  = Math.max(0, (shift ? parseInt(shift.ot_after||480)/60 : 8) - workHrs);
 
-  Loading.show('Getting location...');
-  const loc = await getDeviceLocation();
-
+  const loc = await locPromise;
   Loading.show('Recording Time Out...');
   try {
     await HRDB.update('attendanceDB', r => r.id === todayRecord.id, {
