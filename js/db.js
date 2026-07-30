@@ -140,19 +140,19 @@ const DB = (() => {
       // Re-fetch the current sha and retry with the same payload
       // (last-write-wins, the same semantics this app already documents
       // for offline sync) instead of surfacing a raw GitHub API error to
-      // the user. A single retry isn't always enough under a burst of
-      // concurrent writers, so this allows a couple of extra attempts
-      // with a short backoff before giving up.
+      // the user. 3 attempts still weren't always enough under a real
+      // burst of concurrent writers, so this allows more attempts with a
+      // longer backoff before giving up.
       let lastErr;
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 6; i++) {
         try {
           return await attempt();
         } catch (e) {
           const isShaConflict = e.status === 409 || /does not match/i.test(e.message || '');
           if (!isShaConflict) throw e;
           lastErr = e;
-          if (i < 2) {
-            await new Promise(r => setTimeout(r, 300 * (i + 1)));
+          if (i < 5) {
+            await new Promise(r => setTimeout(r, 400 * (i + 1)));
             await read(dbName, true);
           }
         }
