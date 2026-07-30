@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HR Management System</title>
-  <link rel="stylesheet" href="css/hr.css?v=20260730m">
+  <link rel="stylesheet" href="css/hr.css?v=20260730n">
 </head>
 <body>
 <div class="app-shell">
@@ -1390,9 +1390,9 @@
 <div id="toast-container"></div>
 <div id="global-loading" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="js/hr-config.js?v=20260730m"></script>
-<script src="../js/sync.js?v=20260730m"></script>
-<script src="js/hr-core.js?v=20260730m"></script>
+<script src="js/hr-config.js?v=20260730n"></script>
+<script src="../js/sync.js?v=20260730n"></script>
+<script src="js/hr-core.js?v=20260730n"></script>
 <script>
 // ============================================================
 //  MAIN APP LOGIC
@@ -2104,7 +2104,7 @@ async function loadEmpLeaves() {
     const myPayouts=session.employee_id ? (await HRDB.read('leavepayoutsDB')).filter(p=>p.employee_id===session.employee_id) : [];
     const statsEl=document.getElementById('leave-stats');
     if(!myTypes.length){
-      statsEl.innerHTML='<div class="stat-card" style="grid-column:1/-1"><div><div class="stat-label" style="color:var(--text3)">No leave entitlements configured yet. Ask HR to set them up in Employee List.</div></div></div>';
+      statsEl.innerHTML='<div class="stat-card" style="grid-column:1/-1"><div><div class="stat-label leave-empty-msg" style="color:var(--text3)">No leave entitlements configured yet. Ask HR to set them up in Employee List.</div></div></div>';
     } else {
       const perType=myTypes.map(t=>{
         const allocation=policy[t]?.allocation||0;
