@@ -359,7 +359,8 @@ async function doTimeIn() {
         ? `Late by ${lateMin(timeIn, shift?.start_time)} min` + (defaultNote ? ` (${defaultNote})` : '')
         : defaultNote,
       time_in_lat: loc?.lat || '', time_in_lng: loc?.lng || '',
-      time_out_lat: '', time_out_lng: ''
+      time_out_lat: '', time_out_lng: '',
+      approval_status: 'pending'
     });
     if (status === 'late') {
       addNotification({ audience: 'admin', type: 'attendance', title: 'Late Arrival', message: `${verifiedEmp.name} arrived late today`, referenceId: id });
