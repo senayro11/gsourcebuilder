@@ -12,4 +12,3 @@ hradmin|240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9|admin|a
 hrstaff|10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6|staff|attendance|Red Matienzo|redf@gmail.com|active|2026-07-28|EMP001
 maria|10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6|staff|attendance|Maria|maria.hr@company.com|active|2026-07-28|EMP002
 anag|10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6|staff|attendance|Ana Garcia|anag@company.com|active|2026-07-28|EMP004
-redmatienzo|10176e7b7b24d317acfcf8d2064cfd2f24e154f7b5a96603077d5ef813d6a6b6|staff|attendance|red matienzo|red@gmail.com|active|2026-07-28|
