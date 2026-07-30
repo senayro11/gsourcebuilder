@@ -649,7 +649,7 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
      instead of the default flex-start, and give the row itself some
      breathing room below so the button doesn't sit flush against
      whatever card/grid comes right after it. */
-  .page-header-row > .btn { margin-left: auto; }
+  .page-header-row > .btn, .page-header-row > .page-header-actions { margin-left: auto; }
   .page-header-row { margin-bottom: 16px; }
   /* Shrink the month picker and drop "All" from the Approve/Reject
      labels (see .only-desktop on those buttons) so the date and both
