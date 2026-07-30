@@ -1664,6 +1664,9 @@ async function autoRefreshTick() {
   if (document.visibilityState !== 'visible') return;
   if (document.querySelector('.modal-backdrop.active')) return;
   if (!getSession()) return;
+  // Silent -- this is a background poll, not a user action, so don't
+  // flash the full-screen spinner every 20 seconds.
+  Loading.suppressed = true;
   try {
     HRDB.clearCache();
     if (currentPage === 'att-hr') {
@@ -1684,6 +1687,7 @@ async function autoRefreshTick() {
     // Badges/notifications stay live even on pages skipped above.
     await loadNotifications();
   } catch (e) { /* transient network hiccup -- don't interrupt the page */ }
+  finally { Loading.suppressed = false; Loading.hide(); }
 }
 setInterval(autoRefreshTick, AUTO_REFRESH_MS);
 
