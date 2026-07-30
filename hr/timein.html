@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Time In / Out — HR System</title>
-  <link rel="stylesheet" href="css/hr.css?v=20260730s">
+  <link rel="stylesheet" href="css/hr.css?v=20260730t">
   <style>
     body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--bg); }
     .timein-wrap { width:100%; max-width:420px; padding:20px; }
@@ -146,9 +146,9 @@
 <div id="toast-container"></div>
 <div id="global-loading" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="js/hr-config.js?v=20260730s"></script>
-<script src="../js/sync.js?v=20260730s"></script>
-<script src="js/hr-core.js?v=20260730s"></script>
+<script src="js/hr-config.js?v=20260730t"></script>
+<script src="../js/sync.js?v=20260730t"></script>
+<script src="js/hr-core.js?v=20260730t"></script>
 <script>
 // ---- Clock ----
 function tick() {
@@ -271,9 +271,14 @@ async function doTimeIn() {
   const today  = now.toISOString().split('T')[0];
   const timeIn = now.toTimeString().substring(0, 5);
 
-  // Get shift to check if late
+  // Get shift to check if late -- if this employee has no schedule
+  // assigned, still guess a shift from their check-in time (AM check-in
+  // -> a day-type shift, PM/evening -> a night-type shift) instead of
+  // always marking them "present" with no basis to judge late/absent.
   const shifts = await HRDB.read('shiftsDB');
-  const shift  = activeSchedule ? shifts.find(sh => sh.id === activeSchedule.shift_id) : null;
+  let shift = activeSchedule ? shifts.find(sh => sh.id === activeSchedule.shift_id) : null;
+  const usedDefaultShift = !shift;
+  if (!shift) shift = guessShiftForTime(shifts, timeIn);
   let status = 'present';
   if (shift && shift.start_time) {
     const [sh, sm] = shift.start_time.split(':').map(Number);
@@ -281,6 +286,7 @@ async function doTimeIn() {
     const [h, m]   = timeIn.split(':').map(Number);
     if (h * 60 + m > sh * 60 + sm + grace) status = 'late';
   }
+  const defaultNote = usedDefaultShift && shift ? `No schedule assigned — auto-matched to ${shift.name}` : '';
 
   Loading.show('Recording Time In...');
   try {
@@ -290,7 +296,9 @@ async function doTimeIn() {
       id, employee_id: verifiedEmp.id, date: today,
       time_in: timeIn, time_out: '', break_minutes: shift?.break_minutes || '60',
       work_hours: '0', overtime_hours: '0', undertime: '0',
-      status, notes: status === 'late' ? `Late by ${lateMin(timeIn, shift?.start_time)} min` : ''
+      status, notes: status === 'late'
+        ? `Late by ${lateMin(timeIn, shift?.start_time)} min` + (defaultNote ? ` (${defaultNote})` : '')
+        : defaultNote
     });
     showSuccess('🟢', 'Time In Recorded!', `${verifiedEmp.name} — ${timeIn}${status === 'late' ? ' (Late)' : ''}`);
     Toast.show(`Time In: ${timeIn} ✅`, 'success');
@@ -342,8 +350,9 @@ async function doTimeOut() {
   // else configured window, else legacy flat minutes if no
   // schedule/break config exists at all)
   const shifts = await HRDB.read('shiftsDB');
-  const shift  = activeSchedule ? shifts.find(sh => sh.id === activeSchedule.shift_id) : null;
-  const brk    = computeBreakMinutes(activeSchedule, todayRecord, shift?.break_minutes || 60) / 60;
+  let shift = activeSchedule ? shifts.find(sh => sh.id === activeSchedule.shift_id) : null;
+  if (!shift) shift = guessShiftForTime(shifts, timeIn);
+  const brk = computeBreakMinutes(activeSchedule, todayRecord, shift?.break_minutes || 60) / 60;
 
   workHrs = Math.max(0, workHrs - brk);
   const otHrs  = Math.max(0, workHrs - (shift ? parseInt(shift.ot_after||480)/60 : 8));
