@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HR Management System</title>
-  <link rel="stylesheet" href="css/hr.css?v=20260730q">
+  <link rel="stylesheet" href="css/hr.css?v=20260730r">
 </head>
 <body>
 <div class="app-shell">
@@ -265,8 +265,8 @@
             <tbody id="emp-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">Loading...</td></tr></tbody>
           </table>
         </div>
-        <div id="emp-pagination"></div>
       </div>
+      <div id="emp-pagination"></div>
     </div>
 
     <!-- =========================================
@@ -301,8 +301,8 @@
             <tbody id="holiday-tbody"></tbody>
           </table>
         </div>
-        <div id="holiday-pagination"></div>
       </div>
+      <div id="holiday-pagination"></div>
     </div>
 
     <!-- =========================================
@@ -322,8 +322,8 @@
             <tbody id="lv-emp-tbody"><tr><td colspan="11" style="text-align:center;color:var(--text3);padding:32px">Loading...</td></tr></tbody>
           </table>
         </div>
-        <div id="lv-emp-pagination"></div>
       </div>
+      <div id="lv-emp-pagination"></div>
     </div>
 
     <!-- =========================================
@@ -432,8 +432,8 @@
             <tbody id="hr-lv-tbody"><tr><td colspan="11" style="text-align:center;color:var(--text3);padding:32px">Loading...</td></tr></tbody>
           </table>
         </div>
-        <div id="hr-lv-pagination"></div>
       </div>
+      <div id="hr-lv-pagination"></div>
     </div>
 
     <!-- =========================================
@@ -636,8 +636,8 @@
                 <tbody id="att-hr-tbody"><tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">Select an employee to view attendance</td></tr></tbody>
               </table>
             </div>
-            <div id="att-hr-pagination"></div>
           </div>
+          <div id="att-hr-pagination"></div>
         </div>
       </div>
     </div>
@@ -722,8 +722,8 @@
             <tbody id="payroll-tbody"><tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">Loading...</td></tr></tbody>
           </table>
         </div>
-        <div id="payroll-pagination"></div>
       </div>
+      <div id="payroll-pagination"></div>
     </div>
 
     <!-- =========================================
@@ -806,8 +806,8 @@
             <tbody id="dept-tbody"></tbody>
           </table>
         </div>
-        <div id="dept-pagination"></div>
       </div>
+      <div id="dept-pagination"></div>
     </div>
 
     <!-- =========================================
@@ -832,8 +832,8 @@
             <tbody id="pos-tbody"></tbody>
           </table>
         </div>
-        <div id="pos-pagination"></div>
       </div>
+      <div id="pos-pagination"></div>
     </div>
 
     <!-- =========================================
@@ -922,8 +922,8 @@
             <tbody id="user-tbody"></tbody>
           </table>
         </div>
-        <div id="user-pagination"></div>
       </div>
+      <div id="user-pagination"></div>
     </div>
 
     <!-- =========================================
@@ -1405,9 +1405,9 @@
 <div id="toast-container"></div>
 <div id="global-loading" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="js/hr-config.js?v=20260730q"></script>
-<script src="../js/sync.js?v=20260730q"></script>
-<script src="js/hr-core.js?v=20260730q"></script>
+<script src="js/hr-config.js?v=20260730r"></script>
+<script src="../js/sync.js?v=20260730r"></script>
+<script src="js/hr-core.js?v=20260730r"></script>
 <script>
 // ============================================================
 //  MAIN APP LOGIC
@@ -1868,7 +1868,7 @@ function filterEmployees() {
 }
 function renderEmpTable(rows, page) {
   empPage = page;
-  const paged = paginate(rows, page);
+  const paged = paginate(rows, page, getPerPage('emp-pagination', 15));
   const viewOnly = isViewOnlySession(getSession());
   document.getElementById('emp-tbody').innerHTML = paged.rows.map(e=>`<tr>
     <td><span class="badge badge-blue mono">${e.employee_id}</span></td>
@@ -2025,7 +2025,7 @@ function filterHolidays() {
 }
 function renderHolTable(rows,page) {
   holPage=page;
-  const paged=paginate(rows,page,10);
+  const paged=paginate(rows,page,getPerPage('holiday-pagination',10));
   const viewOnly = isViewOnlySession(getSession());
   document.getElementById('holiday-tbody').innerHTML=paged.rows.map((h,i)=>`<tr>
     <td>${paged.start+i+1}</td>
@@ -2283,7 +2283,7 @@ async function loadEmpLeaves() {
   Loading.hide();
 }
 let lvEmpPage=1;
-function renderEmpLeaveTable(rows,page){lvEmpPage=page;const paged=paginate(rows,page);document.getElementById('lv-emp-tbody').innerHTML=paged.rows.map((l,i)=>`<tr><td>${paged.start+i+1}</td><td>${l.leave_type}</td><td>${Fmt.date(l.from_date)}</td><td>${Fmt.date(l.to_date)}</td><td>${l.days}</td><td><button class="btn btn-ghost btn-xs" onclick="viewLeave('${l.id}')">👁 View</button></td><td style="font-size:12px">${Fmt.date(l.created_at)}</td><td>${l.approved_by||'—'}</td><td>${l.paid?`<span class="badge ${l.paid==='Paid'?'badge-success':l.paid==='Unpaid'?'badge-danger':'badge-warning'}">${l.paid}</span>`:'—'}</td><td>${Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="viewLeave('${l.id}')">👁</button>${l.status==='pending_manager'||l.status==='pending_hr'||l.status==='new'||l.status==='pending'?`<button class="btn btn-danger btn-xs" onclick="deleteLeave('${l.id}')">🗑</button>`:''}</div></td></tr>`).join('')||'<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:32px">No leave records</td></tr>';renderPager('lv-emp-pagination',paged,p=>renderEmpLeaveTable(rows,p));}
+function renderEmpLeaveTable(rows,page){lvEmpPage=page;const paged=paginate(rows,page,getPerPage('lv-emp-pagination',15));document.getElementById('lv-emp-tbody').innerHTML=paged.rows.map((l,i)=>`<tr><td>${paged.start+i+1}</td><td>${l.leave_type}</td><td>${Fmt.date(l.from_date)}</td><td>${Fmt.date(l.to_date)}</td><td>${l.days}</td><td><button class="btn btn-ghost btn-xs" onclick="viewLeave('${l.id}')">👁 View</button></td><td style="font-size:12px">${Fmt.date(l.created_at)}</td><td>${l.approved_by||'—'}</td><td>${l.paid?`<span class="badge ${l.paid==='Paid'?'badge-success':l.paid==='Unpaid'?'badge-danger':'badge-warning'}">${l.paid}</span>`:'—'}</td><td>${Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="viewLeave('${l.id}')">👁</button>${l.status==='pending_manager'||l.status==='pending_hr'||l.status==='new'||l.status==='pending'?`<button class="btn btn-danger btn-xs" onclick="deleteLeave('${l.id}')">🗑</button>`:''}</div></td></tr>`).join('')||'<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:32px">No leave records</td></tr>';renderPager('lv-emp-pagination',paged,p=>renderEmpLeaveTable(rows,p));}
 
 async function initAddLeaveEmp(){
   const session=getSession();
@@ -2371,7 +2371,7 @@ async function rejectManagerLeave(id){Loading.show();try{const session=getSessio
 let hrLvPage=1;
 async function loadHRLeaves(){Loading.show();try{allLeaves=await HRDB.read('leavesDB',true);allEmployees=await HRDB.read('employeesDB');const today=new Date().toISOString().split('T')[0];const todayLeaves=allLeaves.filter(l=>l.from_date<=today&&l.to_date>=today);document.getElementById('hr-lv-today').textContent=`${todayLeaves.filter(l=>l.status==='approved').length}/${allEmployees.filter(e=>e.status==='active').length}`;document.getElementById('hr-lv-today2').textContent=todayLeaves.length;document.getElementById('hr-lv-unplanned').textContent=allLeaves.filter(l=>l.status==='new').length;document.getElementById('hr-lv-pending').textContent=allLeaves.filter(l=>HR_ACTIONABLE_STATUSES.includes(l.status)||l.status==='pending_manager').length;filterHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 function filterHRLeaves(){const q=(document.getElementById('hr-lv-search')?.value||'').toLowerCase();const st=document.getElementById('hr-lv-status-filter')?.value||'';let rows=allLeaves;if(q)rows=rows.filter(l=>{const e=allEmployees.find(x=>x.id===l.employee_id);return(e?.name||'').toLowerCase().includes(q)||l.leave_type.toLowerCase().includes(q);});if(st)rows=rows.filter(l=>l.status===st);rows.sort((a,b)=>b.created_at.localeCompare(a.created_at));renderHRLeaveTable(rows,1);}
-function renderHRLeaveTable(rows,page){hrLvPage=page;const paged=paginate(rows,page);document.getElementById('hr-lv-tbody').innerHTML=paged.rows.map((l,i)=>{const emp=allEmployees.find(e=>e.id===l.employee_id);const actionable=HR_ACTIONABLE_STATUSES.includes(l.status);return`<tr><td>${paged.start+i+1}</td><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28',emp?.photo)}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td><td>${l.leave_type}</td><td><button class="btn btn-ghost btn-xs" onclick="viewLeave('${l.id}')">👁 View</button></td><td>${l.days}</td><td style="font-size:12px">${Fmt.date(l.from_date)}</td><td style="font-size:12px">${Fmt.date(l.to_date)}</td><td style="font-size:12px">${Fmt.date(l.created_at)}</td><td>${l.paid?`<span class="badge ${l.paid==='Paid'?'badge-success':l.paid==='Unpaid'?'badge-danger':'badge-warning'}">${l.paid}</span>`:'—'}</td><td>${l.status==='pending_manager'?'<span class="badge badge-warning">Waiting: Manager</span>':Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="viewLeave('${l.id}')">👁</button>${actionable?`<button class="btn btn-success btn-xs" onclick="approveLeave('${l.id}')">✅</button><button class="btn btn-danger btn-xs" onclick="rejectLeave('${l.id}')">❌</button>`:''}<button class="btn btn-ghost btn-xs" onclick="deleteLeave('${l.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:32px">No leave records</td></tr>';renderPager('hr-lv-pagination',paged,p=>renderHRLeaveTable(rows,p));}
+function renderHRLeaveTable(rows,page){hrLvPage=page;const paged=paginate(rows,page,getPerPage('hr-lv-pagination',15));document.getElementById('hr-lv-tbody').innerHTML=paged.rows.map((l,i)=>{const emp=allEmployees.find(e=>e.id===l.employee_id);const actionable=HR_ACTIONABLE_STATUSES.includes(l.status);return`<tr><td>${paged.start+i+1}</td><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28',emp?.photo)}<div><div class="emp-name">${emp?.name||l.employee_id}</div></div></div></td><td>${l.leave_type}</td><td><button class="btn btn-ghost btn-xs" onclick="viewLeave('${l.id}')">👁 View</button></td><td>${l.days}</td><td style="font-size:12px">${Fmt.date(l.from_date)}</td><td style="font-size:12px">${Fmt.date(l.to_date)}</td><td style="font-size:12px">${Fmt.date(l.created_at)}</td><td>${l.paid?`<span class="badge ${l.paid==='Paid'?'badge-success':l.paid==='Unpaid'?'badge-danger':'badge-warning'}">${l.paid}</span>`:'—'}</td><td>${l.status==='pending_manager'?'<span class="badge badge-warning">Waiting: Manager</span>':Fmt.statusBadge(l.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="viewLeave('${l.id}')">👁</button>${actionable?`<button class="btn btn-success btn-xs" onclick="approveLeave('${l.id}')">✅</button><button class="btn btn-danger btn-xs" onclick="rejectLeave('${l.id}')">❌</button>`:''}<button class="btn btn-ghost btn-xs" onclick="deleteLeave('${l.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="11" style="text-align:center;color:var(--text3);padding:32px">No leave records</td></tr>';renderPager('hr-lv-pagination',paged,p=>renderHRLeaveTable(rows,p));}
 async function approveLeave(id){Loading.show();try{const session=getSession();await HRDB.update('leavesDB',r=>r.id===id,{status:'approved',approved_by:session.full_name||'HR Admin'});Toast.show('Leave approved ✅','success');await loadHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 async function rejectLeave(id){Loading.show();try{const session=getSession();await HRDB.update('leavesDB',r=>r.id===id,{status:'rejected',approved_by:session.full_name||'HR Admin'});Toast.show('Leave rejected','warning');await loadHRLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 async function deleteLeave(id){Modal.confirm('Delete this leave record?',async()=>{Loading.show();try{await HRDB.remove('leavesDB',r=>r.id===id);Toast.show('Deleted','success');if(currentPage==='leave-by-hr')await loadHRLeaves();else if(currentPage==='leave-team')await loadTeamApprovals();else await loadEmpLeaves();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
@@ -2604,7 +2604,7 @@ async function initAttHR(){
   Loading.hide();
 }
 async function loadEmpAttendance(){attEmpId=document.getElementById('att-hr-emp').value;if(!attEmpId){document.getElementById('att-emp-profile').style.display='none';return;}const emp=allEmployees.find(e=>e.id===attEmpId);if(emp){document.getElementById('att-emp-profile').style.display='';document.getElementById('att-emp-avatar').innerHTML=emp.photo?`<img src="${emp.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:emp.name.charAt(0);document.getElementById('att-emp-name2').textContent=emp.name;document.getElementById('att-emp-pos').textContent=emp.position;document.getElementById('att-emp-id2').textContent=emp.employee_id;document.getElementById('att-emp-dept').textContent=emp.department;document.getElementById('att-emp-hire').textContent=Fmt.date(emp.hire_date);}Loading.show();try{const schedules=await HRDB.read('schedulesDB');attEmpSchedule=getActiveSchedule(schedules,attEmpId);allAttendance=await HRDB.read('attendanceDB',true);const month=document.getElementById('att-hr-month').value;const rows=allAttendance.filter(a=>a.employee_id===attEmpId&&a.date.startsWith(month));const approvedHrs=rows.reduce((s,a)=>s+parseFloat(a.work_hours||0),0);const otHrs=rows.reduce((s,a)=>s+parseFloat(a.overtime_hours||0),0);document.getElementById('att-approved-hrs').textContent=approvedHrs.toFixed(2)+' hrs';document.getElementById('att-rejected-hrs').textContent='0 hrs';document.getElementById('att-ot-hrs').textContent=otHrs.toFixed(2)+' hrs';renderAttHRTable(rows,1);}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
-function renderAttHRTable(rows,page){attHRPage=page;const paged=paginate(rows,page,20);const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];document.getElementById('att-hr-tbody').innerHTML=paged.rows.map(a=>{const d=new Date(a.date+'T00:00:00');const brkText=breakSummaryText(a);return`<tr><td><strong class="mono">${a.date}</strong></td><td><span class="badge badge-gray">${days[d.getDay()]}</span></td><td>${a.time_in||'—'}</td><td>${a.time_out||'—'}</td><td style="font-size:11px" title="${brkText||(a.break_minutes||0)+' min (flat)'}">${brkText||((a.break_minutes||0)+' min')}</td><td><strong>${parseFloat(a.work_hours||0).toFixed(2)} hrs</strong></td><td>${parseFloat(a.overtime_hours||0)>0?`<span style="color:var(--warning)">${parseFloat(a.overtime_hours).toFixed(2)} hrs</span>`:'—'}</td><td>${Fmt.statusBadge(a.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-success btn-xs" onclick="approveAtt('${a.id}')" title="Approve">✅</button><button class="btn btn-ghost btn-xs" onclick="editAtt('${a.id}')">✏️</button><button class="btn btn-danger btn-xs" onclick="delAtt('${a.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">No attendance records for this period</td></tr>';renderPager('att-hr-pagination',paged,p=>renderAttHRTable(rows,p));}
+function renderAttHRTable(rows,page){attHRPage=page;const paged=paginate(rows,page,getPerPage('att-hr-pagination',20));const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];document.getElementById('att-hr-tbody').innerHTML=paged.rows.map(a=>{const d=new Date(a.date+'T00:00:00');const brkText=breakSummaryText(a);return`<tr><td><strong class="mono">${a.date}</strong></td><td><span class="badge badge-gray">${days[d.getDay()]}</span></td><td>${a.time_in||'—'}</td><td>${a.time_out||'—'}</td><td style="font-size:11px" title="${brkText||(a.break_minutes||0)+' min (flat)'}">${brkText||((a.break_minutes||0)+' min')}</td><td><strong>${parseFloat(a.work_hours||0).toFixed(2)} hrs</strong></td><td>${parseFloat(a.overtime_hours||0)>0?`<span style="color:var(--warning)">${parseFloat(a.overtime_hours).toFixed(2)} hrs</span>`:'—'}</td><td>${Fmt.statusBadge(a.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-success btn-xs" onclick="approveAtt('${a.id}')" title="Approve">✅</button><button class="btn btn-ghost btn-xs" onclick="editAtt('${a.id}')">✏️</button><button class="btn btn-danger btn-xs" onclick="delAtt('${a.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:32px">No attendance records for this period</td></tr>';renderPager('att-hr-pagination',paged,p=>renderAttHRTable(rows,p));}
 async function approveAtt(id){Loading.show();try{await HRDB.update('attendanceDB',r=>r.id===id,{status:'present'});Toast.show('Approved ✅','success');await loadEmpAttendance();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 async function approveAllAtt(){if(!attEmpId)return;Modal.confirm('Approve all attendance for this employee this month?',async()=>{Loading.show();try{const month=document.getElementById('att-hr-month').value;await HRDB.update('attendanceDB',r=>r.employee_id===attEmpId&&r.date.startsWith(month),{status:'present'});Toast.show('All approved ✅','success');await loadEmpAttendance();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
 async function rejectAllAtt(){if(!attEmpId)return;Modal.confirm('Reject all attendance for this employee this month?',async()=>{Loading.show();try{const month=document.getElementById('att-hr-month').value;await HRDB.update('attendanceDB',r=>r.employee_id===attEmpId&&r.date.startsWith(month),{status:'absent'});Toast.show('All rejected','warning');await loadEmpAttendance();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
@@ -2685,7 +2685,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 let prPage=1;
 async function loadPayroll(){Loading.show();try{allPayroll=await HRDB.read('payrollDB',true);allEmployees=await HRDB.read('employeesDB');filterPayroll();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 function filterPayroll(){const month=document.getElementById('pr-month-filter')?.value||'';const st=document.getElementById('pr-status-filter')?.value||'';let rows=allPayroll;if(month)rows=rows.filter(p=>p.period_start.startsWith(month.substring(0,7))||p.period_end.startsWith(month.substring(0,7)));if(st)rows=rows.filter(p=>p.status===st);const gross=rows.reduce((s,p)=>s+parseFloat(p.gross_pay||0),0);const deduct=rows.reduce((s,p)=>s+parseFloat(p.total_deductions||0),0);const net=rows.reduce((s,p)=>s+parseFloat(p.net_pay||0),0);document.getElementById('pr-gross').textContent=Fmt.peso(gross);document.getElementById('pr-deduct').textContent=Fmt.peso(deduct);document.getElementById('pr-net').textContent=Fmt.peso(net);document.getElementById('pr-count').textContent=rows.length;renderPayrollTable(rows,1);}
-function renderPayrollTable(rows,page){prPage=page;const paged=paginate(rows,page,10);document.getElementById('payroll-tbody').innerHTML=paged.rows.map(p=>{const emp=allEmployees.find(e=>e.id===p.employee_id);return`<tr><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28',emp?.photo)}<div><div class="emp-name">${emp?.name||p.employee_id}</div><div class="emp-pos">${emp?.position||''}</div></div></div></td><td style="font-size:11px"><span class="mono">${p.period_start}</span><br><span class="mono">${p.period_end}</span></td><td>${p.days_worked}</td><td>${Fmt.peso(p.basic_pay)}</td><td>${Fmt.peso(p.overtime_pay)}</td><td><strong>${Fmt.peso(p.gross_pay)}</strong></td><td style="color:var(--danger)">${Fmt.peso(p.total_deductions)}</td><td><strong style="color:var(--success)">${Fmt.peso(p.net_pay)}</strong></td><td>${Fmt.statusBadge(p.status)}</td><td><div style="display:flex;gap:4px">${p.status!=='released'?`<button class="btn btn-success btn-xs" onclick="releasePayroll('${p.id}')">💵 Release</button>`:'<span style="color:var(--text3);font-size:11px">Released</span>'}<button class="btn btn-ghost btn-xs" onclick="viewPayslipDirect('${p.id}')">🧾</button><button class="btn btn-danger btn-xs" onclick="delPayroll('${p.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">No payroll records</td></tr>';renderPager('payroll-pagination',paged,p=>renderPayrollTable(rows,p));}
+function renderPayrollTable(rows,page){prPage=page;const paged=paginate(rows,page,getPerPage('payroll-pagination',10));document.getElementById('payroll-tbody').innerHTML=paged.rows.map(p=>{const emp=allEmployees.find(e=>e.id===p.employee_id);return`<tr><td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28',emp?.photo)}<div><div class="emp-name">${emp?.name||p.employee_id}</div><div class="emp-pos">${emp?.position||''}</div></div></div></td><td style="font-size:11px"><span class="mono">${p.period_start}</span><br><span class="mono">${p.period_end}</span></td><td>${p.days_worked}</td><td>${Fmt.peso(p.basic_pay)}</td><td>${Fmt.peso(p.overtime_pay)}</td><td><strong>${Fmt.peso(p.gross_pay)}</strong></td><td style="color:var(--danger)">${Fmt.peso(p.total_deductions)}</td><td><strong style="color:var(--success)">${Fmt.peso(p.net_pay)}</strong></td><td>${Fmt.statusBadge(p.status)}</td><td><div style="display:flex;gap:4px">${p.status!=='released'?`<button class="btn btn-success btn-xs" onclick="releasePayroll('${p.id}')">💵 Release</button>`:'<span style="color:var(--text3);font-size:11px">Released</span>'}<button class="btn btn-ghost btn-xs" onclick="viewPayslipDirect('${p.id}')">🧾</button><button class="btn btn-danger btn-xs" onclick="delPayroll('${p.id}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">No payroll records</td></tr>';renderPager('payroll-pagination',paged,p=>renderPayrollTable(rows,p));}
 async function releasePayroll(id){Modal.confirm('Release payroll for this employee?',async()=>{Loading.show();try{await HRDB.update('payrollDB',r=>r.id===id,{status:'released'});Toast.show('Payroll released 💵','success');await loadPayroll();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
 async function delPayroll(id){Modal.confirm('Delete this payroll record?',async()=>{Loading.show();try{await HRDB.remove('payrollDB',r=>r.id===id);Toast.show('Deleted','success');await loadPayroll();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
 
@@ -2926,7 +2926,7 @@ function filterDepts() {
 }
 
 function renderDeptTable(rows, page) {
-  const paged = paginate(rows, page, 10);
+  const paged = paginate(rows, page, getPerPage('dept-pagination', 10));
   const viewOnly = isViewOnlySession(getSession());
   document.getElementById('dept-tbody').innerHTML = paged.rows.map((d, i) => `<tr>
     <td>${paged.start+i+1}</td>
@@ -3014,7 +3014,7 @@ function filterPositions() {
 let posPage=1;
 function renderPositionsTable(rows, page) {
   posPage=page;
-  const paged = paginate(rows, page, 10);
+  const paged = paginate(rows, page, getPerPage('pos-pagination', 10));
   const viewOnly = isViewOnlySession(getSession());
   document.getElementById('pos-tbody').innerHTML = paged.rows.map((p, i) => {
     const count = (allEmployees||[]).filter(e=>e.position===p.title && e.status==='active').length;
@@ -3413,7 +3413,7 @@ async function loadUsers() {
 }
 function renderUserStats(){const roles=['admin','user','staff','ojt','guest'];document.getElementById('user-stats').innerHTML=roles.map(r=>`<div class="stat-card"><div><div class="stat-value">${allUsers.filter(u=>u.role===r).length}</div><div class="stat-label">${r.toUpperCase()}</div></div></div>`).join('');}
 function filterUsers(){const q=(document.getElementById('user-search')?.value||'').toLowerCase();const role=document.getElementById('user-role-filter')?.value||'';let rows=allUsers;if(q)rows=rows.filter(u=>u.username.toLowerCase().includes(q)||u.full_name.toLowerCase().includes(q));if(role)rows=rows.filter(u=>u.role===role);renderUserTable(rows,1);}
-function renderUserTable(rows,page){const paged=paginate(rows,page,10);document.getElementById('user-tbody').innerHTML=paged.rows.map(u=>{const emp=allEmployees.find(e=>e.id===u.employee_id);return`<tr><td class="mono">${u.username}</td><td>${u.full_name}</td><td>${Fmt.roleBadge(u.role)}</td><td>${emp?emp.name+'<br><small class="text-muted">'+emp.employee_id+'</small>':'<span style="color:var(--text3)">—</span>'}</td><td>${Fmt.statusBadge(u.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="editUser('${u.username}')">✏️</button><button class="btn btn-${u.status==='active'?'warning':'success'} btn-xs" onclick="toggleUser('${u.username}')">${u.status==='active'?'🔒':'🔓'}</button><button class="btn btn-danger btn-xs" onclick="deleteUser('${u.username}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:32px">No users</td></tr>';renderPager('user-pagination',paged,p=>renderUserTable(rows,p));}
+function renderUserTable(rows,page){const paged=paginate(rows,page,getPerPage('user-pagination',10));document.getElementById('user-tbody').innerHTML=paged.rows.map(u=>{const emp=allEmployees.find(e=>e.id===u.employee_id);return`<tr><td class="mono">${u.username}</td><td>${u.full_name}</td><td>${Fmt.roleBadge(u.role)}</td><td>${emp?emp.name+'<br><small class="text-muted">'+emp.employee_id+'</small>':'<span style="color:var(--text3)">—</span>'}</td><td>${Fmt.statusBadge(u.status)}</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="editUser('${u.username}')">✏️</button><button class="btn btn-${u.status==='active'?'warning':'success'} btn-xs" onclick="toggleUser('${u.username}')">${u.status==='active'?'🔒':'🔓'}</button><button class="btn btn-danger btn-xs" onclick="deleteUser('${u.username}')">🗑</button></div></td></tr>`;}).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:32px">No users</td></tr>';renderPager('user-pagination',paged,p=>renderUserTable(rows,p));}
 
 async function openAddUser(){editUserId=null;['uf-username','uf-fullname','uf-email','uf-password','uf-password2'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});document.getElementById('uf-role').value='staff';document.getElementById('uf-status').value='active';document.getElementById('uf-username').disabled=false;document.getElementById('uf-pw-label').textContent='Password *';document.getElementById('uf-pw-note').style.display='none';const empLink=document.getElementById('uf-emp-link');empLink.innerHTML='<option value="">None</option>'+(allEmployees||[]).filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name} (${e.employee_id})</option>`).join('');document.getElementById('user-modal-title').textContent='+ Add User';Modal.open('user-modal');}
 function editUser(username){const u=allUsers.find(x=>x.username===username);if(!u)return;editUserId=username;document.getElementById('uf-username').value=u.username;document.getElementById('uf-username').disabled=true;document.getElementById('uf-fullname').value=u.full_name;document.getElementById('uf-email').value=u.email||'';document.getElementById('uf-role').value=u.role;document.getElementById('uf-status').value=u.status;document.getElementById('uf-password').value='';document.getElementById('uf-password2').value='';document.getElementById('uf-pw-label').textContent='Password (optional)';document.getElementById('uf-pw-note').style.display='';const empLink=document.getElementById('uf-emp-link');empLink.innerHTML='<option value="">None</option>'+(allEmployees||[]).filter(e=>e.status==='active').map(e=>`<option value="${e.id}" ${e.id===u.employee_id?'selected':''}>${e.name}</option>`).join('');document.getElementById('user-modal-title').textContent='✏️ Edit User';Modal.open('user-modal');}

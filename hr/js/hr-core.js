@@ -160,26 +160,55 @@ function paginate(rows, page, perPage = 15) {
   const start = (page - 1) * perPage;
   return {
     rows: rows.slice(start, start + perPage),
-    total, pages, page, start,
+    total, pages, page, start, perPage,
     showing: `${Math.min(start + 1, total)}–${Math.min(start + perPage, total)} of ${total}`
   };
 }
 
+// Remembers each table's chosen "rows per page" (by pagination element id)
+// across re-renders, until the page is reloaded.
+const pagerPerPage = {};
+function getPerPage(elId, def) { return pagerPerPage[elId] || def; }
+
 function renderPager(elId, paged, onPage) {
   const el = document.getElementById(elId);
   if (!el) return;
-  if (paged.pages <= 1) { el.innerHTML = ''; return; }
+  const perPageOpts = [10, 25, 50, 100];
+  if (!perPageOpts.includes(paged.perPage)) perPageOpts.unshift(paged.perPage);
   let h = `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;flex-wrap:wrap;gap:8px">
-    <span style="font-size:12px;color:var(--text3)">Showing ${paged.showing}</span>
-    <div style="display:flex;gap:4px">`;
-  if (paged.page > 1)
-    h += `<button class="btn btn-ghost btn-sm" onclick="(${onPage.toString()})(${paged.page - 1})">‹</button>`;
-  for (let i = Math.max(1, paged.page - 2); i <= Math.min(paged.pages, paged.page + 2); i++)
-    h += `<button class="btn ${i === paged.page ? 'btn-primary' : 'btn-ghost'} btn-sm" onclick="(${onPage.toString()})(${i})">${i}</button>`;
-  if (paged.page < paged.pages)
-    h += `<button class="btn btn-ghost btn-sm" onclick="(${onPage.toString()})(${paged.page + 1})">›</button>`;
-  h += '</div></div>';
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <label style="font-size:12px;color:var(--text3)">Rows per page</label>
+      <select class="pager-perpage" style="width:72px;padding:5px 8px;font-size:12px">
+        ${perPageOpts.map(n => `<option value="${n}" ${n === paged.perPage ? 'selected' : ''}>${n}</option>`).join('')}
+      </select>
+      <span style="font-size:12px;color:var(--text3)">Showing ${paged.showing}</span>
+    </div>`;
+  if (paged.pages > 1) {
+    h += `<div style="display:flex;gap:4px">`;
+    if (paged.page > 1)
+      h += `<button class="btn btn-ghost btn-sm pager-btn" data-page="${paged.page - 1}">‹</button>`;
+    for (let i = Math.max(1, paged.page - 2); i <= Math.min(paged.pages, paged.page + 2); i++)
+      h += `<button class="btn ${i === paged.page ? 'btn-primary' : 'btn-ghost'} btn-sm pager-btn" data-page="${i}">${i}</button>`;
+    if (paged.page < paged.pages)
+      h += `<button class="btn btn-ghost btn-sm pager-btn" data-page="${paged.page + 1}">›</button>`;
+    h += `</div>`;
+  }
+  h += '</div>';
   el.innerHTML = h;
+  // Real closures via addEventListener -- the previous onclick="(${onPage.toString()})(...)"
+  // re-parsed the callback as a brand new function with no access to the
+  // original closure (e.g. the "rows" array it was defined against), so
+  // every page-number click threw a ReferenceError and silently did nothing.
+  el.querySelectorAll('.pager-btn').forEach(btn => {
+    btn.addEventListener('click', () => onPage(parseInt(btn.dataset.page, 10)));
+  });
+  const perPageSel = el.querySelector('.pager-perpage');
+  if (perPageSel) {
+    perPageSel.addEventListener('change', () => {
+      pagerPerPage[elId] = parseInt(perPageSel.value, 10);
+      onPage(1);
+    });
+  }
 }
 
 // ============================================================
