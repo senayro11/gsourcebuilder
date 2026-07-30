@@ -556,6 +556,7 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 /* =====================================================
    RESPONSIVE
    ===================================================== */
+.leave-add-layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; }
 @media (max-width: 1024px) {
   .main-content { padding: 16px; }
   .form-row, .form-row-3, .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
@@ -571,6 +572,11 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
    mode reliably counts as desktop. */
 @media (max-width: 900px) {
   .only-desktop { display: none !important; }
+  /* Stack to a single column on mobile, with the Leave Information
+     panel on top -- the form is long, so leaving it first pushed the
+     balance info off-screen below the fold. */
+  .leave-add-layout { grid-template-columns: 1fr; }
+  .leave-add-layout .leave-info-card { order: -1; }
   .sched-search-bar { flex: 1 1 140px; width: auto; min-width: 0; }
   .emp-search-bar { flex: 1 1 100px; width: auto; min-width: 0; }
   .dept-search-bar { flex: 1 1 80px; width: auto !important; min-width: 0; }
