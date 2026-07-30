@@ -246,32 +246,49 @@ async function verifyEmployee() {
   Loading.hide();
 }
 
-// ---- Action buttons: Time In, per-break Start/Return, Time Out ----
+// ---- Action buttons: an explicit Time In/Time Out dropdown (instead of
+// silently auto-picking one), plus per-break Start/Return while mid-shift.
+// Manual selection means doTimeIn()/doTimeOut() themselves must guard
+// against the wrong choice (e.g. picking "Time In" while already timed
+// in) since the UI no longer prevents it by only showing the one valid
+// button.
 function renderActionButtons(schedule, rec) {
   const btnRow = document.getElementById('emp-status-row');
-  if (!rec || !rec.time_in) {
-    btnRow.innerHTML = `<button class="btn btn-timein" onclick="doTimeIn()">🟢 Time In</button>`;
-    return;
-  }
-  if (rec.time_out) {
+  if (rec && rec.time_out) {
     btnRow.innerHTML = `<span class="badge badge-success" style="margin-top:4px">✅ Attendance complete for today</span>`;
     return;
   }
-  let html = '<div class="break-actions">';
-  BREAK_TYPES.forEach(bt => {
-    const status = breakStatus(schedule, rec, bt.key);
-    if (status === 'disabled') return;
-    const windowLabel = schedule ? `${schedule[bt.key + '_start'] || ''}–${schedule[bt.key + '_end'] || ''}` : '';
-    const paidLabel = isBreakPaid(schedule, bt.key) ? ' · Paid' : ' · Unpaid';
-    let action;
-    if (status === 'pending') action = `<button class="btn btn-ghost btn-sm" onclick="doBreakOut('${bt.key}')">${bt.icon} Start</button>`;
-    else if (status === 'ongoing') action = `<button class="btn btn-warning btn-sm" onclick="doBreakIn('${bt.key}')">🔙 Return</button>`;
-    else action = `<span class="badge badge-success">✅ Done</span>`;
-    html += `<div class="break-row"><span class="break-label">${bt.icon} ${bt.label}<br><span class="break-window">${windowLabel}${paidLabel}</span></span>${action}</div>`;
-  });
-  html += '</div>';
-  html += `<button class="btn btn-timeout" onclick="doTimeOut()">🔴 Time Out</button>`;
+  let html = '';
+  if (rec && rec.time_in) {
+    html += '<div class="break-actions">';
+    BREAK_TYPES.forEach(bt => {
+      const status = breakStatus(schedule, rec, bt.key);
+      if (status === 'disabled') return;
+      const windowLabel = schedule ? `${schedule[bt.key + '_start'] || ''}–${schedule[bt.key + '_end'] || ''}` : '';
+      const paidLabel = isBreakPaid(schedule, bt.key) ? ' · Paid' : ' · Unpaid';
+      let action;
+      if (status === 'pending') action = `<button class="btn btn-ghost btn-sm" onclick="doBreakOut('${bt.key}')">${bt.icon} Start</button>`;
+      else if (status === 'ongoing') action = `<button class="btn btn-warning btn-sm" onclick="doBreakIn('${bt.key}')">🔙 Return</button>`;
+      else action = `<span class="badge badge-success">✅ Done</span>`;
+      html += `<div class="break-row"><span class="break-label">${bt.icon} ${bt.label}<br><span class="break-window">${windowLabel}${paidLabel}</span></span>${action}</div>`;
+    });
+    html += '</div>';
+  }
+  const defaultAction = (rec && rec.time_in) ? 'out' : 'in';
+  html += `<div class="form-group" style="margin:10px 0 0">
+    <label>Action</label>
+    <select id="kiosk-action">
+      <option value="in" ${defaultAction === 'in' ? 'selected' : ''}>🟢 Time In</option>
+      <option value="out" ${defaultAction === 'out' ? 'selected' : ''}>🔴 Time Out</option>
+    </select>
+  </div>
+  <button class="btn btn-primary w-full" style="padding:12px;margin-top:8px" onclick="doKioskAction()">✅ Submit</button>`;
   btnRow.innerHTML = html;
+}
+
+function doKioskAction() {
+  const action = document.getElementById('kiosk-action')?.value;
+  if (action === 'out') doTimeOut(); else doTimeIn();
 }
 
 function renderBreakSummary(rec) {
@@ -284,6 +301,10 @@ function renderBreakSummary(rec) {
 
 async function doTimeIn() {
   if (!verifiedEmp) return;
+  if (todayRecord) {
+    Toast.show(todayRecord.time_out ? 'Kumpleto na ang attendance mo ngayong araw.' : 'Naka-time-in ka na ngayong araw — piliin ang Time Out.', 'warning');
+    return;
+  }
   const now    = new Date();
   const today  = localDateStr(now);
   const timeIn = now.toTimeString().substring(0, 5);
@@ -360,7 +381,9 @@ async function doBreakIn(key) {
 }
 
 async function doTimeOut() {
-  if (!verifiedEmp || !todayRecord) return;
+  if (!verifiedEmp) return;
+  if (!todayRecord) { Toast.show('Kailangan mo munang mag-Time In.', 'warning'); return; }
+  if (todayRecord.time_out) { Toast.show('Mayroon ka nang Time Out ngayong araw.', 'warning'); return; }
   const now     = new Date();
   const timeOut = now.toTimeString().substring(0, 5);
   const timeIn  = todayRecord.time_in;
