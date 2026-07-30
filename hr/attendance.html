@@ -42,14 +42,14 @@
         </div>
       </div>
 
-      <!-- Scheduling (admin only) -->
-      <div class="nav-group" data-restrict="admin">
+      <!-- Scheduling (Shift Types admin-only; Employee Schedule visible to everyone -- staff only see their own schedule, read-only) -->
+      <div class="nav-group">
         <div class="nav-item nav-parent">
           <span class="nav-icon">📆</span>Scheduling<span class="chevron">›</span>
         </div>
         <div class="nav-sub">
-          <a class="nav-sub-item" data-page="shifts"         href="#" onclick="navigate('shifts');return false">Shift Types</a>
-          <a class="nav-sub-item" data-page="schedules"      href="#" onclick="navigate('schedules');return false">Employee Schedule</a>
+          <a class="nav-sub-item" data-page="shifts"         href="#" onclick="navigate('shifts');return false" data-restrict="admin">Shift Types</a>
+          <a class="nav-sub-item" data-page="schedules"      href="#" onclick="navigate('schedules');return false" id="nav-schedules"><span id="nav-schedules-label">Employee Schedule</span><span class="nav-badge" id="schedule-badge" style="display:none">0</span></a>
         </div>
       </div>
 
@@ -849,8 +849,8 @@
     ========================================= -->
     <div id="page-schedules" class="page-section" style="display:none">
       <div class="page-header-row">
-        <div class="page-header"><h1>📆 Employee Schedule</h1><p class="subtitle">Daily work assignments per employee</p></div>
-        <button class="btn btn-primary only-desktop" onclick="openAddSchedule()">+ Assign Schedule</button>
+        <div class="page-header"><h1 id="schedules-title">📆 Employee Schedule</h1><p class="subtitle" id="schedules-subtitle">Daily work assignments per employee</p></div>
+        <button class="btn btn-primary only-desktop" data-restrict="admin" onclick="openAddSchedule()">+ Assign Schedule</button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
         <button class="btn btn-ghost btn-sm" onclick="loadSchedules()">🔄</button>
@@ -858,11 +858,11 @@
         <button class="btn btn-success" style="padding:7px 14px" onclick="goToTodaySchedule()">Today</button>
         <button class="btn btn-ghost only-desktop" style="height:38px;box-sizing:border-box" onclick="printSchedule()">🖨 Print Schedule</button>
         <button class="btn btn-ghost only-desktop" style="height:38px;box-sizing:border-box" onclick="downloadScheduleDoc()">⬇ Download Schedule</button>
-        <div class="search-bar sched-search-bar">
+        <div class="search-bar sched-search-bar" data-restrict="admin">
           <span class="search-icon">🔍</span>
           <input type="text" id="sched-search" placeholder="Search employee..." oninput="filterSchedulesByDate()">
         </div>
-        <button class="btn btn-primary only-mobile" onclick="openAddSchedule()">+ Assign Schedule</button>
+        <button class="btn btn-primary only-mobile" data-restrict="admin" onclick="openAddSchedule()">+ Assign Schedule</button>
       </div>
       <div class="card">
         <div class="table-wrap">
@@ -1548,6 +1548,12 @@ async function applyAccessRestrictions(session) {
   if (navAtt) navAtt.textContent = 'My Attendance';
   const navPay = document.getElementById('nav-payslip');
   if (navPay) navPay.textContent = 'My Payslip';
+  const navSchedLabel = document.getElementById('nav-schedules-label');
+  if (navSchedLabel) navSchedLabel.textContent = 'My Schedule';
+  const schedTitle = document.getElementById('schedules-title');
+  if (schedTitle) schedTitle.textContent = '📆 My Schedule';
+  const schedSubtitle = document.getElementById('schedules-subtitle');
+  if (schedSubtitle) schedSubtitle.textContent = 'Your daily work assignments';
 }
 
 function doLogout() {
@@ -2633,6 +2639,17 @@ async function loadNotifications() {
         else { teamBadge.style.display = 'none'; }
       }
     }
+    // "My Schedule" nav badge -- count of this employee's upcoming/current
+    // schedule assignments, so a staff member notices right away when HR
+    // assigns (or changes) their schedule.
+    const schedBadge = document.getElementById('schedule-badge');
+    if (schedBadge && session && isEssSession(session) && session.employee_id) {
+      const schedules = await HRDB.read('schedulesDB');
+      const today = todayStr();
+      const upcoming = schedules.filter(s=>s.employee_id===session.employee_id && (!s.end_date || s.end_date >= today)).length;
+      if (upcoming > 0) { schedBadge.textContent = upcoming; schedBadge.style.display = ''; }
+      else { schedBadge.style.display = 'none'; }
+    }
     // Render notif list
     const list = document.getElementById('notif-list');
     if (!list) return;
@@ -2969,7 +2986,10 @@ function goToTodaySchedule() {
 function getFilteredSchedules() {
   const date = document.getElementById('sched-date-filter').value || todayStr();
   const q = (document.getElementById('sched-search')?.value || '').toLowerCase();
+  const session = getSession();
+  const ess = isEssSession(session);
   return allSchedules.filter(s => {
+    if (ess && s.employee_id !== session.employee_id) return false;
     if (!(s.effective_date <= date && (!s.end_date || s.end_date >= date))) return false;
     if (!q) return true;
     const emp = allEmployees.find(e => e.id === s.employee_id);
@@ -3039,6 +3059,7 @@ async function downloadScheduleDoc() {
   URL.revokeObjectURL(url);
 }
 function renderSchedulesTable(rows) {
+  const ess = isEssSession(getSession());
   document.getElementById('schedules-tbody').innerHTML = rows.map(s=>{
     const emp=allEmployees.find(e=>e.id===s.employee_id);
     const shift=allShifts.find(sh=>sh.id===s.shift_id);
@@ -3050,10 +3071,10 @@ function renderSchedulesTable(rows) {
       <td><strong>${shift?.name||s.shift_id}</strong></td>
       <td style="color:var(--text2);font-size:12px">${s.work_assignment||'—'}</td>
       <td style="color:var(--text3);font-size:12px">${s.notes||'—'}</td>
-      <td><div style="display:flex;gap:4px">
+      <td>${ess?'—':`<div style="display:flex;gap:4px">
         <button class="btn btn-ghost btn-xs" onclick="editSched('${s.id}')">✏️</button>
         <button class="btn btn-danger btn-xs" onclick="deleteSched('${s.id}')">🗑</button>
-      </div></td>
+      </div>`}</td>
     </tr>`;
   }).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:32px">No schedules for this date</td></tr>';
 }
