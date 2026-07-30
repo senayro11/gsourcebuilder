@@ -13,3 +13,13 @@ HOL011|Rizal Day|2025-12-30|Tuesday|Regular|Jose Rizal Day
 HOL012|Christmas Day|2026-12-25|Friday|Regular|Christmas day
 HOL013|Birthday ni ville pogi|2026-07-28|Tuesday|Regular|
 HOL014|party party ni red|2026-07-14|Tuesday|Regular|
+HOL015|New Year's Day|2026-01-01|Thursday|Regular|National Holiday
+HOL016|EDSA Revolution|2026-02-25|Wednesday|Special|Anniversary of EDSA
+HOL017|Araw ng Kagitingan|2026-04-09|Thursday|Regular|Day of Valor
+HOL018|Labor Day|2026-05-01|Friday|Regular|International Labor Day
+HOL019|Independence Day|2026-06-12|Friday|Regular|Philippine Independence Day
+HOL020|Buwan ng Wika|2026-08-26|Wednesday|Special|National Language Month
+HOL021|National Heroes Day|2026-08-25|Tuesday|Regular|National Heroes Day
+HOL022|All Saints Day|2026-11-01|Sunday|Regular|All Saints Day
+HOL023|Bonifacio Day|2026-11-30|Monday|Regular|Andres Bonifacio Day
+HOL024|Rizal Day|2026-12-30|Wednesday|Regular|Jose Rizal Day
