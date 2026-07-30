@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Time In / Out — HR System</title>
-  <link rel="stylesheet" href="css/hr.css?v=20260730v">
+  <link rel="stylesheet" href="css/hr.css?v=20260730w">
   <script>
     // Applied before first paint so a saved dark-mode preference doesn't
     // flash light first -- default (no saved value) is light mode.
@@ -151,9 +151,9 @@
 <div id="toast-container"></div>
 <div id="global-loading" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="js/hr-config.js?v=20260730v"></script>
-<script src="../js/sync.js?v=20260730v"></script>
-<script src="js/hr-core.js?v=20260730v"></script>
+<script src="js/hr-config.js?v=20260730w"></script>
+<script src="../js/sync.js?v=20260730w"></script>
+<script src="js/hr-core.js?v=20260730w"></script>
 <script>
 // ---- Clock ----
 function tick() {
@@ -293,6 +293,9 @@ async function doTimeIn() {
   }
   const defaultNote = usedDefaultShift && shift ? `No schedule assigned — auto-matched to ${shift.name}` : '';
 
+  Loading.show('Getting location...');
+  const loc = await getDeviceLocation();
+
   Loading.show('Recording Time In...');
   try {
     const atts = await HRDB.read('attendanceDB', true);
@@ -303,7 +306,9 @@ async function doTimeIn() {
       work_hours: '0', overtime_hours: '0', undertime: '0',
       status, notes: status === 'late'
         ? `Late by ${lateMin(timeIn, shift?.start_time)} min` + (defaultNote ? ` (${defaultNote})` : '')
-        : defaultNote
+        : defaultNote,
+      time_in_lat: loc?.lat || '', time_in_lng: loc?.lng || '',
+      time_out_lat: '', time_out_lng: ''
     });
     if (status === 'late') {
       addNotification({ audience: 'admin', type: 'attendance', title: 'Late Arrival', message: `${verifiedEmp.name} arrived late today`, referenceId: id });
@@ -366,6 +371,9 @@ async function doTimeOut() {
   const otHrs  = Math.max(0, workHrs - (shift ? parseInt(shift.ot_after||480)/60 : 8));
   const utHrs  = Math.max(0, (shift ? parseInt(shift.ot_after||480)/60 : 8) - workHrs);
 
+  Loading.show('Getting location...');
+  const loc = await getDeviceLocation();
+
   Loading.show('Recording Time Out...');
   try {
     await HRDB.update('attendanceDB', r => r.id === todayRecord.id, {
@@ -373,7 +381,8 @@ async function doTimeOut() {
       work_hours:     workHrs.toFixed(2),
       overtime_hours: otHrs.toFixed(2),
       undertime:      utHrs.toFixed(2),
-      status:         todayRecord.status
+      status:         todayRecord.status,
+      time_out_lat:   loc?.lat || '', time_out_lng: loc?.lng || ''
     });
     showSuccess('🔴', 'Time Out Recorded!', `${verifiedEmp.name} — ${timeOut} | ${workHrs.toFixed(2)} hrs worked${otHrs > 0 ? ` | OT: ${otHrs.toFixed(2)} hrs` : ''}${utHrs > 0 ? ` | UT: ${utHrs.toFixed(2)} hrs` : ''}`);
     Toast.show(`Time Out: ${timeOut} ✅`, 'success');

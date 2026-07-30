@@ -685,6 +685,21 @@ async function addNotification({ audience, employeeId, type, title, message, ref
   } catch (e) { console.error('addNotification error:', e); }
 }
 
+// Best-effort device location for the kiosk's time in/out -- resolves to
+// null (never rejects) if geolocation isn't available, isn't granted, or
+// doesn't answer within the timeout, so a slow/denied GPS never blocks
+// attendance from being recorded.
+function getDeviceLocation() {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) { resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6) }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  });
+}
+
 // Is this break "paid" (not deducted from hours)? Blank/not yet
 // configured = 'false' (unpaid/deducted), so the computation for
 // schedules set up before the paid/unpaid option was added doesn't
