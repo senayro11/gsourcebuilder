@@ -182,6 +182,16 @@ if (savedToken) GITHUB_CONFIG.token = savedToken;
 
 let verifiedEmp = null, todayRecord = null, activeSchedule = null;
 
+// GITHUB_CONFIG.dbPath points at "hr/db" on this page (see hr-config.js).
+// Temporarily point it at the root "db" folder to read the shared
+// accountsDB, then restore it -- HRDB itself is unaware of the swap.
+// (mirrors rootDB() in attendance.html's User Management section)
+async function rootDB(fn) {
+  const saved = GITHUB_CONFIG.dbPath;
+  GITHUB_CONFIG.dbPath = 'db';
+  try { return await fn(); } finally { GITHUB_CONFIG.dbPath = saved; }
+}
+
 // ---- Verify Employee ----
 async function verifyEmployee() {
   const empId = document.getElementById('emp-id-input').value.trim();
@@ -193,7 +203,7 @@ async function verifyEmployee() {
   try {
     const [emps, accounts, atts, schedules] = await Promise.all([
       HRDB.read('employeesDB'),
-      HRDB.read('hraccountsDB'),
+      rootDB(() => HRDB.read('accountsDB')),
       HRDB.read('attendanceDB'),
       HRDB.read('schedulesDB')
     ]);
@@ -202,9 +212,11 @@ async function verifyEmployee() {
     const emp = emps.find(e => e.employee_id === empId && e.status === 'active');
     if (!emp) { Toast.show('Employee ID not found','error'); Loading.hide(); return; }
 
-    // Verify password via linked account
+    // Verify password via the employee's linked main-system account (the
+    // same one used to log into the app itself, and managed in User
+    // Management) -- not a separate kiosk-only credential to remember.
     const hashed = await hashPw(pass);
-    const acct = accounts.find(a => a.employee_id === emp.id && a.password_hash === hashed && a.status === 'active');
+    const acct = accounts.find(a => a.employee_id === emp.id && a.password_hash === hashed && a.status === 'active' && (a.assigned_system === 'attendance' || a.assigned_system === 'all'));
     if (!acct) { Toast.show('Incorrect password','error'); Loading.hide(); return; }
 
     verifiedEmp = emp;
