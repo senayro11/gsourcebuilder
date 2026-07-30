@@ -609,8 +609,18 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 @media (max-width: 640px) {
   .stats-grid { grid-template-columns: 1fr; }
   #leave-stats, #hrlv-stats, #ma-stats, #payroll-stats, #user-stats { grid-template-columns: 1fr !important; }
-  .topbar { padding: 0 12px; }
   .topbar-date { display: none; }
+  /* The breadcrumb (parent > current page) squeezed between the menu
+     toggle and the bell/avatar icons on a narrow phone, wrapping the
+     current-page text onto a second line and overlapping the icons.
+     Drop it to its own full-width row below the icon row instead --
+     redeclaring --topbar-h keeps .main-content's margin-top in sync
+     with the now-taller two-row topbar automatically. */
+  :root { --topbar-h: 88px; }
+  .topbar { padding: 8px 12px; flex-wrap: wrap; height: auto; row-gap: 6px; }
+  .topbar-toggle { order: 1; }
+  .topbar-right { order: 2; }
+  .topbar-breadcrumb { order: 3; flex: 1 1 100%; }
 }
 
 /* Print styles */
