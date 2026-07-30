@@ -627,6 +627,27 @@ function getActiveSchedule(schedules, employeeId, dateStr) {
   return candidates.sort((a, b) => b.effective_date.localeCompare(a.effective_date))[0];
 }
 
+// When an employee has no schedule assigned, still judge late/absent
+// against a best-guess shift instead of always marking them "present" --
+// pick the active shift whose start_time is closest to their actual
+// time in (e.g. a morning check-in lands on Day Shift, an evening one on
+// Night Shift). Distance is circular across midnight so a 22:00 shift
+// start reads as close to a 23:50 check-in, not far.
+function guessShiftForTime(shifts, timeStr) {
+  const active = (shifts || []).filter(s => s.status === 'active' && s.start_time);
+  if (!active.length || !timeStr) return null;
+  const [h, m] = timeStr.split(':').map(Number);
+  const mins = h * 60 + m;
+  let best = null, bestDist = Infinity;
+  active.forEach(s => {
+    const [sh, sm] = s.start_time.split(':').map(Number);
+    const diff = Math.abs(mins - (sh * 60 + sm));
+    const dist = Math.min(diff, 1440 - diff);
+    if (dist < bestDist) { bestDist = dist; best = s; }
+  });
+  return best;
+}
+
 // Is this break "paid" (not deducted from hours)? Blank/not yet
 // configured = 'false' (unpaid/deducted), so the computation for
 // schedules set up before the paid/unpaid option was added doesn't
