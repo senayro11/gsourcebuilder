@@ -52,6 +52,45 @@ const Toast = {
   }
 };
 
+// ---- GitHub token/auth banner ----
+// A raw "DB read error 403" toast means nothing to a non-technical user and
+// disappears in a few seconds before they can even read it. When the saved
+// GitHub token itself is the problem (expired/revoked/no access, vs. a
+// normal rate limit that clears on its own), show a banner that stays on
+// screen until the token is fixed, with a direct link to go set a new one.
+function showGithubAuthBanner(message) {
+  let b = document.getElementById('gh-auth-banner');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'gh-auth-banner';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#dc2626;color:#fff;padding:10px 16px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.3)';
+    document.body.prepend(b);
+  }
+  b.innerHTML = `<span>⚠️ ${message}</span><a href="../index.html" style="color:#fff;text-decoration:underline;font-weight:700;white-space:nowrap">I-update ang GitHub Token →</a>`;
+}
+function hideGithubAuthBanner() {
+  const b = document.getElementById('gh-auth-banner');
+  if (b) b.remove();
+}
+// Tells apart "token is actually bad" from "just hit the rate limit" --
+// both surface as HTTP 403, but only the rate-limit reset time is
+// checkable via the x-ratelimit-remaining header.
+function githubAuthErrorInfo(res) {
+  if (res.status === 401) {
+    return { kind: 'invalid', text: 'Nag-expire o hindi na valid ang GitHub Token na naka-save. Mag-set ng bagong token sa login page.' };
+  }
+  if (res.status === 403) {
+    const remaining = res.headers?.get?.('x-ratelimit-remaining');
+    if (remaining === '0') {
+      const resetHeader = res.headers?.get?.('x-ratelimit-reset');
+      const resetTime = resetHeader ? new Date(parseInt(resetHeader) * 1000).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }) : null;
+      return { kind: 'ratelimit', text: 'Naabot na ang GitHub API rate limit.' + (resetTime ? ` Mag-a-reset ito ~${resetTime}.` : ' Maghintay ng ilang minuto.') };
+    }
+    return { kind: 'invalid', text: 'Tinanggihan ng GitHub ang Token (baka nag-expire o na-revoke). Mag-set ng bagong token sa login page.' };
+  }
+  return null;
+}
+
 // ---- Loading ----
 const Loading = {
   // Set by silent background refreshes (see autoRefreshTick in
@@ -410,8 +449,11 @@ const HRDB = (() => {
           if (typeof Sync !== 'undefined') Sync.cacheSet(syncKey(name), [], '');
           return [];
         }
-        throw new Error(`DB read error ${res.status}: ${name}`);
+        const authErr = githubAuthErrorInfo(res);
+        if (authErr) showGithubAuthBanner(authErr.text);
+        throw new Error(authErr ? authErr.text : `DB read error ${res.status}: ${name}`);
       }
+      hideGithubAuthBanner();
       const json = await res.json();
       shas[name] = json.sha;
       const content = atob(json.content.replace(/\n/g, ''));
@@ -449,11 +491,14 @@ const HRDB = (() => {
         body: JSON.stringify(body)
       });
       if (!res.ok) {
+        const authErr = githubAuthErrorInfo(res);
+        if (authErr) showGithubAuthBanner(authErr.text);
         const e = await res.json().catch(() => ({}));
-        const err = new Error(e.message || `DB write error ${res.status}`);
+        const err = new Error(authErr ? authErr.text : (e.message || `DB write error ${res.status}`));
         err.status = res.status;
         throw err;
       }
+      hideGithubAuthBanner();
       const json = await res.json();
       shas[name] = json.content.sha;
       cache[name] = rows;
