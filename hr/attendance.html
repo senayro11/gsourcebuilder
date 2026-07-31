@@ -3115,14 +3115,18 @@ async function loadNotifications() {
         else { teamBadge.style.display = 'none'; }
       }
     }
-    // "My Schedule" nav badge -- count of this employee's upcoming/current
+    // "My Schedule" nav badge -- count of this employee's not-yet-started
     // schedule assignments, so a staff member notices right away when HR
-    // assigns (or changes) their schedule.
+    // assigns (or changes) their schedule. Based on effective_date (the
+    // only date shown per row in the My Schedule table) rather than
+    // end_date -- once effective_date has passed, the employee has already
+    // had the chance to see it, so it's no longer "new" even if the
+    // assignment (e.g. an open-ended recurring schedule) is still active.
     const schedBadge = document.getElementById('schedule-badge');
     if (schedBadge && session && isEssSession(session) && session.employee_id) {
       const schedules = await HRDB.read('schedulesDB');
       const today = todayStr();
-      const upcoming = schedules.filter(s=>s.employee_id===session.employee_id && (!s.end_date || s.end_date >= today)).length;
+      const upcoming = schedules.filter(s=>s.employee_id===session.employee_id && s.effective_date >= today).length;
       if (upcoming > 0) { schedBadge.textContent = upcoming; schedBadge.style.display = ''; }
       else { schedBadge.style.display = 'none'; }
     }
