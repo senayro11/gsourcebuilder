@@ -581,6 +581,21 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 .payslip table th { text-align: left; padding: 8px 10px; background: #f9fafb; font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; }
 .payslip table td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; }
 .payslip .total-row td { font-weight: 700; font-size: 14px; background: #f0f9ff; }
+.payslip-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.payslip-tables-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.payslip-sig-grid { margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+/* Same fix as .att-hr-layout/.leave-add-layout above -- grid children
+   default to min-width:auto, which refuses to shrink below a table's
+   intrinsic content width and pushes the whole payslip wider than the
+   phone screen instead of letting it wrap. */
+.payslip-info-grid > div, .payslip-tables-grid > div { min-width: 0; }
+@media (max-width: 480px) {
+  .payslip-info-grid, .payslip-tables-grid, .payslip-sig-grid { grid-template-columns: 1fr; }
+  /* The Summary block has an inline text-align:right (meant for sitting
+     beside the Employee block on desktop) -- override it once stacked
+     full-width, or it reads as oddly right-aligned body text. */
+  .payslip-info-grid > div:last-child { text-align: left !important; margin-top: 8px; }
+}
 
 /* =====================================================
    RESPONSIVE
@@ -695,6 +710,10 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 @media print {
   .sidebar, .topbar, .page-header .btn, #toast-container, .loading-overlay { display: none !important; }
   .main-content { margin: 0 !important; padding: 0 !important; }
+  /* Printing a payslip should only print the payslip itself -- not the
+     "Payslip Generator" heading, the Select Payslip form still sitting
+     above it, or the Print/Close buttons. */
+  #page-payslip .page-header, #page-payslip .card, .payslip-toolbar { display: none !important; }
 }
 
 /* =====================================================
