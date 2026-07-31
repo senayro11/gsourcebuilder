@@ -584,6 +584,11 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 .payslip-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
 .payslip-tables-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .payslip-sig-grid { margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+/* Desktop: "Select Payslip" form sits beside the generated payslip instead
+   of pushing it down the page. Fixed form column + fluid preview column,
+   same pattern as .att-hr-layout. */
+.payslip-layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+.payslip-layout > div { min-width: 0; }
 /* Same fix as .att-hr-layout/.leave-add-layout above -- grid children
    default to min-width:auto, which refuses to shrink below a table's
    intrinsic content width and pushes the whole payslip wider than the
@@ -636,6 +641,9 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
   /* Stack Select Employee above Attendance Records instead of squeezing
      a 260px column next to the table on a phone-width screen. */
   .att-hr-layout { grid-template-columns: 1fr; }
+  /* Stack the payslip form above the generated payslip instead of
+     squeezing a 320px form column next to it on a phone-width screen. */
+  .payslip-layout { grid-template-columns: 1fr; }
   .sched-search-bar { flex: 1 1 140px; width: auto; min-width: 0; }
   .emp-search-bar { flex: 1 1 100px; width: auto; min-width: 0; }
   .dept-search-bar { flex: 1 1 80px; width: auto !important; min-width: 0; }
