@@ -112,7 +112,14 @@ const DB = (() => {
   async function read(dbName, forceRefresh = false) {
     if (cache[dbName] && !forceRefresh) return cache[dbName];
     try {
-      const res = await fetchRetry(apiUrl(dbName), { headers: headers() });
+      // no-store: GitHub's API sends a short Cache-Control max-age, and
+      // the browser's own HTTP cache can otherwise serve that stale
+      // response even on a page reload (only a true hard-refresh reliably
+      // bypasses it) -- so a reload right after a write elsewhere could
+      // silently show old data for up to that window instead of the
+      // freshest commit. This in-memory `cache` object above is the only
+      // caching layer that should apply.
+      const res = await fetchRetry(apiUrl(dbName), { headers: headers(), cache: 'no-store' });
       if (!res.ok) {
         if (res.status === 404) {
           cache[dbName] = []; cache[`${dbName}_header`] = '';
