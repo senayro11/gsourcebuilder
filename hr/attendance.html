@@ -1102,23 +1102,25 @@
     <!-- Payslip page (restored) -->
     <div id="page-payslip" class="page-section" style="display:none">
       <div class="page-header"><h1>🧾 Payslip Generator</h1><p class="subtitle">Generate and print employee payslips</p></div>
-      <div class="card" style="max-width:480px;margin-bottom:20px">
-        <div class="card-header"><span class="card-title">Select Payslip</span></div>
-        <div class="card-body">
-          <div class="form-group"><label>Employee *</label><select id="ps-emp"><option value="">Select Employee...</option></select></div>
-          <div class="form-row">
-            <div class="form-group"><label>Period Start</label><input type="date" id="ps-from"></div>
-            <div class="form-group"><label>Period End</label><input type="date" id="ps-to"></div>
+      <div class="payslip-layout">
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header"><span class="card-title">Select Payslip</span></div>
+          <div class="card-body">
+            <div class="form-group"><label>Employee *</label><select id="ps-emp"><option value="">Select Employee...</option></select></div>
+            <div class="form-row">
+              <div class="form-group"><label>Period Start</label><input type="date" id="ps-from"></div>
+              <div class="form-group"><label>Period End</label><input type="date" id="ps-to"></div>
+            </div>
+            <button class="btn btn-primary w-full" onclick="loadPayslip()">📄 Generate Payslip</button>
           </div>
-          <button class="btn btn-primary w-full" onclick="loadPayslip()">📄 Generate Payslip</button>
         </div>
-      </div>
-      <div id="payslip-container" style="display:none">
-        <div class="payslip-toolbar" style="display:flex;gap:10px;margin-bottom:16px">
-          <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
-          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('payslip-container').style.display='none'">✕ Close</button>
+        <div id="payslip-container" style="display:none">
+          <div class="payslip-toolbar" style="display:flex;gap:10px;margin-bottom:16px">
+            <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('payslip-container').style.display='none'">✕ Close</button>
+          </div>
+          <div id="payslip-content"></div>
         </div>
-        <div id="payslip-content"></div>
       </div>
     </div>
 
