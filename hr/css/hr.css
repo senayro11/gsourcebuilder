@@ -718,6 +718,21 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
      buttons fit on one row instead of the buttons wrapping below it.
      flex-wrap stays on as a fallback for anything narrower still. */
   #att-hr-month { width: 120px !important; }
+  /* The notification dropdown is anchored (position:absolute; right:0;
+     width:320px) to the bell button's own wrapper, not the viewport --
+     since the bell isn't flush against the screen's right edge (the
+     profile avatar sits further right), the fixed 320px panel spilled
+     past the left edge of a narrow phone screen. Pin it to the viewport
+     instead, with even margins on both sides, so it always fits regardless
+     of where the bell button happens to sit in the topbar. !important is
+     required to beat the inline style set in the HTML. */
+  #notif-panel {
+    position: fixed !important;
+    top: var(--topbar-h) !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+  }
 }
 
 /* Print styles */
