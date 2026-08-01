@@ -823,7 +823,11 @@
         <div class="card">
           <div class="card-header">
             <span class="card-title">📋 Preview — Review before saving</span>
-            <button class="btn btn-success btn-sm" onclick="saveGeneratedPayroll()">💾 Save All</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-ghost btn-sm" onclick="printGeneratedPayroll()">🖨 Print</button>
+              <button class="btn btn-ghost btn-sm" onclick="downloadGeneratedPayrollDoc()">⬇ Download</button>
+              <button class="btn btn-success btn-sm" onclick="saveGeneratedPayroll()">💾 Save All</button>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -3027,6 +3031,67 @@ async function delPayroll(id){Modal.confirm('Delete this payroll record?',async(
 let generatedRows=[];
 async function initGeneratePayroll(){Loading.show();try{allEmployees=await HRDB.read('employeesDB');const sel=document.getElementById('gen-emp');sel.innerHTML='<option value="">All Active Employees</option>'+allEmployees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name}</option>`).join('');document.getElementById('gen-preview').style.display='none';}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 async function generatePayroll(){const from=document.getElementById('gen-from').value,to=document.getElementById('gen-to').value,empId=document.getElementById('gen-emp').value,otMult=parseFloat(document.getElementById('gen-ot-mult').value);if(!from||!to){Toast.show('Select a period','warning');return;}Loading.show('Computing payroll...');try{allAttendance=await HRDB.read('attendanceDB');const allLeavesForPay=await HRDB.read('leavesDB');const allHolsForPay=await HRDB.read('holidaysDB');const holidaysInPeriod=allHolsForPay.filter(h=>h.date>=from&&h.date<=to);const hpPolicy=await getHolidayPayPolicy();const targetEmps=empId?allEmployees.filter(e=>e.id===empId):allEmployees.filter(e=>e.status==='active');generatedRows=targetEmps.map(emp=>{const atts=allAttendance.filter(a=>a.employee_id===emp.id&&a.date>=from&&a.date<=to&&(a.status==='present'||a.status==='late'));const days=atts.length;const regHrs=atts.reduce((s,a)=>s+Math.min(parseFloat(a.work_hours||0),REGULAR_HOURS),0);const otHrs=atts.reduce((s,a)=>s+parseFloat(a.overtime_hours||0),0);const dailyRate=parseFloat(emp.daily_rate||0);const hourlyRate=dailyRate/REGULAR_HOURS;const basicPay=days*dailyRate;const otPay=otHrs*(hourlyRate*otMult);const empAtts=allAttendance.filter(a=>a.employee_id===emp.id);const empApprovedLeaves=allLeavesForPay.filter(l=>l.employee_id===emp.id&&l.status==='approved');const holidayPay=computeEmpHolidayPay(dailyRate,empAtts,empApprovedLeaves,holidaysInPeriod,hpPolicy);const grossPay=basicPay+otPay+holidayPay;const sss=parseFloat(emp.sss||0),ph=parseFloat(emp.philhealth||0),pi=parseFloat(emp.pagibig||0);const tax=grossPay*0.1;const totalDeduct=sss+ph+pi+tax;const netPay=grossPay-totalDeduct;return{employee_id:emp.id,name:emp.name,period_start:from,period_end:to,days_worked:String(days),regular_hours:regHrs.toFixed(2),overtime_hours:otHrs.toFixed(2),basic_pay:basicPay.toFixed(2),overtime_pay:otPay.toFixed(2),holiday_pay:holidayPay.toFixed(2),allowance:'0.00',gross_pay:grossPay.toFixed(2),sss:emp.sss,philhealth:emp.philhealth,pagibig:emp.pagibig,tax:tax.toFixed(2),total_deductions:totalDeduct.toFixed(2),net_pay:netPay.toFixed(2),status:'draft',generated_date:localDateStr()};});document.getElementById('gen-preview-tbody').innerHTML=generatedRows.map(r=>`<tr><td><div class="emp-name">${r.name}</div></td><td>${r.days_worked}</td><td>${r.regular_hours}</td><td>${r.overtime_hours}</td><td>${Fmt.peso(r.basic_pay)}</td><td>${Fmt.peso(r.overtime_pay)}</td><td>${Fmt.peso(r.holiday_pay)}</td><td><strong>${Fmt.peso(r.gross_pay)}</strong></td><td style="color:var(--danger)">${Fmt.peso(r.total_deductions)}</td><td><strong style="color:var(--success)">${Fmt.peso(r.net_pay)}</strong></td></tr>`).join('');document.getElementById('gen-preview').style.display='';}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+async function buildGeneratedPayrollReportHtml() {
+  let logoUrl = '';
+  try {
+    const cfg = await HRDB.read('hrconfigDB');
+    const row = cfg.find(r => r.key === 'logo');
+    if (row && row.value) logoUrl = row.value;
+  } catch (e) { /* no logo configured, that's fine */ }
+  const from = generatedRows[0]?.period_start || '', to = generatedRows[0]?.period_end || '';
+  const rowsHtml = generatedRows.map(r => `<tr><td>${r.name}</td><td style="text-align:center">${r.days_worked}</td><td style="text-align:right">${r.regular_hours}</td><td style="text-align:right">${r.overtime_hours}</td><td style="text-align:right">${Fmt.peso(r.basic_pay)}</td><td style="text-align:right">${Fmt.peso(r.overtime_pay)}</td><td style="text-align:right">${Fmt.peso(r.holiday_pay)}</td><td style="text-align:right"><strong>${Fmt.peso(r.gross_pay)}</strong></td><td style="text-align:right">${Fmt.peso(r.total_deductions)}</td><td style="text-align:right"><strong>${Fmt.peso(r.net_pay)}</strong></td></tr>`).join('') || '<tr><td colspan="10" style="text-align:center;padding:20px;color:#888">No payroll rows generated</td></tr>';
+  const totalGross = generatedRows.reduce((s,r)=>s+parseFloat(r.gross_pay||0),0);
+  const totalDeduct = generatedRows.reduce((s,r)=>s+parseFloat(r.total_deductions||0),0);
+  const totalNet = generatedRows.reduce((s,r)=>s+parseFloat(r.net_pay||0),0);
+  const logoHeader = logoUrl ? `<img src="${logoUrl}">` : `<div class="report-company">🏢 Enterprise System</div>`;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Payroll — ${from} to ${to}</title>
+<style>
+  body { font-family: Arial, Helvetica, sans-serif; color:#111; background:#fff; margin:40px; }
+  .report-header { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:24px; }
+  .report-logo { flex:0 0 160px; }
+  .report-logo img { max-height:70px; max-width:160px; object-fit:contain; }
+  .report-company { font-size:16px; font-weight:800; }
+  h1 { flex:1; text-align:center; font-size:22px; margin:0; letter-spacing:1px; }
+  .report-date { flex:0 0 220px; text-align:right; color:#333; font-size:13px; }
+  .report-date .date-value { display:inline-block; min-width:110px; border-bottom:1px solid #333; padding:0 4px 2px; text-align:center; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th, td { border:1px solid #333; padding:7px 8px; }
+  th { background:#eee; text-transform:uppercase; font-size:10px; letter-spacing:.5px; text-align:left; }
+  tfoot td { font-weight:700; background:#f5f5f5; }
+</style>
+</head><body>
+  <div class="report-header">
+    <div class="report-logo">${logoHeader}</div>
+    <h1>PAYROLL REPORT</h1>
+    <div class="report-date">Period: <span class="date-value">${from}</span> to <span class="date-value">${to}</span></div>
+  </div>
+  <table>
+    <thead><tr><th>Employee</th><th>Days</th><th>Reg Hrs</th><th>OT Hrs</th><th>Basic Pay</th><th>OT Pay</th><th>Holiday Pay</th><th>Gross</th><th>Deductions</th><th>Net Pay</th></tr></thead>
+    <tbody>${rowsHtml}</tbody>
+    <tfoot><tr><td colspan="7" style="text-align:right">TOTAL</td><td style="text-align:right">${Fmt.peso(totalGross)}</td><td style="text-align:right">${Fmt.peso(totalDeduct)}</td><td style="text-align:right">${Fmt.peso(totalNet)}</td></tr></tfoot>
+  </table>
+</body></html>`;
+}
+async function printGeneratedPayroll() {
+  if(!generatedRows.length){Toast.show('Generate payroll first','warning');return;}
+  const win = window.open('', '_blank');
+  win.document.write(await buildGeneratedPayrollReportHtml());
+  win.document.close();
+  setTimeout(() => { win.focus(); win.print(); }, 300);
+}
+async function downloadGeneratedPayrollDoc() {
+  if(!generatedRows.length){Toast.show('Generate payroll first','warning');return;}
+  const from = generatedRows[0]?.period_start || todayStr(), to = generatedRows[0]?.period_end || todayStr();
+  const blob = new Blob(['﻿', await buildGeneratedPayrollReportHtml()], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Payroll_${from}_to_${to}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 async function saveGeneratedPayroll(){if(!generatedRows.length){Toast.show('No data','warning');return;}Loading.show('Saving payroll...');try{const all=await HRDB.read('payrollDB',true);for(const row of generatedRows){await HRDB.insert('payrollDB',{id:HRDB.nextId(all,'id','PAY'),...row});all.push(row);}Toast.show(`Payroll saved for ${generatedRows.length} employee(s) ✅`,'success');navigate('payroll-report');}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 
 // ============================================================
