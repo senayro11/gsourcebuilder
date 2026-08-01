@@ -55,6 +55,7 @@
         <div class="nav-sub">
           <a class="nav-sub-item" data-page="shifts"         href="#" onclick="navigate('shifts');return false" data-restrict="admin">Shift Types</a>
           <a class="nav-sub-item" data-page="schedules"      href="#" onclick="navigate('schedules');return false" id="nav-schedules"><span id="nav-schedules-label">Employee Schedule</span><span class="nav-badge" id="schedule-badge" style="display:none">0</span></a>
+          <a class="nav-sub-item" data-page="weekly-schedules" href="#" onclick="navigate('weekly-schedules');return false" id="nav-weekly-schedules"><span id="nav-weekly-schedules-label">Weekly Schedule</span></a>
         </div>
       </div>
 
@@ -936,6 +937,32 @@
     </div>
 
     <!-- =========================================
+         PAGE: WEEKLY SCHEDULES
+    ========================================= -->
+    <div id="page-weekly-schedules" class="page-section" style="display:none">
+      <div class="page-header-row">
+        <div class="page-header"><h1 id="wsched-title">🗓️ Weekly Schedule</h1><p class="subtitle" id="wsched-subtitle">Recurring work assignments that repeat weekly</p></div>
+        <button class="btn btn-primary only-desktop" data-restrict="admin" onclick="openAddWeeklySchedule()">+ Assign Weekly Schedule</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <button class="btn btn-ghost btn-sm" onclick="loadWeeklySchedules()">🔄</button>
+        <div class="search-bar sched-search-bar" data-restrict="admin">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="wsched-search" placeholder="Search employee..." oninput="filterWeeklySchedules()">
+        </div>
+        <button class="btn btn-primary only-mobile" data-restrict="admin" onclick="openAddWeeklySchedule()">+ Assign Weekly Schedule</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Employee</th><th>Days</th><th>Start</th><th>End</th><th>Shift</th><th>Effective</th><th>Until</th><th>Work Assign</th><th>Notes</th><th>Action</th></tr></thead>
+            <tbody id="weekly-schedules-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- =========================================
          PAGE: ANNOUNCEMENTS
     ========================================= -->
     <div id="page-announcements" class="page-section" style="display:none">
@@ -1246,6 +1273,49 @@
   </div>
 </div>
 
+<!-- Weekly Schedule Modal -->
+<div class="modal-backdrop" id="weekly-schedule-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="wsched-modal-title">+ Assign Weekly Schedule</span>
+      <button class="modal-close" onclick="Modal.close('weekly-schedule-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Employee *</label><select id="wsch-emp"></select></div>
+        <div class="form-group"><label>Shift *</label><select id="wsch-shift" onchange="updateWeeklyShiftPreview()"></select></div>
+      </div>
+      <div id="wshift-preview" style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:12px;display:none;font-size:12px;color:var(--text2)"></div>
+      <div class="form-group">
+        <label>Work Days *</label>
+        <div id="wsch-days" style="display:flex;gap:12px;flex-wrap:wrap;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px">
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" class="wsch-day-cb" value="Mon"> Mon</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" class="wsch-day-cb" value="Tue"> Tue</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" class="wsch-day-cb" value="Wed"> Wed</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" class="wsch-day-cb" value="Thu"> Thu</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" class="wsch-day-cb" value="Fri"> Fri</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" class="wsch-day-cb" value="Sat"> Sat</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px"><input type="checkbox" class="wsch-day-cb" value="Sun"> Sun</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Effective Date *</label><input type="date" id="wsch-eff-date"></div>
+        <div class="form-group"><label>End Date</label><input type="date" id="wsch-end-date" placeholder="Leave blank for ongoing"></div>
+      </div>
+      <div class="form-group"><label>Work Assignment *</label><textarea id="wsch-assignment" rows="2" placeholder="e.g. Front desk coverage"></textarea></div>
+      <div class="form-group"><label>Notes</label><textarea id="wsch-notes" rows="2"></textarea></div>
+      <div class="form-group">
+        <label>Break Schedule</label>
+        <div id="wbrksched-rows" style="display:flex;flex-direction:column;gap:8px;margin-top:6px"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="Modal.close('weekly-schedule-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveWeeklySchedule()">💾 Save Weekly Schedule</button>
+    </div>
+  </div>
+</div>
+
 <!-- Announcement Modal -->
 <!-- Leave Details Modal -->
 <div class="modal-backdrop" id="leave-view-modal">
@@ -1496,9 +1566,9 @@
 <div id="toast-container"></div>
 <div id="global-loading" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="js/hr-config.js?v=20260730ab"></script>
-<script src="../js/sync.js?v=20260730ab"></script>
-<script src="js/hr-core.js?v=20260730ab"></script>
+<script src="js/hr-config.js?v=20260801a"></script>
+<script src="../js/sync.js?v=20260801a"></script>
+<script src="js/hr-core.js?v=20260801a"></script>
 <script>
 // ============================================================
 //  MAIN APP LOGIC
@@ -1743,6 +1813,12 @@ async function applyAccessRestrictions(session) {
   if (schedTitle) schedTitle.textContent = '📆 My Schedule';
   const schedSubtitle = document.getElementById('schedules-subtitle');
   if (schedSubtitle) schedSubtitle.textContent = 'Your daily work assignments';
+  const navWSchedLabel = document.getElementById('nav-weekly-schedules-label');
+  if (navWSchedLabel) navWSchedLabel.textContent = 'My Weekly Schedule';
+  const wschedTitle = document.getElementById('wsched-title');
+  if (wschedTitle) wschedTitle.textContent = '🗓️ My Weekly Schedule';
+  const wschedSubtitle = document.getElementById('wsched-subtitle');
+  if (wschedSubtitle) wschedSubtitle.textContent = 'Your recurring weekly work assignment';
 }
 
 function doLogout() {
@@ -1778,6 +1854,7 @@ function updateBreadcrumb(pageId) {
     'att-hr':'Attendance (HR)','att-main':'Main Attendance',
     'payroll-report':'Payroll Report','payroll-generate':'Generate Payroll','payslip':'Payslip',
     'departments':'Department','positions':'Position','shifts':'Shift Types','schedules':'Employee Schedule',
+    'weekly-schedules':'Weekly Schedule',
     'announcements':'Announcements','user-mgmt':'User Management',
     'thirteenth-month':'13th Month & Bonus','timein-terminal':'Time In/Out Terminal',
     'holiday-pay-settings':'Holiday Pay Settings',
@@ -1790,7 +1867,7 @@ function updateBreadcrumb(pageId) {
     'leave-team':'Leave Manage','leave-settings':'Leave Manage','leave-payout':'Leave Manage',
     'att-hr':'Attendance','att-main':'Attendance',
     'payroll-report':'Payroll','payroll-generate':'Payroll','payslip':'Payroll',
-    'departments':'HR Management','shifts':'Scheduling','schedules':'Scheduling',
+    'departments':'HR Management','shifts':'Scheduling','schedules':'Scheduling','weekly-schedules':'Scheduling',
     'thirteenth-month':'Payroll','timein-terminal':'Attendance',
     'holiday-pay-settings':'Payroll'
   };
@@ -1831,6 +1908,7 @@ async function loadPage(pageId) {
     case 'positions':        await loadPositions(); break;
     case 'shifts':           await loadShifts(); break;
     case 'schedules':        await loadSchedules(); break;
+    case 'weekly-schedules': await loadWeeklySchedules(); break;
     case 'announcements':    await loadAnnouncements(); break;
     case 'user-mgmt':        await loadUsers(); break;
     case 'thirteenth-month': await load13thMonth(); break;
@@ -2852,7 +2930,7 @@ async function initAttHR(){
   }catch(e){Toast.show('Error: '+e.message,'error');}
   Loading.hide();
 }
-async function loadEmpAttendance(){attEmpId=document.getElementById('att-hr-emp').value;if(!attEmpId){document.getElementById('att-emp-profile').style.display='none';return;}const emp=allEmployees.find(e=>e.id===attEmpId);if(emp){document.getElementById('att-emp-profile').style.display='';document.getElementById('att-emp-avatar').innerHTML=emp.photo?`<img src="${emp.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:emp.name.charAt(0);document.getElementById('att-emp-name2').textContent=emp.name;document.getElementById('att-emp-pos').textContent=emp.position;document.getElementById('att-emp-id2').textContent=emp.employee_id;document.getElementById('att-emp-dept').textContent=emp.department;document.getElementById('att-emp-hire').textContent=Fmt.date(emp.hire_date);}Loading.show();try{const schedules=await HRDB.read('schedulesDB');attEmpSchedule=getActiveSchedule(schedules,attEmpId);allAttendance=await HRDB.read('attendanceDB',true);const month=document.getElementById('att-hr-month').value;const rows=allAttendance.filter(a=>a.employee_id===attEmpId&&a.date.startsWith(month));const approvedHrs=rows.filter(a=>(a.approval_status||'pending')==='approved').reduce((s,a)=>s+parseFloat(a.work_hours||0),0);const rejectedHrs=rows.filter(a=>a.approval_status==='rejected').reduce((s,a)=>s+parseFloat(a.work_hours||0),0);const otHrs=rows.reduce((s,a)=>s+parseFloat(a.overtime_hours||0),0);document.getElementById('att-approved-hrs').textContent=approvedHrs.toFixed(2)+' hrs';document.getElementById('att-rejected-hrs').textContent=rejectedHrs.toFixed(2)+' hrs';document.getElementById('att-ot-hrs').textContent=otHrs.toFixed(2)+' hrs';renderAttHRTable(rows,1);}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+async function loadEmpAttendance(){attEmpId=document.getElementById('att-hr-emp').value;if(!attEmpId){document.getElementById('att-emp-profile').style.display='none';return;}const emp=allEmployees.find(e=>e.id===attEmpId);if(emp){document.getElementById('att-emp-profile').style.display='';document.getElementById('att-emp-avatar').innerHTML=emp.photo?`<img src="${emp.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:emp.name.charAt(0);document.getElementById('att-emp-name2').textContent=emp.name;document.getElementById('att-emp-pos').textContent=emp.position;document.getElementById('att-emp-id2').textContent=emp.employee_id;document.getElementById('att-emp-dept').textContent=emp.department;document.getElementById('att-emp-hire').textContent=Fmt.date(emp.hire_date);}Loading.show();try{const[schedules,weeklySchedules]=await Promise.all([HRDB.read('schedulesDB'),HRDB.read('weeklySchedulesDB')]);attEmpSchedule=getEffectiveSchedule(schedules,weeklySchedules,attEmpId);allAttendance=await HRDB.read('attendanceDB',true);const month=document.getElementById('att-hr-month').value;const rows=allAttendance.filter(a=>a.employee_id===attEmpId&&a.date.startsWith(month));const approvedHrs=rows.filter(a=>(a.approval_status||'pending')==='approved').reduce((s,a)=>s+parseFloat(a.work_hours||0),0);const rejectedHrs=rows.filter(a=>a.approval_status==='rejected').reduce((s,a)=>s+parseFloat(a.work_hours||0),0);const otHrs=rows.reduce((s,a)=>s+parseFloat(a.overtime_hours||0),0);document.getElementById('att-approved-hrs').textContent=approvedHrs.toFixed(2)+' hrs';document.getElementById('att-rejected-hrs').textContent=rejectedHrs.toFixed(2)+' hrs';document.getElementById('att-ot-hrs').textContent=otHrs.toFixed(2)+' hrs';renderAttHRTable(rows,1);}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 // A small clickable pin next to a time-in/out value that opens the
 // device's recorded coordinates on Google Maps -- blank if the kiosk
 // couldn't get a location that day (denied/unsupported/timed out).
@@ -3588,8 +3666,10 @@ function updateShiftPreview() {
 // schedule: shows the saved values (OFF/blank if it wasn't configured
 // before, so the computation for existing employees doesn't suddenly
 // change until this is deliberately enabled).
-function renderBreakScheduleRows(schedule) {
-  const container = document.getElementById('brksched-rows');
+function renderBreakScheduleRows(schedule, containerId, idPrefix) {
+  containerId = containerId || 'brksched-rows';
+  idPrefix = idPrefix || 'brk';
+  const container = document.getElementById(containerId);
   container.innerHTML = BREAK_TYPES.map(bt => {
     const enabled = schedule ? schedule[`${bt.key}_enabled`] === 'true' : true;
     const start = (schedule && schedule[`${bt.key}_start`]) || bt.defaultStart;
@@ -3597,20 +3677,150 @@ function renderBreakScheduleRows(schedule) {
     const paid  = schedule ? schedule[`${bt.key}_paid`] === 'true' : bt.defaultPaid;
     return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;flex-wrap:wrap">
       <label style="display:flex;align-items:center;gap:6px;font-weight:600;min-width:140px">
-        <input type="checkbox" id="brk-${bt.key}-enabled" ${enabled?'checked':''}> ${bt.icon} ${bt.label}
+        <input type="checkbox" id="${idPrefix}-${bt.key}-enabled" ${enabled?'checked':''}> ${bt.icon} ${bt.label}
       </label>
-      <input type="time" id="brk-${bt.key}-start" value="${start}" style="width:110px">
+      <input type="time" id="${idPrefix}-${bt.key}-start" value="${start}" style="width:110px">
       <span style="color:var(--text3)">–</span>
-      <input type="time" id="brk-${bt.key}-end" value="${end}" style="width:110px">
+      <input type="time" id="${idPrefix}-${bt.key}-end" value="${end}" style="width:110px">
       <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);margin-left:auto">
-        <input type="checkbox" id="brk-${bt.key}-paid" ${paid?'checked':''}> Paid (not deducted from Work Hours)
+        <input type="checkbox" id="${idPrefix}-${bt.key}-paid" ${paid?'checked':''}> Paid (not deducted from Work Hours)
       </label>
     </div>`;
   }).join('');
 }
 
+// ============================================================
+//  WEEKLY SCHEDULES — one row = a recurring pattern for one employee:
+//  a single shift + break config that repeats every week on the
+//  selected work_days, for the effective_date..end_date range (blank
+//  end_date = ongoing). Mutually exclusive with the Daily Schedule
+//  above -- an employee has exactly one scheduling mode at a time,
+//  enforced in saveSchedule()/saveWeeklySchedule() below. Both tables
+//  share the same column shape, so getEffectiveSchedule() in
+//  hr-core.js (used by the kiosk and HR manual attendance entry) and
+//  everything downstream of it (computeBreakMinutes, payroll via
+//  attendanceDB) work unchanged regardless of which table resolved.
+// ============================================================
+let allWeeklySchedules=[], editWeeklySchedId=null;
+
+async function loadWeeklySchedules() {
+  Loading.show();
+  try {
+    [allWeeklySchedules, allEmployees, allShifts] = await Promise.all([
+      HRDB.read('weeklySchedulesDB',true), HRDB.read('employeesDB'), HRDB.read('shiftsDB')
+    ]);
+    filterWeeklySchedules();
+  }catch(e){Toast.show('Error: '+e.message,'error');}
+  Loading.hide();
+}
+function getFilteredWeeklySchedules() {
+  const q = (document.getElementById('wsched-search')?.value || '').toLowerCase();
+  const session = getSession();
+  const ess = isEssSession(session);
+  return allWeeklySchedules.filter(s => {
+    if (ess && s.employee_id !== session.employee_id) return false;
+    if (!q) return true;
+    const emp = allEmployees.find(e => e.id === s.employee_id);
+    return (emp?.name || '').toLowerCase().includes(q);
+  });
+}
+function filterWeeklySchedules() {
+  renderWeeklySchedulesTable(getFilteredWeeklySchedules());
+}
+function renderWeeklySchedulesTable(rows) {
+  const ess = isEssSession(getSession());
+  document.getElementById('weekly-schedules-tbody').innerHTML = rows.map(s=>{
+    const emp=allEmployees.find(e=>e.id===s.employee_id);
+    const shift=allShifts.find(sh=>sh.id===s.shift_id);
+    return `<tr>
+      <td><div class="emp-card">${Fmt.avatarHtml(emp?.name||'?','28',emp?.photo)}<div><div class="emp-name">${emp?.name||s.employee_id}</div><div class="emp-pos">${emp?.position||''}</div></div></div></td>
+      <td style="font-size:12px">${(s.work_days||'').split(',').filter(Boolean).join(', ')||'—'}</td>
+      <td class="mono" style="font-size:12px">${shift?fmtTime12(shift.start_time)||'Flexible':'—'}</td>
+      <td class="mono" style="font-size:12px">${shift?fmtTime12(shift.end_time)||'Flexible':'—'}</td>
+      <td><strong>${shift?.name||s.shift_id}</strong></td>
+      <td class="mono" style="font-size:11px">${s.effective_date}</td>
+      <td class="mono" style="font-size:11px">${s.end_date||'Ongoing'}</td>
+      <td style="color:var(--text2);font-size:12px">${s.work_assignment||'—'}</td>
+      <td style="color:var(--text3);font-size:12px">${s.notes||'—'}</td>
+      <td>${ess?'—':`<div style="display:flex;gap:4px">
+        <button class="btn btn-ghost btn-xs" onclick="editWeeklySched('${s.id}')">✏️</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteWeeklySched('${s.id}')">🗑</button>
+      </div>`}</td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:32px">No weekly schedules assigned</td></tr>';
+}
+async function openAddWeeklySchedule() {
+  editWeeklySchedId=null;
+  await Promise.all([HRDB.read('employeesDB'),HRDB.read('shiftsDB')]);
+  const empSel=document.getElementById('wsch-emp');
+  empSel.innerHTML='<option value="">Select Employee</option>'+allEmployees.filter(e=>e.status==='active').map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+  const shiftSel=document.getElementById('wsch-shift');
+  shiftSel.innerHTML='<option value="">Select Shift</option>'+allShifts.filter(s=>s.status==='active').map(s=>{const t=(s.start_time||s.end_time)?`${fmtTime12(s.start_time)||'Flexible'}–${fmtTime12(s.end_time)||'Flexible'}`:'Flexible';return `<option value="${s.id}">${s.name} (${s.type}) — ${t}</option>`;}).join('');
+  document.querySelectorAll('.wsch-day-cb').forEach(cb=>cb.checked=false);
+  document.getElementById('wsch-eff-date').value=todayStr();
+  document.getElementById('wsch-end-date').value='';
+  document.getElementById('wsch-assignment').value='';
+  document.getElementById('wsch-notes').value='';
+  document.getElementById('wsched-modal-title').textContent='+ Assign Weekly Schedule';
+  updateWeeklyShiftPreview();
+  renderBreakScheduleRows(null,'wbrksched-rows','wbrk');
+  Modal.open('weekly-schedule-modal');
+}
+function updateWeeklyShiftPreview() {
+  const id=document.getElementById('wsch-shift')?.value;
+  const shift=allShifts.find(s=>s.id===id);
+  const preview=document.getElementById('wshift-preview');
+  if(shift&&preview){preview.style.display='';preview.innerHTML=`<strong>${shift.name}</strong> — ${shift.start_time||'Flexible'} to ${shift.end_time||'Flexible'} | Break: ${shift.break_minutes}min | Grace: ${shift.grace_period}min | Type: <strong>${shift.type}</strong>`;}
+  else if(preview){preview.style.display='none';}
+}
+function editWeeklySched(id){
+  const s=allWeeklySchedules.find(x=>x.id===id);
+  if(!s)return;
+  openAddWeeklySchedule().then(()=>{
+    editWeeklySchedId=id;
+    document.getElementById('wsch-emp').value=s.employee_id;
+    document.getElementById('wsch-shift').value=s.shift_id;
+    const days=(s.work_days||'').split(',');
+    document.querySelectorAll('.wsch-day-cb').forEach(cb=>cb.checked=days.includes(cb.value));
+    document.getElementById('wsch-eff-date').value=s.effective_date;
+    document.getElementById('wsch-end-date').value=s.end_date||'';
+    document.getElementById('wsch-assignment').value=s.work_assignment||'';
+    document.getElementById('wsch-notes').value=s.notes||'';
+    document.getElementById('wsched-modal-title').textContent='✏️ Edit Weekly Schedule';
+    updateWeeklyShiftPreview();
+    renderBreakScheduleRows(s,'wbrksched-rows','wbrk');
+  });
+}
+async function saveWeeklySchedule(){
+  const empId=document.getElementById('wsch-emp').value;
+  const shiftId=document.getElementById('wsch-shift').value;
+  const effDate=document.getElementById('wsch-eff-date').value;
+  const endDate=document.getElementById('wsch-end-date').value;
+  const assignment=document.getElementById('wsch-assignment').value.trim();
+  const days=Array.from(document.querySelectorAll('.wsch-day-cb:checked')).map(cb=>cb.value);
+  if(!empId||!shiftId||!effDate||!assignment||!days.length){Toast.show('Fill required fields (including at least one work day)','warning');return;}
+  if(endDate&&endDate<effDate){Toast.show('End Date cannot be before Effective Date','warning');return;}
+  const breakData={};BREAK_TYPES.forEach(bt=>{breakData[`${bt.key}_enabled`]=document.getElementById(`wbrk-${bt.key}-enabled`).checked?'true':'false';breakData[`${bt.key}_start`]=document.getElementById(`wbrk-${bt.key}-start`).value;breakData[`${bt.key}_end`]=document.getElementById(`wbrk-${bt.key}-end`).value;breakData[`${bt.key}_paid`]=document.getElementById(`wbrk-${bt.key}-paid`).checked?'true':'false';});
+  Loading.show();
+  try{
+    if(!editWeeklySchedId||allWeeklySchedules.find(s=>s.id===editWeeklySchedId)?.employee_id!==empId){
+      const dailySchedules=await HRDB.read('schedulesDB');
+      if(hasActiveDailySchedule(dailySchedules,empId,effDate)){
+        Toast.show('This employee already has an active Daily Schedule. Remove it first before assigning a Weekly Schedule.','warning');
+        Loading.hide();return;
+      }
+    }
+    const data={employee_id:empId,shift_id:shiftId,effective_date:effDate,end_date:endDate,work_days:days.join(','),work_assignment:assignment,notes:document.getElementById('wsch-notes').value,created_by:getSession()?.username||'admin',...breakData};
+    if(editWeeklySchedId){await HRDB.update('weeklySchedulesDB',r=>r.id===editWeeklySchedId,data);Toast.show('Weekly schedule updated ✅','success');}
+    else{const all=await HRDB.read('weeklySchedulesDB',true);await HRDB.insert('weeklySchedulesDB',{id:HRDB.nextId(all,'id','WSCH'),...data});Toast.show('Weekly schedule assigned ✅','success');}
+    Modal.close('weekly-schedule-modal');await loadWeeklySchedules();
+  }catch(e){Toast.show('Error: '+e.message,'error');}
+  Loading.hide();
+}
+function deleteWeeklySched(id){Modal.confirm('Delete this weekly schedule?',async()=>{Loading.show();try{await HRDB.remove('weeklySchedulesDB',r=>r.id===id);Toast.show('Deleted','success');await loadWeeklySchedules();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
+
 function editSched(id){const s=allSchedules.find(x=>x.id===id);if(!s)return;openAddSchedule().then(()=>{editSchedId=id;document.getElementById('sch-emp').value=s.employee_id;document.getElementById('sch-shift').value=s.shift_id;document.getElementById('sch-date').value=s.effective_date;document.getElementById('sch-assignment').value=s.work_assignment||'';document.getElementById('sch-notes').value=s.notes||'';document.getElementById('sched-modal-title').textContent='✏️ Edit Schedule';updateShiftPreview();renderBreakScheduleRows(s);});}
-async function saveSchedule(){const empId=document.getElementById('sch-emp').value,shiftId=document.getElementById('sch-shift').value,date=document.getElementById('sch-date').value,assignment=document.getElementById('sch-assignment').value.trim();if(!empId||!shiftId||!date||!assignment){Toast.show('Fill required fields','warning');return;}const breakData={};BREAK_TYPES.forEach(bt=>{breakData[`${bt.key}_enabled`]=document.getElementById(`brk-${bt.key}-enabled`).checked?'true':'false';breakData[`${bt.key}_start`]=document.getElementById(`brk-${bt.key}-start`).value;breakData[`${bt.key}_end`]=document.getElementById(`brk-${bt.key}-end`).value;breakData[`${bt.key}_paid`]=document.getElementById(`brk-${bt.key}-paid`).checked?'true':'false';});Loading.show();try{const data={employee_id:empId,shift_id:shiftId,effective_date:date,end_date:date,work_assignment:assignment,notes:document.getElementById('sch-notes').value,created_by:getSession()?.username||'admin',...breakData};if(editSchedId){await HRDB.update('schedulesDB',r=>r.id===editSchedId,data);Toast.show('Schedule updated ✅','success');}else{const all=await HRDB.read('schedulesDB',true);await HRDB.insert('schedulesDB',{id:HRDB.nextId(all,'id','SCH'),...data});Toast.show('Schedule assigned ✅','success');}Modal.close('schedule-modal');await loadSchedules();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
+async function saveSchedule(){const empId=document.getElementById('sch-emp').value,shiftId=document.getElementById('sch-shift').value,date=document.getElementById('sch-date').value,assignment=document.getElementById('sch-assignment').value.trim();if(!empId||!shiftId||!date||!assignment){Toast.show('Fill required fields','warning');return;}const breakData={};BREAK_TYPES.forEach(bt=>{breakData[`${bt.key}_enabled`]=document.getElementById(`brk-${bt.key}-enabled`).checked?'true':'false';breakData[`${bt.key}_start`]=document.getElementById(`brk-${bt.key}-start`).value;breakData[`${bt.key}_end`]=document.getElementById(`brk-${bt.key}-end`).value;breakData[`${bt.key}_paid`]=document.getElementById(`brk-${bt.key}-paid`).checked?'true':'false';});Loading.show();try{const weeklySchedules=await HRDB.read('weeklySchedulesDB');if(hasActiveWeeklySchedule(weeklySchedules,empId,date)){Toast.show('This employee already has an active Weekly Schedule. Remove it first before assigning a Daily Schedule.','warning');Loading.hide();return;}const data={employee_id:empId,shift_id:shiftId,effective_date:date,end_date:date,work_assignment:assignment,notes:document.getElementById('sch-notes').value,created_by:getSession()?.username||'admin',...breakData};if(editSchedId){await HRDB.update('schedulesDB',r=>r.id===editSchedId,data);Toast.show('Schedule updated ✅','success');}else{const all=await HRDB.read('schedulesDB',true);await HRDB.insert('schedulesDB',{id:HRDB.nextId(all,'id','SCH'),...data});Toast.show('Schedule assigned ✅','success');}Modal.close('schedule-modal');await loadSchedules();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();}
 function deleteSched(id){Modal.confirm('Delete this schedule?',async()=>{Loading.show();try{await HRDB.remove('schedulesDB',r=>r.id===id);Toast.show('Deleted','success');await loadSchedules();}catch(e){Toast.show('Error: '+e.message,'error');}Loading.hide();});}
 
 // ============================================================

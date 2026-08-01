@@ -151,9 +151,9 @@
 <div id="toast-container"></div>
 <div id="global-loading" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="js/hr-config.js?v=20260730ab"></script>
-<script src="../js/sync.js?v=20260730ab"></script>
-<script src="js/hr-core.js?v=20260730ab"></script>
+<script src="js/hr-config.js?v=20260801a"></script>
+<script src="../js/sync.js?v=20260801a"></script>
+<script src="js/hr-core.js?v=20260801a"></script>
 <script>
 // ---- Clock ----
 function tick() {
@@ -201,11 +201,12 @@ async function verifyEmployee() {
 
   Loading.show('Verifying...');
   try {
-    const [emps, accounts, atts, schedules] = await Promise.all([
+    const [emps, accounts, atts, schedules, weeklySchedules] = await Promise.all([
       HRDB.read('employeesDB'),
       rootDB(() => HRDB.read('accountsDB')),
       HRDB.read('attendanceDB'),
-      HRDB.read('schedulesDB')
+      HRDB.read('schedulesDB'),
+      HRDB.read('weeklySchedulesDB')
     ]);
 
     // Find employee by employee_id
@@ -220,7 +221,7 @@ async function verifyEmployee() {
     if (!acct) { Toast.show('Incorrect password','error'); Loading.hide(); return; }
 
     verifiedEmp = emp;
-    activeSchedule = getActiveSchedule(schedules, emp.id);
+    activeSchedule = getEffectiveSchedule(schedules, weeklySchedules, emp.id);
 
     // Show employee card
     document.getElementById('emp-av').textContent    = emp.name.charAt(0);
