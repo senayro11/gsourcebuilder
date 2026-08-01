@@ -1,0 +1,5 @@
+id|employee_id|shift_id|effective_date|end_date|work_days|notes|created_by|am_break_enabled|am_break_start|am_break_end|lunch_break_enabled|lunch_break_start|lunch_break_end|pm_break_enabled|pm_break_start|pm_break_end|am_break_paid|lunch_break_paid|pm_break_paid|work_assignment
+WSCH001|EMP002|SH001|2027-01-01||Mon,Tue,Wed,Thu,Fri|Regular weekday schedule|admin_att|||||||||||||
+WSCH002|EMP005|SH001|2027-01-01||Mon,Tue,Wed,Thu,Fri||admin_att|false|10:00|10:15|true|12:00|13:00|false|15:00|15:15||||
+WSCH003|EMP004|SH001|2027-01-01||Mon,Tue,Wed,Thu,Fri||admin_att|false|10:00|10:15|true|12:00|13:00|false|15:00|15:15||||
+WSCH004|EMP001|SH001|2027-01-01||Mon,Tue,Thu,Fri|Regular weekday schedule|admin_att|false|10:00|10:15|false|12:00|13:00|false|15:00|15:15|false|false|false|

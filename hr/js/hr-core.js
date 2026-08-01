@@ -666,6 +666,52 @@ function getActiveSchedule(schedules, employeeId, dateStr) {
   return candidates.sort((a, b) => b.effective_date.localeCompare(a.effective_date))[0];
 }
 
+const WEEKDAY_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+// Pick the Weekly Schedule row applicable to the employee on the given
+// date -- same effective_date/end_date range check as getActiveSchedule(),
+// plus the date's day-of-week must be one of the row's work_days
+// (comma list, e.g. "Mon,Tue,Wed,Thu,Fri"). A row with no work_days set
+// matches no day (a weekly schedule with nothing selected applies to
+// nothing, rather than silently applying every day).
+function getActiveWeeklySchedule(weeklySchedules, employeeId, dateStr) {
+  const date = dateStr || localDateStr();
+  const dayAbbr = WEEKDAY_ABBR[new Date(date + 'T00:00:00').getDay()];
+  const candidates = (weeklySchedules || []).filter(s =>
+    s.employee_id === employeeId &&
+    s.effective_date && s.effective_date <= date &&
+    (!s.end_date || s.end_date >= date) &&
+    (s.work_days || '').split(',').map(d => d.trim()).includes(dayAbbr)
+  );
+  if (!candidates.length) return null;
+  return candidates.sort((a, b) => b.effective_date.localeCompare(a.effective_date))[0];
+}
+
+// An employee is on exactly one scheduling mode at a time (enforced at
+// save time in attendance.html) -- Daily Schedule takes precedence since
+// it's the more specific, one-off assignment; Weekly Schedule is the
+// recurring fallback. Returns a row shaped like a schedulesDB record
+// (shift_id + break columns + work_assignment) either way, so every
+// downstream consumer (computeBreakMinutes, breakStatus, payroll via
+// attendanceDB) works unchanged regardless of which table it came from.
+function getEffectiveSchedule(dailySchedules, weeklySchedules, employeeId, dateStr) {
+  return getActiveSchedule(dailySchedules, employeeId, dateStr) ||
+         getActiveWeeklySchedule(weeklySchedules, employeeId, dateStr);
+}
+
+// Mutual-exclusion checks used when assigning a new Daily or Weekly
+// Schedule -- an employee can't have both. "Active" here means not yet
+// expired (blank or future end_date), regardless of whether it has
+// started yet, so a future-dated assignment still reserves the employee.
+function hasActiveDailySchedule(schedules, employeeId, asOfDate) {
+  const date = asOfDate || localDateStr();
+  return (schedules || []).some(s => s.employee_id === employeeId && (!s.end_date || s.end_date >= date));
+}
+function hasActiveWeeklySchedule(weeklySchedules, employeeId, asOfDate) {
+  const date = asOfDate || localDateStr();
+  return (weeklySchedules || []).some(s => s.employee_id === employeeId && (!s.end_date || s.end_date >= date));
+}
+
 // When an employee has no schedule assigned, still judge late/absent
 // against a best-guess shift instead of always marking them "present" --
 // pick the active shift whose start_time is closest to their actual
