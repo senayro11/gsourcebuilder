@@ -668,21 +668,22 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
      the topbar row, leaving just the avatar circle + dropdown arrow. */
   .topbar-user-info { display: none; }
   .stats-grid { grid-template-columns: 1fr; }
-  #hrlv-stats, #ma-stats, #payroll-stats, #user-stats { grid-template-columns: 1fr !important; }
-  /* My Leave Requests' balance cards (Vacation Leave, Sick Leave, etc.)
-     and the Dashboard's stat cards stay 2 per row even on a narrow
-     phone -- per request, unlike the other stats-grids above which
-     collapse to a single column. */
-  #leave-stats, #dash-stats, #dash-stats-ess { grid-template-columns: 1fr 1fr !important; gap: 10px; }
+  #ma-stats, #user-stats { grid-template-columns: 1fr !important; }
+  /* My Leave Requests' balance cards (Vacation Leave, Sick Leave, etc.),
+     the Dashboard's stat cards, By HR's leave-overview cards, and the
+     Payroll Report totals stay 2 per row even on a narrow phone -- per
+     request, unlike the other stats-grids above which collapse to a
+     single column. */
+  #leave-stats, #dash-stats, #dash-stats-ess, #hrlv-stats, #payroll-stats { grid-template-columns: 1fr 1fr !important; gap: 10px; }
   /* Grid/flex items default to min-width:auto, which refuses to shrink
      below the label's unwrapped text width -- that pushed the card (and
      the whole page) wider than the phone screen instead of letting the
      label wrap inside the card. */
-  #leave-stats .stat-card, #dash-stats .stat-card, #dash-stats-ess .stat-card { padding: 12px 14px; gap: 10px; min-width: 0; }
-  #leave-stats .stat-card > div, #dash-stats .stat-card > div, #dash-stats-ess .stat-card > div { min-width: 0; }
-  #leave-stats .stat-icon, #dash-stats .stat-icon, #dash-stats-ess .stat-icon { width: 36px; height: 36px; font-size: 16px; border-radius: 8px; }
-  #leave-stats .stat-value, #dash-stats .stat-value, #dash-stats-ess .stat-value { font-size: 18px; }
-  #leave-stats .stat-label, #dash-stats .stat-label, #dash-stats-ess .stat-label { font-size: 11px; white-space: normal; overflow-wrap: break-word; }
+  #leave-stats .stat-card, #dash-stats .stat-card, #dash-stats-ess .stat-card, #hrlv-stats .stat-card, #payroll-stats .stat-card { padding: 12px 14px; gap: 10px; min-width: 0; }
+  #leave-stats .stat-card > div, #dash-stats .stat-card > div, #dash-stats-ess .stat-card > div, #hrlv-stats .stat-card > div, #payroll-stats .stat-card > div { min-width: 0; }
+  #leave-stats .stat-icon, #dash-stats .stat-icon, #dash-stats-ess .stat-icon, #hrlv-stats .stat-icon, #payroll-stats .stat-icon { width: 36px; height: 36px; font-size: 16px; border-radius: 8px; }
+  #leave-stats .stat-value, #dash-stats .stat-value, #dash-stats-ess .stat-value, #hrlv-stats .stat-value, #payroll-stats .stat-value { font-size: 18px; }
+  #leave-stats .stat-label, #dash-stats .stat-label, #dash-stats-ess .stat-label, #hrlv-stats .stat-label, #payroll-stats .stat-label { font-size: 11px; white-space: normal; overflow-wrap: break-word; }
   /* Exception: the "no leave entitlements configured yet" notice is a
      full sentence in a full-width card, not a short balance label --
      it should wrap normally instead of truncating with an ellipsis. */
