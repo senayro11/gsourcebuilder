@@ -2,7 +2,7 @@ id|employee_id|name|email|phone|position|department|daily_rate|monthly_rate|sss|
 EMP001|GS-0001|Red Matienzo|juan@company.com|09171234567|Electrician|Human Resources|650.00|14300.00|||||2023-06-01|active|photos/GS-0001.jpg?v=aad03e10|Probationary|Vacation Leave,Sick Leave,Unpaid leave
 EMP002|GS-0002|Hobert Depana|hober@gmail.com|09187654321|All around|Manpower|700|15400.00|||||2024-01-10|active||Regular|Vacation Leave,Sick Leave,Unpaid leave
 EMP003|GS-0003|Florante Nas|florante@gmail.com|09194561234|Foreman|Manpower|800|17600.00|||||2022-03-15|inactive||Regular|Vacation Leave,Sick Leave,Unpaid leave
-EMP004|GS-0004|Alvin Fernandez|alvin@gmail.com|09201234568|Supervisor|Manpower|700|15400.00|||||2021-07-20|active||Casual|Vacation Leave,Sick Leave,Unpaid leave
+EMP004|GS-0004|Alvin Fernandez|alvin@gmail.com|09201234568|Aircon tech|Manpower|700|15400.00|||||2021-07-20|active||Casual|Vacation Leave,Sick Leave,Unpaid leave
 EMP005|GS-0005|Jose Reyes|jose@company.com|09213456789|Driver|Logistics|550.00|12100.00|150.00|100.00|100.00||2023-09-01|active|||Vacation Leave,Sick Leave,Medical Leave,Casual Leave,Emergency Leave,Maternity Leave,Paternity Leave
 EMP006|GS-0006|Ville ryane San Esteban|v.ryane59@gmail.com|09099236860|Tech|IT|700|15400.00|200||||2026-01-16|inactive|||Vacation Leave,Sick Leave,Medical Leave,Casual Leave,Emergency Leave,Maternity Leave,Paternity Leave
 EMP007|GS-0007|Melanie gupong|melanie@gmail.com|097654323224|HR manager|Human Resources|700|15400.00|||||2022-07-29|active||Regular|Vacation Leave,Sick Leave,Medical Leave,Unpaid leave
