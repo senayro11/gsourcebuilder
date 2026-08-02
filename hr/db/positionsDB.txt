@@ -12,3 +12,4 @@ POS010|All around|active
 POS011|Foreman|active
 POS012|Leadman|active
 POS013|Office staff|active
+POS014|Aircon tech|active
