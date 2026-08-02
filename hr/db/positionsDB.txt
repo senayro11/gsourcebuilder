@@ -8,3 +8,4 @@ POS006|Electrician|active
 POS007|IT|active
 POS008|Carpenter|active
 POS009|HR manager|active
+POS010|All around|active
