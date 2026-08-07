@@ -41,6 +41,15 @@
     .time-display .clock { font-size: 28px; font-weight: 700; color: var(--white); font-family: var(--mono); }
     .time-display .date  { color: var(--text2); font-size: 13px; }
     .quick-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 12px; margin-bottom: 24px; }
+    @media (max-width: 480px) {
+      /* auto-fill/minmax(180px,1fr) needs ~372px of usable width for 2
+         columns -- a phone's content width after .main's 16px padding
+         (e.g. 390px screen -> 358px) falls just short, so it collapsed
+         to 1 card per row. Force 2 even at the narrowest phone width. */
+      .quick-stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .quick-stats .stat-card { padding: 14px; min-width: 0; }
+      .quick-stats .stat-value { font-size: 22px; }
+    }
   </style>
 </head>
 <body>

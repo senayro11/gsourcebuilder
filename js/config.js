@@ -12,14 +12,14 @@ const GITHUB_CONFIG = {
 
 // System definitions
 const SYSTEMS = {
-  pos:        { name: 'Point of Sale',        icon: '馃洅', file: 'pos.html',        color: '#6366f1' },
-  inventory:  { name: 'Inventory',            icon: '馃摝', file: 'inventory.html',  color: '#0ea5e9' },
-  attendance: { name: 'HR Management',        icon: '馃晲', file: 'hr/attendance.html', color: '#10b981' },
-  budget:     { name: 'Budget & Finance',     icon: '馃挵', file: 'budget.html',     color: '#f59e0b' }
+  pos:        { name: 'Point of Sale',        icon: '🛒', file: 'pos.html',        color: '#6366f1' },
+  inventory:  { name: 'Inventory',            icon: '📦', file: 'inventory.html',  color: '#0ea5e9' },
+  attendance: { name: 'HR Management',        icon: '🕐', file: 'hr/attendance.html', color: '#10b981' },
+  budget:     { name: 'Budget & Finance',     icon: '💰', file: 'budget.html',     color: '#f59e0b' }
 };
 
 // Superadmin-only system (not in SYSTEMS to hide from normal users)
-const SUPERADMIN_SYSTEM = { name: 'SuperAdmin Panel', icon: '鈿欙笍', file: 'superadmin.html', color: '#8b5cf6' };
+const SUPERADMIN_SYSTEM = { name: 'SuperAdmin Panel', icon: '⚙️', file: 'superadmin.html', color: '#8b5cf6' };
 
 // Role hierarchy
 const ROLE_LEVELS = { guest: 1, ojt: 2, staff: 3, admin: 4, superadmin: 5 };
