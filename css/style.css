@@ -372,6 +372,11 @@ input::placeholder { color: var(--text3); }
   .main { margin-left: 0; padding: 16px; }
   .form-row, .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
+  /* Just the avatar circle in the navbar on a narrow phone -- the
+     name/role text next to it was crowding the "Online" pill and
+     Logout button off the visible row. */
+  .user-chip { padding: 6px; gap: 0; }
+  .user-chip .user-info { display: none; }
 }
 
 /* ---- Scrollbar ---- */
