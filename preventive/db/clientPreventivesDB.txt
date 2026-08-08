@@ -1,3 +1,5 @@
 id|client_id|preventive_type|frequency|floors|notes
 CP001|CLI001|fire_extinguisher|monthly|B2-27|
 CP002|CLI001|seismic|monthly|27, 15, B2|
+CP003|CLI001|fire_pump|semi_annual|B2|
+CP004|CLI001|fire_hose_cabinet|quarterly|B2-27|
