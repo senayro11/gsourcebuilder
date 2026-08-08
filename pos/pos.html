@@ -64,26 +64,34 @@
   </style>
 </head>
 <body>
-<div class="app-layout">
-  <nav class="navbar">
-    <div class="navbar-brand" id="navbar-brand">🏢</div>
-    <div class="navbar-right">
-      <div class="user-chip">
-        <div class="avatar" id="user-avatar">A</div>
-        <div class="user-info"><span class="name" id="user-name"></span><span class="role" id="user-role"></span></div>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🛒</div>
+      <div>
+        <div class="logo-text">POS System</div>
+        <div class="logo-sub">POINT OF SALE</div>
       </div>
     </div>
-  </nav>
-  <aside class="sidebar" id="sidebar"></aside>
-  <main class="main">
-
-    <!-- Tabs -->
-    <div class="tabs" id="pos-tabs">
-      <div class="tab active" data-tab="tab-cashier">🛒 Cashier</div>
-      <div class="tab" data-tab="tab-transactions" data-perm="reports">📋 Transactions</div>
-      <div class="tab" data-tab="tab-products" data-perm="settings">🛍 Products</div>
-      <div class="tab" data-tab="tab-reports" data-perm="reports">📊 Reports</div>
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-bottom">
+      <div class="user-card" id="sidebar-user-card" onclick="UI.toggleProfileMenu()">
+        <div class="user-avatar" id="sidebar-avatar">A</div>
+        <div>
+          <div class="user-name" id="sidebar-name"></div>
+          <div class="user-role" id="sidebar-role"></div>
+        </div>
+        <span class="logout-btn">⋯</span>
+      </div>
     </div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <header class="topbar" id="topbar">
+    <button class="topbar-toggle sidebar-toggle-btn">☰</button>
+    <div class="topbar-breadcrumb"><span class="current">POS System</span></div>
+    <div class="topbar-right" id="topbar-right"></div>
+  </header>
+  <main class="main-content" id="main-content">
 
     <!-- ===== CASHIER TAB ===== -->
     <div class="tab-pane active" id="tab-cashier">
@@ -294,10 +302,24 @@
 Auth.loadToken();
 const user = Auth.guard('pos');
 if (!user) throw 0;
+const TABS = [
+  { id:'tab-cashier',      icon:'🛒', label:'Cashier' },
+  { id:'tab-transactions', icon:'📋', label:'Transactions', perm:'reports' },
+  { id:'tab-products',     icon:'🛍', label:'Products',     perm:'settings' },
+  { id:'tab-reports',      icon:'📊', label:'Reports',      perm:'reports' }
+];
+function switchTab(tabId, el) {
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  const pane = document.getElementById(tabId);
+  if (pane) pane.classList.add('active');
+  document.querySelectorAll('#sidebar-nav .nav-item[data-tab]').forEach(n=>n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (tabId==='tab-transactions') loadTransactions();
+  if (tabId==='tab-products') loadProdMgmt();
+}
 UI.buildNavbar(user, 'POS System');
-UI.buildSidebar(user, 'pos');
+UI.buildSidebar(user, 'pos', TABS);
 Auth.applyUIPermissions(user, 'pos');
-UI.initTabs();
 UserMgmt.init(user, 'pos');
 
 let allProducts=[], cart=[], varTarget=null, editProdId=null, imgBase64='', allTxns=[];
@@ -697,14 +719,6 @@ async function generateReport(){
   const top=Object.entries(prodMap).sort((a,b)=>b[1].rev-a[1].rev).slice(0,10);
   document.getElementById('rpt-top-tbody').innerHTML=top.map(([name,d])=>`<tr><td>${name}</td><td>${d.qty}</td><td><strong>${UI.peso(d.rev)}</strong></td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--text3)">No data</td></tr>';
 }
-
-// Tab listeners
-document.querySelectorAll('.tab').forEach(t=>{
-  t.addEventListener('click',()=>{
-    if(t.dataset.tab==='tab-transactions') loadTransactions();
-    if(t.dataset.tab==='tab-products') loadProdMgmt();
-  });
-});
 
 // Set default report dates
 const today=new Date().toISOString().split('T')[0];
