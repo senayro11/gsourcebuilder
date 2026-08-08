@@ -203,6 +203,7 @@
     document.querySelectorAll('#sidebar-nav .nav-item[data-tab]').forEach(n=>n.classList.remove('active'));
     if (el) el.classList.add('active');
     if (tabId==='tab-movements') loadMovements();
+    sessionStorage.setItem('inventory_last_tab', tabId);
   }
   UI.buildNavbar(user, 'Inventory');
   UI.buildSidebar(user, 'inventory', TABS);
@@ -399,6 +400,16 @@
   }
 
   loadAll();
+
+  // Stay on whatever tab the user was on before a refresh, instead of
+  // always resetting to the first tab. Only restore if that nav item is
+  // still present and not permission-hidden.
+  (function restoreLastTab() {
+    const lastTab = sessionStorage.getItem('inventory_last_tab');
+    if (!lastTab || lastTab === TABS[0].id) return;
+    const el = document.querySelector(`#sidebar-nav .nav-item[data-tab="${lastTab}"]`);
+    if (el && el.style.display !== 'none') switchTab(lastTab, el);
+  })();
 </script>
 </body>
 </html>
