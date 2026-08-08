@@ -1,0 +1,1 @@
+id|client_id|serial_no|date_checked|floor|location|type|capacity_lb|status|problem_desc|expiration_date

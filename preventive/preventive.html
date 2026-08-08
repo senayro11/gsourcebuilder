@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preventive Maintenance — Enterprise</title>
+  <link rel="stylesheet" href="css/preventive.css">
+  <script>
+    // Applied before first paint so a saved theme preference doesn't
+    // flash the wrong theme first -- default (no saved value) is dark,
+    // matching how this app has always looked. Own key (preventive_theme),
+    // independent from the root app's and the other systems'.
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('preventive_theme') === 'light' ? 'light' : 'dark');
+  </script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🧯</div>
+      <div>
+        <div class="logo-text">Preventive Maint.</div>
+        <div class="logo-sub">MULTI-CLIENT</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-bottom">
+      <div class="user-card" id="sidebar-user-card" onclick="UI.toggleProfileMenu()">
+        <div class="user-avatar" id="sidebar-avatar">A</div>
+        <div>
+          <div class="user-name" id="sidebar-name"></div>
+          <div class="user-role" id="sidebar-role"></div>
+        </div>
+        <span class="logout-btn">⋯</span>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <header class="topbar" id="topbar">
+    <button class="topbar-toggle sidebar-toggle-btn">☰</button>
+    <div class="topbar-breadcrumb"><span class="current">Preventive Maintenance</span></div>
+    <div class="topbar-right" id="topbar-right"></div>
+  </header>
+  <main class="main-content" id="main-content">
+
+    <!-- Clients -->
+    <div class="tab-pane active" id="tab-clients">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div class="search-bar" style="max-width:280px">
+          <span>🔍</span>
+          <input type="text" id="client-search" placeholder="Search client..." oninput="filterClients()">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openAddClient()" data-perm="create">+ New Client</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Client Name</th><th>Address</th><th>Contact</th><th>Preventive Types</th><th>Actions</th></tr></thead>
+            <tbody id="client-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fire Extinguisher -->
+    <div class="tab-pane" id="tab-fire-ext">
+      <div class="card" style="margin-bottom:16px">
+        <div class="form-row" style="grid-template-columns:repeat(6,1fr);gap:12px">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Client</label>
+            <select id="fe-filter-client" onchange="filterFireExt()"><option value="">All Clients</option></select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Floor</label>
+            <input type="text" id="fe-filter-floor" placeholder="e.g. 5" oninput="filterFireExt()">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Status</label>
+            <select id="fe-filter-status" onchange="filterFireExt()">
+              <option value="">All Status</option>
+              <option value="good">Good</option>
+              <option value="low pressure">Low Pressure</option>
+              <option value="not check">Not Check</option>
+              <option value="pullout">Pullout</option>
+              <option value="missing">Missing</option>
+              <option value="defective">Defective</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Type</label>
+            <select id="fe-filter-type" onchange="filterFireExt()">
+              <option value="">All Types</option>
+              <option value="AFFF">AFFF</option>
+              <option value="CO2">CO2</option>
+              <option value="Dry Chem">Dry Chem</option>
+              <option value="HFC-236fa">HFC-236fa</option>
+              <option value="Class K">Class K</option>
+              <option value="HCFC-123">HCFC-123</option>
+              <option value="none">None</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Date Check From</label>
+            <input type="date" id="fe-filter-from" onchange="filterFireExt()">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Date Check To</label>
+            <input type="date" id="fe-filter-to" onchange="filterFireExt()">
+          </div>
+        </div>
+      </div>
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="printFireExt()">🖨 Print</button>
+          <button class="btn btn-ghost btn-sm" onclick="downloadFireExt()">⬇ Download</button>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openAddFireExt()" data-perm="create">+ Add Fire Extinguisher</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Serial #</th><th>Date Check</th><th>Floor</th><th>Location</th><th>Type</th><th>Capacity (lb)</th><th>Status</th><th>Problem Desc</th><th>Expiration</th><th>Actions</th></tr></thead>
+            <tbody id="fe-tbody"></tbody>
+          </table>
+        </div>
+        <div id="fe-pagination"></div>
+      </div>
+    </div>
+
+    <!-- Placeholder preventive types -- details to be specified later, one at a time -->
+    <div class="tab-pane" id="tab-seismic">
+      <div class="card"><div class="empty-state">
+        <div class="icon">📐</div>
+        <h3>Seismic Preventive Maintenance</h3>
+        <p>Configuration for this preventive type is coming soon.</p>
+      </div></div>
+    </div>
+    <div class="tab-pane" id="tab-firepump">
+      <div class="card"><div class="empty-state">
+        <div class="icon">🚒</div>
+        <h3>Fire Pump Preventive Maintenance</h3>
+        <p>Configuration for this preventive type is coming soon.</p>
+      </div></div>
+    </div>
+    <div class="tab-pane" id="tab-transferpump">
+      <div class="card"><div class="empty-state">
+        <div class="icon">🔄</div>
+        <h3>Transfer Pump Preventive Maintenance</h3>
+        <p>Configuration for this preventive type is coming soon.</p>
+      </div></div>
+    </div>
+    <div class="tab-pane" id="tab-firehose">
+      <div class="card"><div class="empty-state">
+        <div class="icon">🚿</div>
+        <h3>Fire Hose &amp; Cabinet Preventive Maintenance</h3>
+        <p>Configuration for this preventive type is coming soon.</p>
+      </div></div>
+    </div>
+  </main>
+</div>
+
+<!-- Add/Edit Client Modal -->
+<div class="modal-backdrop" id="client-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="client-modal-title">+ Add Client</span>
+      <button class="modal-close" onclick="UI.closeModal('client-modal')">✕</button>
+    </div>
+    <div class="form-group"><label>Client Name *</label><input type="text" id="cf-name"></div>
+    <div class="form-group"><label>Address</label><input type="text" id="cf-address"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Contact Person</label><input type="text" id="cf-contact"></div>
+      <div class="form-group"><label>Contact Number</label><input type="text" id="cf-phone"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('client-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveClient()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Preventive Types Modal -->
+<div class="modal-backdrop" id="types-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">🧯 Preventive Types — <span id="mt-client-name"></span></span>
+      <button class="modal-close" onclick="UI.closeModal('types-modal')">✕</button>
+    </div>
+    <p style="color:var(--text2);font-size:12px;margin-bottom:14px">Check the preventive maintenance types that apply to this client, and set the schedule frequency and floor scope for each.</p>
+    <div id="types-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('types-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTypes()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Fire Extinguisher Modal -->
+<div class="modal-backdrop" id="fe-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="fe-modal-title">+ Add Fire Extinguisher</span>
+      <button class="modal-close" onclick="UI.closeModal('fe-modal')">✕</button>
+    </div>
+    <div class="form-group"><label>Client *</label><select id="fef-client"></select></div>
+    <div class="form-row">
+      <div class="form-group"><label>Floor *</label><input type="text" id="fef-floor" placeholder="e.g. 5"></div>
+      <div class="form-group"><label>Location</label><input type="text" id="fef-location" placeholder="e.g. Near Stairwell A"></div>
+    </div>
+    <div class="form-group">
+      <label>Serial # *</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="fef-serial" placeholder="e.g. 5F-001" style="flex:1">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="suggestSerial()">🔢 Suggest</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Type</label>
+        <select id="fef-type">
+          <option value="AFFF">AFFF</option>
+          <option value="CO2">CO2</option>
+          <option value="Dry Chem">Dry Chem</option>
+          <option value="HFC-236fa">HFC-236fa</option>
+          <option value="Class K">Class K</option>
+          <option value="HCFC-123">HCFC-123</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Capacity (lb)</label><input type="number" id="fef-capacity" step="0.1"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Date Checked *</label><input type="date" id="fef-date"></div>
+      <div class="form-group"><label>Expiration Date</label><input type="date" id="fef-expiration"></div>
+    </div>
+    <div class="form-group"><label>Status</label>
+      <select id="fef-status">
+        <option value="good">Good</option>
+        <option value="low pressure">Low Pressure</option>
+        <option value="not check">Not Check</option>
+        <option value="pullout">Pullout</option>
+        <option value="missing">Missing</option>
+        <option value="defective">Defective</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Problem Description</label><input type="text" id="fef-problem"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('fe-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveFireExt()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<div id="loading-overlay" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
+
+<script src="js/preventive-config.js"></script>
+<script src="../js/sync.js"></script>
+<script src="js/preventive-core.js"></script>
+<script src="../js/usermgmt.js"></script>
+<script>
+Auth.loadToken();
+const user = Auth.guard('preventive');
+if (!user) throw 0;
+
+const PREVENTIVE_TYPES = [
+  { key:'fire_extinguisher',  label:'Fire Extinguisher',    icon:'🧯' },
+  { key:'seismic',            label:'Seismic',              icon:'📐' },
+  { key:'fire_pump',          label:'Fire Pump',            icon:'🚒' },
+  { key:'transfer_pump',      label:'Transfer Pump',        icon:'🔄' },
+  { key:'fire_hose_cabinet',  label:'Fire Hose & Cabinet',  icon:'🚿' }
+];
+
+const TABS = [
+  { id:'tab-clients',       icon:'🏢', label:'Clients' },
+  { id:'tab-fire-ext',      icon:'🧯', label:'Fire Extinguisher' },
+  { id:'tab-seismic',       icon:'📐', label:'Seismic' },
+  { id:'tab-firepump',      icon:'🚒', label:'Fire Pump' },
+  { id:'tab-transferpump',  icon:'🔄', label:'Transfer Pump' },
+  { id:'tab-firehose',      icon:'🚿', label:'Fire Hose & Cabinet' }
+];
+function switchTab(tabId, el) {
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  const pane = document.getElementById(tabId);
+  if (pane) pane.classList.add('active');
+  document.querySelectorAll('#sidebar-nav .nav-item[data-tab]').forEach(n=>n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (tabId==='tab-fire-ext') loadFireExt();
+}
+UI.buildNavbar(user, 'Preventive Maintenance');
+UI.buildSidebar(user, 'preventive', TABS);
+Auth.applyUIPermissions(user, 'preventive');
+UserMgmt.init(user, 'preventive');
+
+let allClients=[], allClientPreventives=[], allFireExt=[], feFilteredRows=[];
+let editClientId=null, managingClientId=null, editFireExtId=null;
+
+function clientName(id) { return allClients.find(c=>c.id===id)?.client_name || id; }
+
+function populateClientSelects() {
+  const opts = allClients.map(c => `<option value="${c.id}">${c.client_name}</option>`).join('');
+  const filterSel = document.getElementById('fe-filter-client');
+  if (filterSel) { const cur = filterSel.value; filterSel.innerHTML = '<option value="">All Clients</option>' + opts; filterSel.value = cur; }
+  const modalSel = document.getElementById('fef-client');
+  if (modalSel) modalSel.innerHTML = opts || '<option value="">No clients yet</option>';
+}
+
+// ---- Clients ----
+async function loadAll() {
+  UI.loading(true, 'Loading clients...');
+  try {
+    allClients = await DB.read('clientsDB', true);
+    allClients.sort((a,b)=>(a.client_name||'').localeCompare(b.client_name||''));
+    allClientPreventives = await DB.read('clientPreventivesDB', true);
+    populateClientSelects();
+    renderClients();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+
+function filterClients() {
+  const q = document.getElementById('client-search').value.toLowerCase();
+  renderClients(allClients.filter(c => (c.client_name||'').toLowerCase().includes(q)));
+}
+
+function renderClients(rows) {
+  rows = rows || allClients;
+  document.getElementById('client-tbody').innerHTML = rows.map(c => {
+    const types = allClientPreventives.filter(cp=>cp.client_id===c.id);
+    const badges = types.map(t => {
+      const def = PREVENTIVE_TYPES.find(p=>p.key===t.preventive_type);
+      return `<span class="badge badge-info" style="margin:2px 2px 2px 0">${def?def.icon:''} ${def?def.label:t.preventive_type}</span>`;
+    }).join('') || '<span style="color:var(--text3);font-size:12px">None assigned</span>';
+    return `<tr>
+      <td class="mono">${c.id}</td>
+      <td><strong>${c.client_name}</strong></td>
+      <td>${c.address||'—'}</td>
+      <td>${c.contact_person||'—'}${c.contact_number?`<br><small style="color:var(--text3)">${c.contact_number}</small>`:''}</td>
+      <td>${badges}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openManageTypes('${c.id}')" data-perm="edit" title="Manage Preventive Types">🧯 Types</button>
+        <button class="btn btn-ghost btn-sm" onclick="editClient('${c.id}')" data-perm="edit" title="Edit">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteClient('${c.id}')" data-perm="delete" title="Delete">🗑</button>
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text3)">No clients yet</td></tr>';
+  Auth.applyUIPermissions(user, 'preventive');
+}
+
+function openAddClient() {
+  editClientId = null;
+  ['cf-name','cf-address','cf-contact','cf-phone'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('client-modal-title').textContent = '+ Add Client';
+  UI.openModal('client-modal');
+}
+function editClient(id) {
+  const c = allClients.find(x=>x.id===id); if (!c) return;
+  editClientId = id;
+  document.getElementById('cf-name').value = c.client_name;
+  document.getElementById('cf-address').value = c.address || '';
+  document.getElementById('cf-contact').value = c.contact_person || '';
+  document.getElementById('cf-phone').value = c.contact_number || '';
+  document.getElementById('client-modal-title').textContent = '✏️ Edit Client';
+  UI.openModal('client-modal');
+}
+async function saveClient() {
+  const name = document.getElementById('cf-name').value.trim();
+  if (!name) { UI.toast('Fill in the client name','warning'); return; }
+  const data = {
+    client_name: name,
+    address: document.getElementById('cf-address').value.trim(),
+    contact_person: document.getElementById('cf-contact').value.trim(),
+    contact_number: document.getElementById('cf-phone').value.trim()
+  };
+  UI.loading(true,'Saving...');
+  try {
+    if (editClientId) {
+      await DB.update('clientsDB', r=>r.id===editClientId, data);
+      UI.toast('Updated ✅','success');
+    } else {
+      const all = await DB.read('clientsDB', true);
+      await DB.insert('clientsDB', { id: DB.nextId(all,'id','CLI'), ...data, created_at: new Date().toISOString().split('T')[0] });
+      UI.toast('Added ✅','success');
+    }
+    UI.closeModal('client-modal');
+    await loadAll();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+function deleteClient(id) {
+  UI.confirm('Delete this client? Assigned preventive types and equipment records will not be deleted automatically.', async () => {
+    UI.loading(true);
+    try { await DB.remove('clientsDB', r=>r.id===id); UI.toast('Deleted','success'); await loadAll(); }
+    catch(e) { UI.toast('Error: '+e.message,'error'); }
+    UI.loading(false);
+  });
+}
+
+// ---- Manage Preventive Types per client ----
+function renderTypesModalBody(assigned) {
+  document.getElementById('types-modal-body').innerHTML = PREVENTIVE_TYPES.map(pt => {
+    const row = assigned.find(a=>a.preventive_type===pt.key);
+    return `<div class="card" style="margin-bottom:10px;padding:14px">
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:0;cursor:pointer">
+        <input type="checkbox" id="mt-cb-${pt.key}" style="width:auto" ${row?'checked':''} onchange="toggleTypeRow('${pt.key}')">
+        <strong>${pt.icon} ${pt.label}</strong>
+      </label>
+      <div id="mt-row-${pt.key}" class="form-row" style="display:${row?'grid':'none'};margin-top:10px;margin-bottom:0">
+        <div class="form-group" style="margin-bottom:0"><label>Frequency</label>
+          <select id="mt-freq-${pt.key}">
+            <option value="monthly" ${row?.frequency==='monthly'?'selected':''}>Monthly</option>
+            <option value="quarterly" ${!row||row.frequency==='quarterly'?'selected':''}>Quarterly</option>
+            <option value="semi_annual" ${row?.frequency==='semi_annual'?'selected':''}>Semi-Annual</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0"><label>Floor Scope</label><input type="text" id="mt-floors-${pt.key}" value="${row?.floors||''}" placeholder="e.g. 1-27, or 5,7,9"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleTypeRow(key) {
+  const cb = document.getElementById('mt-cb-'+key);
+  document.getElementById('mt-row-'+key).style.display = cb.checked ? 'grid' : 'none';
+}
+function openManageTypes(clientId) {
+  managingClientId = clientId;
+  document.getElementById('mt-client-name').textContent = clientName(clientId);
+  renderTypesModalBody(allClientPreventives.filter(cp=>cp.client_id===clientId));
+  UI.openModal('types-modal');
+}
+async function saveTypes() {
+  UI.loading(true,'Saving...');
+  try {
+    const all = await DB.read('clientPreventivesDB', true);
+    let nextNum = all.length ? Math.max(...all.map(r=>parseInt((r.id||'').replace('CP',''))||0)) : 0;
+    const kept = all.filter(r => r.client_id !== managingClientId);
+    PREVENTIVE_TYPES.forEach(pt => {
+      const cb = document.getElementById('mt-cb-'+pt.key);
+      if (cb.checked) {
+        const existing = all.find(r => r.client_id===managingClientId && r.preventive_type===pt.key);
+        let id = existing?.id;
+        if (!id) { nextNum++; id = 'CP' + String(nextNum).padStart(3,'0'); }
+        kept.push({
+          id, client_id: managingClientId, preventive_type: pt.key,
+          frequency: document.getElementById('mt-freq-'+pt.key).value,
+          floors: document.getElementById('mt-floors-'+pt.key).value.trim(),
+          notes: existing?.notes || ''
+        });
+      }
+    });
+    await DB.write('clientPreventivesDB', kept, 'Update preventive type assignments');
+    UI.toast('Saved ✅','success');
+    UI.closeModal('types-modal');
+    await loadAll();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+
+// ---- Fire Extinguisher ----
+function feStatusBadge(s) {
+  const map = { good:'badge-success', 'low pressure':'badge-warning', 'not check':'badge-gray', pullout:'badge-warning', missing:'badge-danger', defective:'badge-danger' };
+  return `<span class="badge ${map[s]||'badge-gray'}">${s||''}</span>`;
+}
+
+async function loadFireExt() {
+  UI.loading(true, 'Loading fire extinguisher records...');
+  try {
+    allFireExt = await DB.read('fireExtinguisherDB', true);
+    filterFireExt();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+
+function filterFireExt() {
+  const client = document.getElementById('fe-filter-client').value;
+  const floor = document.getElementById('fe-filter-floor').value.trim();
+  const status = document.getElementById('fe-filter-status').value;
+  const type = document.getElementById('fe-filter-type').value;
+  const from = document.getElementById('fe-filter-from').value;
+  const to = document.getElementById('fe-filter-to').value;
+  let rows = allFireExt;
+  if (client) rows = rows.filter(r => r.client_id === client);
+  if (floor) rows = rows.filter(r => r.floor === floor);
+  if (status) rows = rows.filter(r => r.status === status);
+  if (type) rows = rows.filter(r => r.type === type);
+  if (from) rows = rows.filter(r => r.date_checked >= from);
+  if (to) rows = rows.filter(r => r.date_checked <= to);
+  rows = rows.slice().sort((a,b) => (b.date_checked||'').localeCompare(a.date_checked||''));
+  renderFireExt(rows, 1);
+}
+
+function renderFireExt(rows, page) {
+  feFilteredRows = rows;
+  const paged = UI.paginate(rows, page, 15);
+  document.getElementById('fe-tbody').innerHTML = paged.rows.map(r => `<tr>
+    <td class="mono">${r.serial_no}</td>
+    <td>${UI.dateStr(r.date_checked)}</td>
+    <td>${r.floor}</td>
+    <td>${r.location||'—'}</td>
+    <td>${r.type||'—'}</td>
+    <td>${r.capacity_lb||'—'}</td>
+    <td>${feStatusBadge(r.status)}</td>
+    <td>${r.problem_desc||'—'}</td>
+    <td>${UI.dateStr(r.expiration_date)}</td>
+    <td>
+      <button class="btn btn-ghost btn-sm" onclick="editFireExt('${r.id}')" data-perm="edit" title="Edit">✏️</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteFireExt('${r.id}')" data-perm="delete" title="Delete">🗑</button>
+    </td>
+  </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--text3)">No records found</td></tr>';
+  UI.renderPagination('fe-pagination', paged, p => renderFireExt(rows, p));
+  Auth.applyUIPermissions(user, 'preventive');
+}
+
+function openAddFireExt() {
+  if (!allClients.length) { UI.toast('Add a client first','warning'); return; }
+  editFireExtId = null;
+  document.getElementById('fef-client').value = document.getElementById('fe-filter-client').value || allClients[0].id;
+  document.getElementById('fef-serial').value = '';
+  document.getElementById('fef-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fef-floor').value = document.getElementById('fe-filter-floor').value || '';
+  document.getElementById('fef-location').value = '';
+  document.getElementById('fef-type').value = 'none';
+  document.getElementById('fef-capacity').value = '';
+  document.getElementById('fef-status').value = 'good';
+  document.getElementById('fef-problem').value = '';
+  document.getElementById('fef-expiration').value = '';
+  document.getElementById('fe-modal-title').textContent = '+ Add Fire Extinguisher';
+  UI.openModal('fe-modal');
+}
+function editFireExt(id) {
+  const r = allFireExt.find(x=>x.id===id); if (!r) return;
+  editFireExtId = id;
+  document.getElementById('fef-client').value = r.client_id;
+  document.getElementById('fef-serial').value = r.serial_no;
+  document.getElementById('fef-date').value = r.date_checked;
+  document.getElementById('fef-floor').value = r.floor;
+  document.getElementById('fef-location').value = r.location || '';
+  document.getElementById('fef-type').value = r.type || 'none';
+  document.getElementById('fef-capacity').value = r.capacity_lb || '';
+  document.getElementById('fef-status').value = r.status || 'good';
+  document.getElementById('fef-problem').value = r.problem_desc || '';
+  document.getElementById('fef-expiration').value = r.expiration_date || '';
+  document.getElementById('fe-modal-title').textContent = '✏️ Edit Fire Extinguisher';
+  UI.openModal('fe-modal');
+}
+async function saveFireExt() {
+  const client = document.getElementById('fef-client').value;
+  const serial = document.getElementById('fef-serial').value.trim();
+  const dateChecked = document.getElementById('fef-date').value;
+  const floor = document.getElementById('fef-floor').value.trim();
+  if (!client || !serial || !dateChecked || !floor) { UI.toast('Fill in the required fields','warning'); return; }
+  const data = {
+    client_id: client, serial_no: serial, date_checked: dateChecked, floor,
+    location: document.getElementById('fef-location').value.trim(),
+    type: document.getElementById('fef-type').value,
+    capacity_lb: document.getElementById('fef-capacity').value,
+    status: document.getElementById('fef-status').value,
+    problem_desc: document.getElementById('fef-problem').value.trim(),
+    expiration_date: document.getElementById('fef-expiration').value
+  };
+  UI.loading(true,'Saving...');
+  try {
+    if (editFireExtId) {
+      await DB.update('fireExtinguisherDB', r=>r.id===editFireExtId, data);
+      UI.toast('Updated ✅','success');
+    } else {
+      const all = await DB.read('fireExtinguisherDB', true);
+      await DB.insert('fireExtinguisherDB', { id: DB.nextId(all,'id','FE'), ...data });
+      UI.toast('Added ✅','success');
+    }
+    UI.closeModal('fe-modal');
+    await loadFireExt();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+function deleteFireExt(id) {
+  UI.confirm('Delete this fire extinguisher record?', async () => {
+    UI.loading(true);
+    try { await DB.remove('fireExtinguisherDB', r=>r.id===id); UI.toast('Deleted','success'); await loadFireExt(); }
+    catch(e) { UI.toast('Error: '+e.message,'error'); }
+    UI.loading(false);
+  });
+}
+
+// Proposes the next "<floor>F-<seq>" serial for the selected client+floor,
+// matching the numbering convention already used on real printed tags
+// (e.g. 5F-001, 5F-002 on the 5th floor; 7F-001 on the 7th floor) --
+// the field stays editable so it can still be corrected to match a tag.
+function suggestSerial() {
+  const client = document.getElementById('fef-client').value;
+  const floor = document.getElementById('fef-floor').value.trim();
+  if (!client || !floor) { UI.toast('Select the Client and Floor first','warning'); return; }
+  const existing = allFireExt.filter(r => r.client_id === client && r.floor === floor);
+  const esc = floor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp('^' + esc + 'F-(\\d+)$', 'i');
+  const nums = existing.map(r => { const m = (r.serial_no||'').match(re); return m ? parseInt(m[1],10) : 0; });
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  document.getElementById('fef-serial').value = `${floor}F-${String(next).padStart(3,'0')}`;
+}
+
+async function buildFireExtReportHtml() {
+  const clientFilter = document.getElementById('fe-filter-client').value;
+  const clientLabel = clientFilter ? clientName(clientFilter) : 'All Clients';
+  const rows = feFilteredRows || [];
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fire Extinguisher Report</title>
+  <style>
+    body{font-family:Arial,sans-serif;padding:24px;color:#1e293b}
+    h1{font-size:18px;margin-bottom:4px}
+    p{font-size:12px;color:#64748b;margin-bottom:16px}
+    table{width:100%;border-collapse:collapse;font-size:11px}
+    th,td{border:1px solid #cbd5e1;padding:6px 8px;text-align:left}
+    th{background:#f1f5f9}
+  </style></head><body>
+  <h1>🧯 Fire Extinguisher Preventive Maintenance Report</h1>
+  <p>Client: ${clientLabel} &nbsp;|&nbsp; Generated: ${new Date().toLocaleString('en-PH')}</p>
+  <table><thead><tr><th>Serial #</th><th>Date Check</th><th>Floor</th><th>Location</th><th>Type</th><th>Capacity (lb)</th><th>Status</th><th>Problem Desc</th><th>Expiration</th></tr></thead>
+  <tbody>${rows.map(r=>`<tr><td>${r.serial_no}</td><td>${r.date_checked||''}</td><td>${r.floor}</td><td>${r.location||''}</td><td>${r.type||''}</td><td>${r.capacity_lb||''}</td><td>${r.status||''}</td><td>${r.problem_desc||''}</td><td>${r.expiration_date||''}</td></tr>`).join('')}</tbody>
+  </table></body></html>`;
+}
+async function printFireExt() {
+  if (!feFilteredRows.length) { UI.toast('No records to print','warning'); return; }
+  const win = window.open('', '_blank');
+  win.document.write(await buildFireExtReportHtml());
+  win.document.close();
+  setTimeout(() => { win.focus(); win.print(); }, 300);
+}
+async function downloadFireExt() {
+  if (!feFilteredRows.length) { UI.toast('No records to download','warning'); return; }
+  const blob = new Blob(['﻿', await buildFireExtReportHtml()], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Fire_Extinguisher_Report_${new Date().toISOString().split('T')[0]}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+loadAll();
+</script>
+</body>
+</html>

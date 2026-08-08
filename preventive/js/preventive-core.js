@@ -1,0 +1,642 @@
+// ============================================================
+//  PREVENTIVE-CORE.JS — Self-contained DB engine + Auth + UI for Preventive Maintenance
+//  Own copy so this system reads/debugs independently of the root
+//  app and the other systems -- mirrors the hr/ module's own
+//  hr-core.js. Always used one folder deep (preventive/preventive.html), so links
+//  back to root-level pages are hardcoded '../' directly (no ROOT
+//  indirection needed, unlike the shared root js/ files that have to
+//  handle being loaded from more than one folder depth).
+// ============================================================
+
+// ---- GitHub token/auth banner ----
+function showGithubAuthBanner(message) {
+  let b = document.getElementById('gh-auth-banner');
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'gh-auth-banner';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#dc2626;color:#fff;padding:10px 16px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.3)';
+    document.body.prepend(b);
+  }
+  b.innerHTML = `<span>⚠️ ${message}</span><a href="../index.html" style="color:#fff;text-decoration:underline;font-weight:700;white-space:nowrap">I-update ang GitHub Token →</a>`;
+}
+function hideGithubAuthBanner() {
+  const b = document.getElementById('gh-auth-banner');
+  if (b) b.remove();
+}
+function githubAuthErrorInfo(res) {
+  if (res.status === 401) {
+    return { kind: 'invalid', text: 'Nag-expire o hindi na valid ang GitHub Token na naka-save. Mag-set ng bagong token sa login page.' };
+  }
+  if (res.status === 403) {
+    const remaining = res.headers?.get?.('x-ratelimit-remaining');
+    if (remaining === '0') {
+      const resetHeader = res.headers?.get?.('x-ratelimit-reset');
+      const resetTime = resetHeader ? new Date(parseInt(resetHeader) * 1000).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }) : null;
+      return { kind: 'ratelimit', text: 'Naabot na ang GitHub API rate limit.' + (resetTime ? ` Mag-a-reset ito ~${resetTime}.` : ' Maghintay ng ilang minuto.') };
+    }
+    return { kind: 'invalid', text: 'Tinanggihan ng GitHub ang Token (baka nag-expire o na-revoke). Mag-set ng bagong token sa login page.' };
+  }
+  return null;
+}
+
+// ============================================================
+//  DB — GitHub API TXT database engine, own copy pointed at preventive/db
+// ============================================================
+const DB = (() => {
+
+  const cache = {};
+  const shas  = {};
+
+  function apiUrl(filename) {
+    const { owner, repo, branch, dbPath } = GITHUB_CONFIG;
+    return `https://api.github.com/repos/${owner}/${repo}/contents/${dbPath}/${filename}.txt`;
+  }
+
+  // Sync's cache/queue is keyed by bare dbName whenever dbPath is the
+  // shared root 'db' (e.g. this page reading productsDB/accountsDB via
+  // withPath('db', ...)); otherwise it's "path|dbName" -- this system's
+  // own default (preventive/db) always qualifies, so a Sync.flush() running
+  // later from a *different* page still commits to the right folder.
+  function syncKey(dbName) {
+    return GITHUB_CONFIG.dbPath === 'db' ? dbName : `${GITHUB_CONFIG.dbPath}|${dbName}`;
+  }
+
+  function headers() {
+    return {
+      'Authorization': `token ${GITHUB_CONFIG.token}`,
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    };
+  }
+
+  async function fetchRetry(url, opts, attempts = 3, delayMs = 500) {
+    let lastRes;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const res = await fetch(url, opts);
+        if ((res.status === 403 || res.status === 429) && i < attempts - 1) {
+          lastRes = res;
+          const retryAfter = parseInt(res.headers?.get?.('retry-after')) || 0;
+          await new Promise(r => setTimeout(r, Math.max(delayMs, retryAfter * 1000)));
+          continue;
+        }
+        return res;
+      } catch (e) {
+        if (i === attempts - 1) throw e;
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+    return lastRes;
+  }
+
+  function parseTxt(raw) {
+    const lines = raw.trim().split('\n').filter(l => l.trim() && !l.startsWith('#'));
+    if (lines.length < 1) return [];
+    const headers = lines[0].split('|').map(h => h.trim());
+    return lines.slice(1).map(line => {
+      const vals = line.split('|');
+      const obj  = {};
+      headers.forEach((h, i) => { obj[h] = (vals[i] || '').trim(); });
+      return obj;
+    });
+  }
+
+  function serializeTxt(rows, headerRow) {
+    if (!rows || rows.length === 0) return headerRow + '\n';
+    const keys = headerRow.split('|');
+    const lines = rows.map(row => keys.map(k => (row[k] ?? '')).join('|'));
+    return [headerRow, ...lines].join('\n') + '\n';
+  }
+
+  async function read(dbName, forceRefresh = false) {
+    if (cache[dbName] && !forceRefresh) return cache[dbName];
+    try {
+      const res = await fetchRetry(apiUrl(dbName), { headers: headers(), cache: 'no-store' });
+      if (!res.ok) {
+        if (res.status === 404) {
+          cache[dbName] = []; cache[`${dbName}_header`] = '';
+          if (typeof Sync !== 'undefined') Sync.cacheSet(syncKey(dbName), [], '');
+          return [];
+        }
+        const authErr = githubAuthErrorInfo(res);
+        if (authErr) showGithubAuthBanner(authErr.text);
+        throw new Error(authErr ? authErr.text : `DB read error ${res.status}: ${dbName}`);
+      }
+      hideGithubAuthBanner();
+      const json = await res.json();
+      shas[dbName]  = json.sha;
+      const content = decodeURIComponent(escape(atob(json.content.replace(/\n/g, ''))));
+      cache[dbName] = parseTxt(content);
+      cache[`${dbName}_header`] = content.split('\n')[0];
+      if (typeof Sync !== 'undefined') Sync.cacheSet(syncKey(dbName), cache[dbName], cache[`${dbName}_header`]);
+      return cache[dbName];
+    } catch (e) {
+      if (typeof Sync !== 'undefined' && Sync.isConnectivityError(e)) {
+        const local = Sync.cacheGet(syncKey(dbName));
+        if (local) {
+          cache[dbName] = local.rows;
+          cache[`${dbName}_header`] = local.header;
+          return cache[dbName];
+        }
+      }
+      throw e;
+    }
+  }
+
+  async function write(dbName, rows, description) {
+    const headerRow = cache[`${dbName}_header`] || Object.keys(rows[0] || {}).join('|');
+    const content = serializeTxt(rows, headerRow);
+    const encoded = btoa(unescape(encodeURIComponent(content)));
+    async function attempt() {
+      const body = {
+        message: `Update ${dbName} - ${new Date().toISOString()}`,
+        content: encoded,
+        sha:     shas[dbName],
+        branch:  GITHUB_CONFIG.branch
+      };
+      const res = await fetchRetry(apiUrl(dbName), {
+        method: 'PUT',
+        headers: headers(),
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const authErr = githubAuthErrorInfo(res);
+        if (authErr) showGithubAuthBanner(authErr.text);
+        const err = await res.json().catch(() => ({}));
+        const e = new Error(authErr ? authErr.text : (err.message || `DB write error ${res.status}`));
+        e.status = res.status;
+        throw e;
+      }
+      hideGithubAuthBanner();
+      const json = await res.json();
+      shas[dbName]  = json.content.sha;
+      cache[dbName] = rows;
+      if (typeof Sync !== 'undefined') Sync.cacheSet(syncKey(dbName), rows, headerRow);
+      return { ok: true, queued: false };
+    }
+    try {
+      let lastErr;
+      for (let i = 0; i < 6; i++) {
+        try {
+          return await attempt();
+        } catch (e) {
+          const isShaConflict = e.status === 409 || /does not match/i.test(e.message || '');
+          if (!isShaConflict) throw e;
+          lastErr = e;
+          if (i < 5) {
+            await new Promise(r => setTimeout(r, 400 * (i + 1)));
+            await read(dbName, true);
+          }
+        }
+      }
+      throw lastErr;
+    } catch (e) {
+      if (typeof Sync !== 'undefined' && Sync.isConnectivityError(e)) {
+        cache[dbName] = rows;
+        const key = syncKey(dbName);
+        Sync.cacheSet(key, rows, headerRow);
+        Sync.queueWrite(key, rows, headerRow, description || `Update to ${dbName}`);
+        return { ok: true, queued: true };
+      }
+      throw e;
+    }
+  }
+
+  async function forceCommit(dbName, rows, headerRow) {
+    await read(dbName, true);
+    cache[`${dbName}_header`] = headerRow || cache[`${dbName}_header`];
+    return write(dbName, rows, '(sync)');
+  }
+
+  async function insert(dbName, newRow) {
+    const rows = await read(dbName, true);
+    rows.push(newRow);
+    return write(dbName, rows, 'New record');
+  }
+
+  async function update(dbName, condition, updates) {
+    const rows = await read(dbName, true);
+    let changed = 0;
+    const newRows = rows.map(row => {
+      if (condition(row)) { changed++; return { ...row, ...updates }; }
+      return row;
+    });
+    if (changed === 0) return false;
+    await write(dbName, newRows, 'Record update');
+    return changed;
+  }
+
+  async function remove(dbName, condition) {
+    const rows = await read(dbName, true);
+    const newRows = rows.filter(row => !condition(row));
+    const deleted = rows.length - newRows.length;
+    if (deleted === 0) return 0;
+    await write(dbName, newRows, 'Record deletion');
+    return deleted;
+  }
+
+  function nextId(rows, field, prefix) {
+    if (rows.length === 0) return `${prefix}001`;
+    const nums = rows.map(r => parseInt(r[field].replace(prefix, '')) || 0);
+    const next = Math.max(...nums) + 1;
+    return `${prefix}${String(next).padStart(3, '0')}`;
+  }
+
+  function search(rows, query, fields) {
+    const q = query.toLowerCase();
+    return rows.filter(row =>
+      fields.some(f => (row[f] || '').toLowerCase().includes(q))
+    );
+  }
+
+  function clearCache(dbName) {
+    if (dbName) { delete cache[dbName]; delete shas[dbName]; }
+    else { Object.keys(cache).forEach(k => delete cache[k]); }
+  }
+
+  // Run fn() against a different dbPath than this system's own default
+  // (preventive/db) -- used to reach tables shared at the root (productsDB,
+  // accountsDB). Restores the default afterward regardless of outcome.
+  // Never Promise.all a withPath call alongside another unwrapped DB.*
+  // call -- GITHUB_CONFIG.dbPath is a single mutable global, so truly
+  // concurrent calls could race. Every call site in this app already
+  // awaits sequentially, which is what keeps this safe.
+  async function withPath(path, fn) {
+    const saved = GITHUB_CONFIG.dbPath;
+    GITHUB_CONFIG.dbPath = path;
+    try { return await fn(); }
+    finally { GITHUB_CONFIG.dbPath = saved; }
+  }
+
+  return { read, write, insert, update, remove, forceCommit, nextId, search, parseTxt, serializeTxt, clearCache, withPath };
+})();
+
+// ============================================================
+//  SIDEBAR — collapsible topbar+sidebar chrome, ported from
+//  hr/js/hr-core.js's initSidebar() (desktop default OPEN + content
+//  push via .sb-pushed, mobile default CLOSED + overlay-only).
+//  Standalone (not part of UI) to match the hr-core.js original.
+// ============================================================
+function initSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const topbar  = document.getElementById('topbar');
+  const mainEl  = document.getElementById('main-content');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (!sidebar || !topbar || !mainEl) return;
+
+  const MOBILE_BP = 1024;
+  let sidebarOpen = false;
+
+  function isMobile() { return window.innerWidth <= MOBILE_BP; }
+
+  function applyOpen() {
+    sidebarOpen = true;
+    sidebar.classList.add('sb-open');
+    if (isMobile()) {
+      overlay.classList.add('sb-visible');
+    } else {
+      topbar.classList.add('sb-pushed');
+      mainEl.classList.add('sb-pushed');
+    }
+  }
+
+  function applyClose() {
+    sidebarOpen = false;
+    sidebar.classList.remove('sb-open');
+    overlay.classList.remove('sb-visible');
+    topbar.classList.remove('sb-pushed');
+    mainEl.classList.remove('sb-pushed');
+  }
+
+  function toggle() { if (sidebarOpen) applyClose(); else applyOpen(); }
+
+  if (isMobile()) applyClose(); else applyOpen();
+
+  document.querySelectorAll('.sidebar-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', e => { e.stopPropagation(); toggle(); });
+  });
+  if (overlay) overlay.addEventListener('click', () => applyClose());
+
+  let lastWasMobile = isMobile();
+  window.addEventListener('resize', () => {
+    const nowMobile = isMobile();
+    if (nowMobile === lastWasMobile) return;
+    lastWasMobile = nowMobile;
+    if (nowMobile) applyClose(); else applyOpen();
+  });
+}
+
+// ============================================================
+//  Auth — session/permissions, own copy (same session/token keys as
+//  root so a single root login works across every system)
+// ============================================================
+const Auth = (() => {
+  const SESSION_KEY = 'ent_session';
+  const TOKEN_KEY   = 'ent_gh_token';
+
+  function setSession(user) { sessionStorage.setItem(SESSION_KEY, JSON.stringify(user)); }
+  function getSession() { const s = sessionStorage.getItem(SESSION_KEY); return s ? JSON.parse(s) : null; }
+  function clearSession() { sessionStorage.removeItem(SESSION_KEY); }
+  function saveToken(t) { localStorage.setItem(TOKEN_KEY, t); GITHUB_CONFIG.token = t; }
+  function loadToken() { const t = localStorage.getItem(TOKEN_KEY); if (t) GITHUB_CONFIG.token = t; return t; }
+
+  async function hashPassword(password) {
+    const data = new TextEncoder().encode(password);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  function logout() { clearSession(); window.location.href = '../index.html'; }
+
+  function guard(requiredSystem) {
+    const user = getSession();
+    if (!user) { window.location.href = '../index.html'; return null; }
+    if (requiredSystem === null) return user;
+
+    if (requiredSystem === 'superadmin') {
+      if (user.role !== 'superadmin') { window.location.href = '../dashboard.html'; return null; }
+      return user;
+    }
+
+    if (!canAccessSystem(user, requiredSystem)) {
+      alert('You don\'t have access to this system.');
+      window.location.href = '../dashboard.html';
+      return null;
+    }
+    return user;
+  }
+
+  function canAccessSystem(user, system) {
+    if (!system) return true;
+    if (user.role === 'superadmin') return true;
+    if (system === 'superadmin') return user.role === 'superadmin';
+    if (user.assigned_system === 'all') return true;
+    return user.assigned_system === system;
+  }
+
+  function hasPermission(user, system, action) {
+    if (user.role === 'superadmin') return true;
+    return (PERMISSIONS[system]?.[user.role] || []).includes(action);
+  }
+
+  function getAccessibleSystems(user) {
+    if (user.role === 'superadmin') return Object.keys(SYSTEMS);
+    if (user.assigned_system === 'all') return Object.keys(SYSTEMS);
+    return [user.assigned_system].filter(s => SYSTEMS[s]);
+  }
+
+  function getHomeUrl(user) {
+    if (user.role === 'superadmin') return '../dashboard.html';
+    const sys = user.assigned_system;
+    return '../' + (SYSTEMS[sys] ? SYSTEMS[sys].file : 'dashboard.html');
+  }
+
+  function applyUIPermissions(user, system) {
+    document.querySelectorAll('[data-perm]').forEach(el => {
+      if (!hasPermission(user, system, el.dataset.perm)) el.style.display = 'none';
+    });
+    document.querySelectorAll('[data-role]').forEach(el => {
+      const roles = el.dataset.role.split(',').map(r => r.trim());
+      if (!roles.includes(user.role)) el.style.display = 'none';
+    });
+  }
+
+  // No login() here -- this page never shows its own login form, only
+  // the root index.html does; this copy only needs to read/guard a
+  // session that login already created.
+  return { logout, guard, getSession, setSession, clearSession,
+           saveToken, loadToken, canAccessSystem, hasPermission,
+           getAccessibleSystems, applyUIPermissions, hashPassword, getHomeUrl };
+})();
+
+// ============================================================
+//  UI — shared UI utilities, own copy
+// ============================================================
+const UI = (() => {
+
+  function toast(message, type = 'info', duration = 3500) {
+    let c = document.getElementById('toast-container');
+    if (!c) { c = document.createElement('div'); c.id = 'toast-container'; document.body.appendChild(c); }
+    const icons = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️' };
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${message}</span>`;
+    c.appendChild(el);
+    setTimeout(() => { el.style.opacity='0'; el.style.transform='translateX(20px)'; el.style.transition='all 0.3s'; setTimeout(()=>el.remove(),300); }, duration);
+  }
+
+  function loading(show, msg='Loading...') {
+    let o = document.getElementById('loading-overlay');
+    if (!o) { o=document.createElement('div'); o.id='loading-overlay'; o.className='loading-overlay'; o.innerHTML=`<div class="spinner"></div><div style="color:#94a3b8;font-size:14px">${msg}</div>`; document.body.appendChild(o); }
+    o.querySelector('div:last-child').textContent = msg;
+    o.classList.toggle('active', show);
+  }
+
+  function openModal(id)  { const m=document.getElementById(id); if(m) m.classList.add('active'); }
+  function closeModal(id) { const m=document.getElementById(id); if(m) m.classList.remove('active'); }
+
+  document.addEventListener('click', e => {
+    if (e.target.classList.contains('modal-backdrop')) e.target.classList.remove('active');
+  });
+
+  function confirm(message, onConfirm, onCancel) {
+    const id = 'cfm-'+Date.now();
+    const div = document.createElement('div');
+    div.id=id; div.className='modal-backdrop active';
+    div.innerHTML=`<div class="modal" style="max-width:400px"><div class="modal-header"><span class="modal-title">⚠️ Confirmation</span></div><p style="color:#e2e8f0;margin-bottom:24px">${message}</p><div class="modal-footer"><button class="btn btn-ghost" id="${id}-no">Cancel</button><button class="btn btn-danger" id="${id}-yes">Yes, continue</button></div></div>`;
+    document.body.appendChild(div);
+    document.getElementById(`${id}-yes`).onclick=()=>{div.remove();onConfirm?.();};
+    document.getElementById(`${id}-no`).onclick=()=>{div.remove();onCancel?.();};
+    div.addEventListener('click',e=>{if(e.target===div){div.remove();onCancel?.();}});
+  }
+
+  function peso(v)       { return '₱'+parseFloat(v||0).toLocaleString('en-PH',{minimumFractionDigits:2}); }
+  function dateStr(s)    { return s?new Date(s).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}):'—'; }
+  function dateTimeStr(s){ return s?new Date(s).toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'short'}):'—'; }
+
+  function roleBadge(role) {
+    const map={superadmin:'badge-purple',admin:'badge-info',user:'badge-gray',staff:'badge-success',ojt:'badge-warning',guest:'badge-gray'};
+    return `<span class="badge ${map[role]||'badge-gray'}">${role.toUpperCase()}</span>`;
+  }
+  function statusBadge(status) {
+    const map={active:'badge-success',inactive:'badge-gray',suspended:'badge-danger',completed:'badge-success',pending:'badge-warning',cancelled:'badge-danger',approved:'badge-success',rejected:'badge-danger',present:'badge-success',absent:'badge-danger',late:'badge-warning',released:'badge-success',draft:'badge-gray','in-stock':'badge-success','low-stock':'badge-warning','out-of-stock':'badge-danger',paid:'badge-success'};
+    return `<span class="badge ${map[status]||'badge-gray'}">${status}</span>`;
+  }
+
+  // Flat sidebar nav (no accordion groups -- this page is a single
+  // tab-based view, not a multi-page app like HR): Dashboard (only
+  // shown when it actually leads somewhere else -- superadmin or a
+  // multi-system user, since a single-system user's "home" already IS
+  // this page), this system's own tabs (passed in by the page's own
+  // inline script, since the tab list/icons differ per system), the
+  // other systems this user can reach, and User Management if allowed.
+  function buildSidebar(user, currentSystem, tabs) {
+    const nav = document.getElementById('sidebar-nav');
+    if (!nav) return;
+    const isSuperAdmin = user.role === 'superadmin';
+    const systems = Auth.getAccessibleSystems(user);
+
+    let html = '';
+
+    if (isSuperAdmin || systems.length > 1) {
+      html += `<div class="nav-group">
+        <a href="../dashboard.html" class="nav-item"><span class="nav-icon">🏠</span>Dashboard</a>
+      </div>`;
+    }
+
+    if (tabs && tabs.length) {
+      const sys = SYSTEMS[currentSystem];
+      html += `<div class="nav-group">
+        <div class="nav-group-label">${sys ? sys.name : currentSystem}</div>
+        ${tabs.map((t, i) => `<div class="nav-item${i === 0 ? ' active' : ''}" data-tab="${t.id}"${t.perm ? ` data-perm="${t.perm}"` : ''} onclick="switchTab('${t.id}',this)"><span class="nav-icon">${t.icon}</span>${t.label}</div>`).join('')}
+      </div>`;
+    }
+
+    const otherSystems = systems.filter(s => s !== currentSystem);
+    if (otherSystems.length || isSuperAdmin) {
+      html += `<div class="nav-group">
+        <div class="nav-group-label">Systems</div>
+        ${otherSystems.map(s => {
+          const sys = SYSTEMS[s];
+          return sys ? `<a href="../${sys.file}" class="nav-item"><span class="nav-icon">${sys.icon}</span>${sys.name}</a>` : '';
+        }).join('')}
+        ${isSuperAdmin ? `<a href="../superadmin.html" class="nav-item"><span class="nav-icon">⚙️</span>SuperAdmin Panel</a>` : ''}
+      </div>`;
+    }
+
+    if (currentSystem && Auth.hasPermission(user, currentSystem, 'manage_users')) {
+      html += `<div class="nav-group">
+        <div class="nav-group-label">System</div>
+        <div class="nav-item" onclick="openUserMgmt&&openUserMgmt()"><span class="nav-icon">👥</span>User Management</div>
+      </div>`;
+    }
+
+    nav.innerHTML = html;
+
+    const avEl   = document.getElementById('sidebar-avatar');
+    const nameEl = document.getElementById('sidebar-name');
+    const roleEl = document.getElementById('sidebar-role');
+    if (avEl)   avEl.textContent   = user.full_name.charAt(0).toUpperCase();
+    if (nameEl) nameEl.textContent = user.full_name;
+    if (roleEl) roleEl.textContent = user.role.toUpperCase();
+  }
+
+  function buildNavbar(user, systemName) {
+    const crumb = document.querySelector('.topbar-breadcrumb .current');
+    if (crumb && systemName) crumb.textContent = systemName;
+    mountSyncPill();
+    mountProfileMenu(user);
+    initSidebar();
+  }
+
+  function mountProfileMenu(user) {
+    const right = document.getElementById('topbar-right');
+    if (!right || document.getElementById('profile-menu')) return;
+    const wrap = document.createElement('div');
+    wrap.style.position = 'relative';
+    right.appendChild(wrap);
+
+    const chip = document.createElement('div');
+    chip.className = 'user-chip clickable';
+    chip.innerHTML = `<div class="avatar">${user.full_name.charAt(0).toUpperCase()}</div>
+      <div class="user-info"><span class="name">${user.full_name}</span><span class="role">${user.role.toUpperCase()}</span></div>`;
+    chip.addEventListener('click', e => { e.stopPropagation(); toggleProfileMenu(); });
+    wrap.appendChild(chip);
+
+    const menu = document.createElement('div');
+    menu.id = 'profile-menu';
+    menu.className = 'profile-menu';
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+    menu.innerHTML = `
+      <div class="pm-header">
+        <div class="pm-name">${user.full_name}</div>
+        <div class="pm-role">${user.role}</div>
+      </div>
+      <a class="pm-item" href="../edit-profile.html">✏️ Edit Profile</a>
+      <a class="pm-item" href="../change-password.html">🔑 Change Password</a>
+      <div class="pm-theme-row">
+        <span>🌙 Dark Mode</span>
+        <label class="theme-switch">
+          <input type="checkbox" id="theme-toggle-input" ${isDark?'checked':''} onchange="UI.toggleTheme(this.checked)">
+          <span class="theme-switch-track"></span>
+        </label>
+      </div>
+      <div class="pm-divider"></div>
+      <button class="pm-item danger" onclick="Auth.logout()">🚪 Logout</button>
+    `;
+    wrap.appendChild(menu);
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.user-chip') && !e.target.closest('#profile-menu') && !e.target.closest('#sidebar-user-card')) closeProfileMenu();
+    });
+  }
+  function toggleProfileMenu() {
+    const m = document.getElementById('profile-menu');
+    if (m) m.classList.toggle('open');
+  }
+  function closeProfileMenu() {
+    const m = document.getElementById('profile-menu');
+    if (m) m.classList.remove('open');
+  }
+  // Own theme key (preventive_theme) -- independent from the root app's
+  // ent_theme and the other systems' own keys, same independence
+  // principle as the hr/ module's separate hr_theme.
+  function toggleTheme(isDark) {
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    localStorage.setItem('preventive_theme', isDark ? 'dark' : 'light');
+  }
+
+  function mountSyncPill() {
+    if (typeof Sync === 'undefined') return;
+    const right = document.getElementById('topbar-right');
+    if (!right || document.getElementById('sync-pill')) return;
+    const pill = document.createElement('div');
+    pill.id = 'sync-pill';
+    pill.className = 'sync-pill';
+    pill.title = 'Click to sync now';
+    pill.onclick = () => Sync.flush().then(r => {
+      if (r.synced) toast(`Synced ${r.synced} change(s) ✅`, 'success');
+      else if (!Sync.status().online) toast('Offline — will save locally first.', 'warning');
+      else toast('No new changes to sync.', 'info');
+    });
+    right.insertBefore(pill, right.firstChild);
+    renderSyncPill(Sync.status());
+    document.addEventListener('ent:sync-status', e => renderSyncPill(e.detail));
+  }
+
+  function renderSyncPill(s) {
+    const pill = document.getElementById('sync-pill');
+    if (!pill) return;
+    if (!s.online) {
+      pill.className = 'sync-pill offline';
+      pill.innerHTML = `🔴 Offline${s.pending ? ` <span class="sync-count">${s.pending}</span>` : ''}`;
+    } else if (s.pending) {
+      pill.className = 'sync-pill pending';
+      pill.innerHTML = `🟡 Syncing... <span class="sync-count">${s.pending}</span>`;
+    } else {
+      pill.className = 'sync-pill online';
+      pill.innerHTML = `🟢 Online`;
+    }
+  }
+
+  function paginate(rows, page, perPage=15) {
+    const total=rows.length, pages=Math.ceil(total/perPage), start=(page-1)*perPage;
+    return { rows:rows.slice(start,start+perPage), total, pages, page, showing:`Showing ${start+1}–${Math.min(start+perPage,total)} of ${total}` };
+  }
+
+  function renderPagination(containerId, paged, onPage) {
+    const el=document.getElementById(containerId);
+    if(!el||paged.pages<=1){if(el)el.innerHTML='';return;}
+    let html=`<div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:16px"><span style="color:#94a3b8;font-size:12px">${paged.showing}</span>`;
+    for(let i=1;i<=paged.pages;i++){
+      const a=i===paged.page?'btn-primary':'btn-ghost';
+      html+=`<button class="btn btn-sm ${a}" onclick="(${onPage.toString()})(${i})">${i}</button>`;
+    }
+    html+='</div>';
+    el.innerHTML=html;
+  }
+
+  return { toast, loading, openModal, closeModal, confirm,
+           peso, dateStr, dateTimeStr, roleBadge, statusBadge,
+           buildSidebar, buildNavbar, paginate, renderPagination, toggleTheme,
+           toggleProfileMenu };
+})();

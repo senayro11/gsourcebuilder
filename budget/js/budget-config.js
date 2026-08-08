@@ -19,7 +19,9 @@ const SYSTEMS = {
   pos:        { name: 'Point of Sale',        icon: '🛒', file: 'pos/pos.html',        color: '#6366f1' },
   inventory:  { name: 'Inventory',            icon: '📦', file: 'inventory/inventory.html',  color: '#0ea5e9' },
   attendance: { name: 'HR Management',        icon: '🕐', file: 'hr/attendance.html', color: '#10b981' },
-  budget:     { name: 'Budget & Finance',     icon: '💰', file: 'budget/budget.html',     color: '#f59e0b' }
+  budget:     { name: 'Budget & Finance',     icon: '💰', file: 'budget/budget.html',     color: '#f59e0b' },
+  pm:         { name: 'Project Management',   icon: '📁', file: 'pm/pm.html',          color: '#14b8a6' },
+  preventive: { name: 'Preventive Maintenance', icon: '🧯', file: 'preventive/preventive.html', color: '#ef4444' }
 };
 
 // Superadmin-only system (not in SYSTEMS to hide from normal users)
@@ -54,5 +56,17 @@ const PERMISSIONS = {
     staff:  ['view','create'],
     ojt:    ['view'],
     guest:  []
+  },
+  pm: {
+    admin:  ['view','create','edit','delete','reports','settings','manage_users'],
+    staff:  ['view','create','edit'],
+    ojt:    ['view'],
+    guest:  ['view']
+  },
+  preventive: {
+    admin:  ['view','create','edit','delete','reports','settings','manage_users'],
+    staff:  ['view','create','edit'],
+    ojt:    ['view'],
+    guest:  ['view']
   }
 };
