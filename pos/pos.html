@@ -4,15 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>POS System — Enterprise</title>
-  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="css/pos.css">
   <script>
     // Applied before first paint so a saved theme preference doesn't
     // flash the wrong theme first -- default (no saved value) is dark,
-    // matching how this app has always looked.
-    document.documentElement.setAttribute('data-theme', localStorage.getItem('ent_theme') === 'light' ? 'light' : 'dark');
-    // One folder deep -- shared root scripts (auth.js/ui.js/db.js) use
-    // this to build links back to root-level pages correctly.
-    const ROOT = '../';
+    // matching how this app has always looked. Own key (pos_theme),
+    // independent from the root app's and the other systems'.
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('pos_theme') === 'light' ? 'light' : 'dark');
   </script>
   <style>
     .pos-layout { display:grid; grid-template-columns:1fr 340px; gap:16px; }
@@ -288,11 +286,9 @@
 <div id="toast-container"></div>
 <div id="loading-overlay" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="../js/config.js"></script>
+<script src="js/pos-config.js"></script>
 <script src="../js/sync.js"></script>
-<script src="../js/db.js"></script>
-<script src="../js/auth.js"></script>
-<script src="../js/ui.js"></script>
+<script src="js/pos-core.js"></script>
 <script src="../js/usermgmt.js"></script>
 <script>
 Auth.loadToken();
@@ -308,7 +304,7 @@ let allProducts=[], cart=[], varTarget=null, editProdId=null, imgBase64='', allT
 
 // ============ PRODUCTS ============
 async function loadProducts() {
-  allProducts = (await DB.read('productsDB')).filter(p=>p.status==='active');
+  allProducts = (await DB.withPath('db',()=>DB.read('productsDB'))).filter(p=>p.status==='active');
   renderCatTabs(); filterProducts();
 }
 
@@ -474,15 +470,15 @@ async function checkout() {
   if(method==='cash'&&tendered<total){UI.toast('Insufficient payment!','error');return;}
   UI.loading(true,'Processing...');
   try{
-    const txns=await DB.withPath('pos/db',()=>DB.read('transactionsDB',true));
+    const txns=await DB.read('transactionsDB',true);
     const id=DB.nextId(txns,'id','TXN');
     const items=cart.map(c=>({id:c.id,name:c.name,qty:c.qty,price:c.price,variation:c.variation,total:c.price*c.qty}));
-    await DB.withPath('pos/db',()=>DB.insert('transactionsDB',{id,date:new Date().toISOString().replace('T',' ').substring(0,19),cashier:user.username,items_json:JSON.stringify(items),subtotal:sub.toFixed(2),discount:(sub*disc/100).toFixed(2),tax:'0.00',total:total.toFixed(2),payment_method:method,amount_tendered:tendered.toFixed(2),change:(tendered-total).toFixed(2),status:'completed'}));
+    await DB.insert('transactionsDB',{id,date:new Date().toISOString().replace('T',' ').substring(0,19),cashier:user.username,items_json:JSON.stringify(items),subtotal:sub.toFixed(2),discount:(sub*disc/100).toFixed(2),tax:'0.00',total:total.toFixed(2),payment_method:method,amount_tendered:tendered.toFixed(2),change:(tendered-total).toFixed(2),status:'completed'});
     // Deduct stock
-    const prods=await DB.read('productsDB',true);
+    const prods=await DB.withPath('db',()=>DB.read('productsDB',true));
     for(const item of cart){
       const p=prods.find(x=>x.id===item.id);
-      if(p) await DB.update('productsDB',r=>r.id===item.id,{stock:String(parseInt(p.stock)-item.qty)});
+      if(p) await DB.withPath('db',()=>DB.update('productsDB',r=>r.id===item.id,{stock:String(parseInt(p.stock)-item.qty)}));
     }
     showReceipt({id,date:new Date().toISOString().replace('T',' ').substring(0,19),cashier:user.username,items,subtotal:sub,discount:sub*disc/100,total,method,tendered,change:tendered-total});
     clearCart(); await loadProducts();
@@ -513,7 +509,7 @@ function showReceipt(t) {
 
 // ============ TRANSACTIONS ============
 async function loadTransactions() {
-  allTxns=(await DB.withPath('pos/db',()=>DB.read('transactionsDB',true))).sort((a,b)=>b.date.localeCompare(a.date));
+  allTxns=(await DB.read('transactionsDB',true)).sort((a,b)=>b.date.localeCompare(a.date));
   filterTxns();
 }
 function filterTxns(){
@@ -541,7 +537,7 @@ function viewTxnReceipt(id){
 // ============ PRODUCT MANAGEMENT ============
 let allProdsMgmt=[];
 async function loadProdMgmt(){
-  allProdsMgmt=await DB.read('productsDB',true);
+  allProdsMgmt=await DB.withPath('db',()=>DB.read('productsDB',true));
   filterProdMgmt();
 }
 function filterProdMgmt(){
@@ -654,11 +650,11 @@ async function saveProduct(){
   try{
     const data={name,category:document.getElementById('f-pcat').value,price,cost:document.getElementById('f-pcost').value,stock:document.getElementById('f-pstock').value,unit:document.getElementById('f-punit').value,barcode:document.getElementById('f-pbarcode').value,status:document.getElementById('f-pstatus').value,image:imgBase64,variations_json:JSON.stringify(varGroups)};
     if(editProdId){
-      await DB.update('productsDB',r=>r.id===editProdId,data);
+      await DB.withPath('db',()=>DB.update('productsDB',r=>r.id===editProdId,data));
       UI.toast('Updated ✅','success');
     }else{
-      const all=await DB.read('productsDB',true);
-      await DB.insert('productsDB',{id:DB.nextId(all,'id','P'),...data,created_at:new Date().toISOString().split('T')[0]});
+      const all=await DB.withPath('db',()=>DB.read('productsDB',true));
+      await DB.withPath('db',()=>DB.insert('productsDB',{id:DB.nextId(all,'id','P'),...data,created_at:new Date().toISOString().split('T')[0]}));
       UI.toast('Added ✅','success');
     }
     UI.closeModal('product-modal');
@@ -670,7 +666,7 @@ async function saveProduct(){
 function archiveProduct(id){
   UI.confirm('Archive this product?',async()=>{
     UI.loading(true);
-    try{await DB.update('productsDB',r=>r.id===id,{status:'inactive'});UI.toast('Archived','success');await loadProdMgmt();await loadProducts();}
+    try{await DB.withPath('db',()=>DB.update('productsDB',r=>r.id===id,{status:'inactive'}));UI.toast('Archived','success');await loadProdMgmt();await loadProducts();}
     catch(e){UI.toast('Error: '+e.message,'error');}
     UI.loading(false);
   });
@@ -681,7 +677,7 @@ async function generateReport(){
   const from=document.getElementById('rpt-from').value;
   const to=document.getElementById('rpt-to').value;
   if(!from||!to){UI.toast('Select a date range','warning');return;}
-  const txns=(await DB.withPath('pos/db',()=>DB.read('transactionsDB',true))).filter(t=>t.date>=from&&t.date<=to+'z'&&t.status==='completed');
+  const txns=(await DB.read('transactionsDB',true)).filter(t=>t.date>=from&&t.date<=to+'z'&&t.status==='completed');
   const totalSales=txns.reduce((s,t)=>s+parseFloat(t.total||0),0);
   const totalTxns=txns.length;
   const avgPerTxn=totalTxns?totalSales/totalTxns:0;

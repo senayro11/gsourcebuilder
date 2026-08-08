@@ -104,7 +104,7 @@ const UserMgmt = (() => {
     document.getElementById('umf-system-name').textContent = SYSTEMS[currentSystem]?.name || currentSystem;
     UI.loading(true, 'Loading users...');
     try {
-      allUsers = (await DB.read('accountsDB', true))
+      allUsers = (await DB.withPath('db', () => DB.read('accountsDB', true)))
         .filter(u => u.assigned_system === currentSystem);
       renderStats();
       filter();
@@ -194,28 +194,28 @@ const UserMgmt = (() => {
     try {
       let hashed = '';
       if (pw) hashed = await Auth.hashPassword(pw);
-      const allAcc = await DB.read('accountsDB', true);
+      const allAcc = await DB.withPath('db', () => DB.read('accountsDB', true));
 
       if (editUsername) {
         const updates = { full_name:fullName, email, role, status };
         if (hashed) updates.password_hash = hashed;
-        await DB.update('accountsDB', r=>r.username===editUsername, updates);
+        await DB.withPath('db', () => DB.update('accountsDB', r=>r.username===editUsername, updates));
         UI.toast('User updated ✅','success');
       } else {
         if (allAcc.find(u=>u.username===username)) {
           UI.toast('A user with this username already exists!','error');
           UI.loading(false); return;
         }
-        await DB.insert('accountsDB', {
+        await DB.withPath('db', () => DB.insert('accountsDB', {
           username, password_hash:hashed, role,
           assigned_system: currentSystem,
           full_name:fullName, email, status,
           created_at: new Date().toISOString().split('T')[0]
-        });
+        }));
         UI.toast('User added ✅','success');
       }
       UI.closeModal('um-form-backdrop');
-      allUsers = (await DB.read('accountsDB',true)).filter(u=>u.assigned_system===currentSystem);
+      allUsers = (await DB.withPath('db', () => DB.read('accountsDB',true))).filter(u=>u.assigned_system===currentSystem);
       renderStats(); filter();
     } catch(e) { UI.toast('Error: '+e.message,'error'); }
     UI.loading(false);
@@ -227,9 +227,9 @@ const UserMgmt = (() => {
     UI.confirm(`${newStatus==='suspended'?'Suspend':'Activate'} the account of ${u.full_name}?`, async()=>{
       UI.loading(true);
       try {
-        await DB.update('accountsDB',r=>r.username===username,{status:newStatus});
+        await DB.withPath('db', () => DB.update('accountsDB',r=>r.username===username,{status:newStatus}));
         UI.toast(`Account ${newStatus} ✅`,'success');
-        allUsers=(await DB.read('accountsDB',true)).filter(u=>u.assigned_system===currentSystem);
+        allUsers=(await DB.withPath('db', () => DB.read('accountsDB',true))).filter(u=>u.assigned_system===currentSystem);
         renderStats(); filter();
       } catch(e){UI.toast('Error: '+e.message,'error');}
       UI.loading(false);
@@ -240,9 +240,9 @@ const UserMgmt = (() => {
     UI.confirm(`DELETE the account of ${username}? This cannot be undone.`, async()=>{
       UI.loading(true);
       try {
-        await DB.remove('accountsDB',r=>r.username===username&&r.assigned_system===currentSystem);
+        await DB.withPath('db', () => DB.remove('accountsDB',r=>r.username===username&&r.assigned_system===currentSystem));
         UI.toast('User deleted','success');
-        allUsers=(await DB.read('accountsDB',true)).filter(u=>u.assigned_system===currentSystem);
+        allUsers=(await DB.withPath('db', () => DB.read('accountsDB',true))).filter(u=>u.assigned_system===currentSystem);
         renderStats(); filter();
       } catch(e){UI.toast('Error: '+e.message,'error');}
       UI.loading(false);

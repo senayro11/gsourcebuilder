@@ -93,16 +93,20 @@ const Sync = (() => {
     return realOnline;
   }
 
-  // A queue/cache key may come from the root app (bare dbName, using
-  // window.DB and whatever GITHUB_CONFIG.dbPath is current when the
-  // write eventually flushes), from the HR module (prefixed "hr_", using
+  // A queue/cache key comes from the HR module (prefixed "hr_", using
   // window.HRDB — different engine because it points at a different
   // dbPath/files even when some names coincide, e.g. "employeesDB"), or
-  // from a root page that wrote via DB.withPath() to a folder other than
-  // its own default (e.g. pos/pos.html writing "transactionsDB" into
-  // pos/db) — those are queued as "path|dbName" so a flush that happens
-  // to run from a *different* page (whose own default dbPath wouldn't
-  // otherwise match) still commits to the right folder.
+  // from any page's own DB object (root, or one of the per-system
+  // pos/inventory/budget copies). DB.js's syncKey() only leaves a key
+  // bare when the table was accessed at the literal root 'db' path
+  // (whether that's a root page's own default, or another page's
+  // DB.withPath('db', ...) cross-read) -- so a bare key ALWAYS means
+  // "root db", explicitly, regardless of whatever GITHUB_CONFIG.dbPath
+  // the page that eventually flushes it happens to default to. A
+  // "path|dbName" key means the table lives at that specific folder.
+  // Either way, engineFor() always returns an explicit path so flush()
+  // can wrap the commit correctly instead of trusting the flushing
+  // page's own current default.
   function engineFor(key) {
     if (key.startsWith('hr_')) {
       return typeof HRDB !== 'undefined' ? { db: HRDB, realName: key.slice(3) } : null;
@@ -110,7 +114,7 @@ const Sync = (() => {
     if (typeof DB === 'undefined') return null;
     const sep = key.indexOf('|');
     if (sep !== -1) return { db: DB, realName: key.slice(sep + 1), path: key.slice(0, sep) };
-    return { db: DB, realName: key };
+    return { db: DB, realName: key, path: 'db' };
   }
 
   // Commit each pending dbName to GitHub using the right engine's
