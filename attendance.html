@@ -10,6 +10,10 @@
     // flash the wrong theme first -- default (no saved value) is dark,
     // matching how this app has always looked.
     document.documentElement.setAttribute('data-theme', localStorage.getItem('ent_theme') === 'light' ? 'light' : 'dark');
+    // At the site root -- shared scripts (auth.js/ui.js/db.js) fall back
+    // to '' when ROOT is undefined, but declaring it explicitly here keeps
+    // the convention visible.
+    const ROOT = '';
   </script>
   <style>
     .timein-card { background: linear-gradient(135deg,rgba(16,185,129,0.15),rgba(16,185,129,0.05)); border:1px solid rgba(16,185,129,0.3); border-radius:var(--radius-lg); padding:24px; text-align:center; margin-bottom:24px; }

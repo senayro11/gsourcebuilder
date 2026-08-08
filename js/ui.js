@@ -81,12 +81,12 @@ const UI = (() => {
       const sys = SYSTEMS[s];
       if (!sys) return '';
       const active = s === currentSystem ? 'active' : '';
-      return `<a href="${sys.file}" class="sidebar-item ${active}"><span class="icon">${sys.icon}</span>${sys.name}</a>`;
+      return `<a href="${_ROOT}${sys.file}" class="sidebar-item ${active}"><span class="icon">${sys.icon}</span>${sys.name}</a>`;
     }).join('');
 
     // Superadmin gets link to superadmin panel
     if (isSuperAdmin) {
-      sysItems += `<a href="superadmin.html" class="sidebar-item ${currentSystem==='superadmin'?'active':''}"><span class="icon">⚙️</span>SuperAdmin Panel</a>`;
+      sysItems += `<a href="${_ROOT}superadmin.html" class="sidebar-item ${currentSystem==='superadmin'?'active':''}"><span class="icon">⚙️</span>SuperAdmin Panel</a>`;
     }
 
     // Per-system User Management for admins
@@ -99,7 +99,7 @@ const UI = (() => {
 
     // Dashboard link — only for superadmin (non-superadmin shouldn't see other systems)
     const dashLink = isSuperAdmin
-      ? `<a href="dashboard.html" class="sidebar-item ${!currentSystem?'active':''}"><span class="icon">🏠</span>Dashboard</a><hr class="sidebar-divider"><div class="sidebar-section"><span class="sidebar-label">Systems</span></div>`
+      ? `<a href="${_ROOT}dashboard.html" class="sidebar-item ${!currentSystem?'active':''}"><span class="icon">🏠</span>Dashboard</a><hr class="sidebar-divider"><div class="sidebar-section"><span class="sidebar-label">Systems</span></div>`
       : '';
 
     sidebar.innerHTML = `
@@ -147,8 +147,8 @@ const UI = (() => {
         <div class="pm-name">${user.full_name}</div>
         <div class="pm-role">${user.role}</div>
       </div>
-      <a class="pm-item" href="edit-profile.html">✏️ Edit Profile</a>
-      <a class="pm-item" href="change-password.html">🔑 Change Password</a>
+      <a class="pm-item" href="${_ROOT}edit-profile.html">✏️ Edit Profile</a>
+      <a class="pm-item" href="${_ROOT}change-password.html">🔑 Change Password</a>
       <div class="pm-theme-row">
         <span>🌙 Dark Mode</span>
         <label class="theme-switch">

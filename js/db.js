@@ -2,6 +2,12 @@
 //  DB.JS — TXT File Database Engine via GitHub API
 // ============================================================
 
+// A page one folder deep (e.g. pos/pos.html) declares `const ROOT = '../';`
+// before this script loads so links back to root-level pages resolve
+// correctly; root pages either declare '' or don't declare it at all --
+// either way this falls back to '' so nothing changes for them.
+const _ROOT = (typeof ROOT !== 'undefined') ? ROOT : '';
+
 // ---- GitHub token/auth banner ----
 // A raw "DB read error 403" toast means nothing to a non-technical user and
 // disappears in a few seconds before they can even react. When the saved
@@ -16,7 +22,7 @@ function showGithubAuthBanner(message) {
     b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#dc2626;color:#fff;padding:10px 16px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.3)';
     document.body.prepend(b);
   }
-  b.innerHTML = `<span>⚠️ ${message}</span><a href="index.html" style="color:#fff;text-decoration:underline;font-weight:700;white-space:nowrap">I-update ang GitHub Token →</a>`;
+  b.innerHTML = `<span>⚠️ ${message}</span><a href="${_ROOT}index.html" style="color:#fff;text-decoration:underline;font-weight:700;white-space:nowrap">I-update ang GitHub Token →</a>`;
 }
 function hideGithubAuthBanner() {
   const b = document.getElementById('gh-auth-banner');
@@ -50,6 +56,18 @@ const DB = (() => {
   function apiUrl(filename) {
     const { owner, repo, branch, dbPath } = GITHUB_CONFIG;
     return `https://api.github.com/repos/${owner}/${repo}/contents/${dbPath}/${filename}.txt`;
+  }
+
+  // Sync's cache/queue is keyed by bare dbName for the overwhelming
+  // majority of tables (always read/written at the default root 'db'
+  // path). A table accessed via withPath() at a non-default path (e.g.
+  // pos/pos.html writing "transactionsDB" into pos/db) gets a
+  // "path|dbName" key instead, so a later Sync.flush() -- which might
+  // run from a *different* page, with a different default dbPath --
+  // still commits to the right folder instead of wherever that page's
+  // own default happens to be.
+  function syncKey(dbName) {
+    return GITHUB_CONFIG.dbPath === 'db' ? dbName : `${GITHUB_CONFIG.dbPath}|${dbName}`;
   }
 
   function headers() {
@@ -123,7 +141,7 @@ const DB = (() => {
       if (!res.ok) {
         if (res.status === 404) {
           cache[dbName] = []; cache[`${dbName}_header`] = '';
-          if (typeof Sync !== 'undefined') Sync.cacheSet(dbName, [], '');
+          if (typeof Sync !== 'undefined') Sync.cacheSet(syncKey(dbName), [], '');
           return [];
         }
         const authErr = githubAuthErrorInfo(res);
@@ -141,11 +159,11 @@ const DB = (() => {
       const content = decodeURIComponent(escape(atob(json.content.replace(/\n/g, ''))));
       cache[dbName] = parseTxt(content);
       cache[`${dbName}_header`] = content.split('\n')[0];
-      if (typeof Sync !== 'undefined') Sync.cacheSet(dbName, cache[dbName], cache[`${dbName}_header`]);
+      if (typeof Sync !== 'undefined') Sync.cacheSet(syncKey(dbName), cache[dbName], cache[`${dbName}_header`]);
       return cache[dbName];
     } catch (e) {
       if (typeof Sync !== 'undefined' && Sync.isConnectivityError(e)) {
-        const local = Sync.cacheGet(dbName);
+        const local = Sync.cacheGet(syncKey(dbName));
         if (local) {
           cache[dbName] = local.rows;
           cache[`${dbName}_header`] = local.header;
@@ -187,7 +205,7 @@ const DB = (() => {
       const json = await res.json();
       shas[dbName]  = json.content.sha;
       cache[dbName] = rows;
-      if (typeof Sync !== 'undefined') Sync.cacheSet(dbName, rows, headerRow);
+      if (typeof Sync !== 'undefined') Sync.cacheSet(syncKey(dbName), rows, headerRow);
       return { ok: true, queued: false };
     }
     try {
@@ -219,8 +237,9 @@ const DB = (() => {
       if (typeof Sync !== 'undefined' && Sync.isConnectivityError(e)) {
         // Offline — save locally first, queue it for auto-sync later
         cache[dbName] = rows;
-        Sync.cacheSet(dbName, rows, headerRow);
-        Sync.queueWrite(dbName, rows, headerRow, description || `Update to ${dbName}`);
+        const key = syncKey(dbName);
+        Sync.cacheSet(key, rows, headerRow);
+        Sync.queueWrite(key, rows, headerRow, description || `Update to ${dbName}`);
         return { ok: true, queued: true };
       }
       throw e;
@@ -287,5 +306,20 @@ const DB = (() => {
     else { Object.keys(cache).forEach(k => delete cache[k]); }
   }
 
-  return { read, write, insert, update, remove, forceCommit, nextId, search, parseTxt, serializeTxt, clearCache };
+  // Run fn() against a different dbPath than the page's default (e.g. a
+  // root page reading a per-system folder's exclusive table, or a
+  // per-system page reading a table shared at the root) -- restores the
+  // page's own default afterward regardless of success/failure. Never
+  // Promise.all a withPath call alongside another unwrapped DB.* call:
+  // GITHUB_CONFIG.dbPath is a single mutable global, so truly concurrent
+  // calls could race. Every call site in this app already awaits
+  // sequentially, which is what keeps this safe.
+  async function withPath(path, fn) {
+    const saved = GITHUB_CONFIG.dbPath;
+    GITHUB_CONFIG.dbPath = path;
+    try { return await fn(); }
+    finally { GITHUB_CONFIG.dbPath = saved; }
+  }
+
+  return { read, write, insert, update, remove, forceCommit, nextId, search, parseTxt, serializeTxt, clearCache, withPath };
 })();

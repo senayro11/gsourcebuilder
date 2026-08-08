@@ -4,12 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inventory — Enterprise</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="../css/style.css">
   <script>
     // Applied before first paint so a saved theme preference doesn't
     // flash the wrong theme first -- default (no saved value) is dark,
     // matching how this app has always looked.
     document.documentElement.setAttribute('data-theme', localStorage.getItem('ent_theme') === 'light' ? 'light' : 'dark');
+    // One folder deep -- shared root scripts (auth.js/ui.js/db.js) use
+    // this to build links back to root-level pages correctly.
+    const ROOT = '../';
   </script>
   <style>
     .stock-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 4px; }
@@ -25,7 +28,7 @@
         <div class="avatar" id="user-avatar">A</div>
         <div class="user-info"><span class="name" id="user-name"></span><span class="role" id="user-role"></span></div>
       </div>
-      <a href="dashboard.html" class="btn btn-ghost btn-sm">🏠</a>
+      <a href="../dashboard.html" class="btn btn-ghost btn-sm">🏠</a>
     </div>
   </nav>
   <aside class="sidebar" id="sidebar"></aside>
@@ -173,12 +176,12 @@
 <div id="toast-container"></div>
 <div id="loading-overlay" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="js/config.js"></script>
-<script src="js/sync.js"></script>
-<script src="js/db.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/usermgmt.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/sync.js"></script>
+<script src="../js/db.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/usermgmt.js"></script>
 <script>
   Auth.loadToken();
   const user = Auth.guard('inventory');
@@ -322,8 +325,8 @@
     UI.loading(true,'Applying adjustment...');
     try {
       await DB.update('productsDB',r=>r.id===prodId,{stock:String(after)});
-      const movs = await DB.read('inventoryDB',true);
-      await DB.insert('inventoryDB',{id:DB.nextId(movs,'id','INV'),date:new Date().toISOString().split('T')[0],product_id:prodId,type,quantity:type==='adjustment'?qty:(type==='restock'?qty:-qty),before_stock:String(before),after_stock:String(after),reason:reason||type,recorded_by:user.username});
+      const movs = await DB.withPath('inventory/db',()=>DB.read('inventoryDB',true));
+      await DB.withPath('inventory/db',()=>DB.insert('inventoryDB',{id:DB.nextId(movs,'id','INV'),date:new Date().toISOString().split('T')[0],product_id:prodId,type,quantity:type==='adjustment'?qty:(type==='restock'?qty:-qty),before_stock:String(before),after_stock:String(after),reason:reason||type,recorded_by:user.username}));
       UI.toast(`Stock updated: ${before} → ${after} ✅`,'success');
       UI.closeModal('adjust-modal'); await loadAll();
     } catch(e){UI.toast('Error: '+e.message,'error');}
@@ -334,7 +337,7 @@
   async function loadMovements() {
     UI.loading(true,'Loading movements...');
     try {
-      allMovs = await DB.read('inventoryDB',true);
+      allMovs = await DB.withPath('inventory/db',()=>DB.read('inventoryDB',true));
       allMovs.sort((a,b)=>b.date.localeCompare(a.date));
       renderMovements(allMovs,1);
     } catch(e){UI.toast('Error: '+e.message,'error');}

@@ -12,10 +12,10 @@ const GITHUB_CONFIG = {
 
 // System definitions
 const SYSTEMS = {
-  pos:        { name: 'Point of Sale',        icon: '🛒', file: 'pos.html',        color: '#6366f1' },
-  inventory:  { name: 'Inventory',            icon: '📦', file: 'inventory.html',  color: '#0ea5e9' },
+  pos:        { name: 'Point of Sale',        icon: '🛒', file: 'pos/pos.html',        color: '#6366f1' },
+  inventory:  { name: 'Inventory',            icon: '📦', file: 'inventory/inventory.html',  color: '#0ea5e9' },
   attendance: { name: 'HR Management',        icon: '🕐', file: 'hr/attendance.html', color: '#10b981' },
-  budget:     { name: 'Budget & Finance',     icon: '💰', file: 'budget.html',     color: '#f59e0b' }
+  budget:     { name: 'Budget & Finance',     icon: '💰', file: 'budget/budget.html',     color: '#f59e0b' }
 };
 
 // Superadmin-only system (not in SYSTEMS to hide from normal users)

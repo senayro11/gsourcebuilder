@@ -10,6 +10,10 @@
     // flash the wrong theme first -- default (no saved value) is dark,
     // matching how this app has always looked.
     document.documentElement.setAttribute('data-theme', localStorage.getItem('ent_theme') === 'light' ? 'light' : 'dark');
+    // At the site root -- shared scripts (auth.js/ui.js/db.js) fall back
+    // to '' when ROOT is undefined, but declaring it explicitly here keeps
+    // the convention visible.
+    const ROOT = '';
   </script>
   <style>
     .system-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 24px; }
@@ -175,7 +179,7 @@
     try {
       const stats = [];
       if (Auth.canAccessSystem(_session, 'pos')) {
-        const txns = await DB.read('transactionsDB');
+        const txns = await DB.withPath('pos/db',()=>DB.read('transactionsDB'));
         const today = new Date().toISOString().split('T')[0];
         const todayTxns = txns.filter(t => t.date && t.date.startsWith(today));
         const todaySales = todayTxns.reduce((s,t) => s + parseFloat(t.total||0), 0);
@@ -192,7 +196,7 @@
         stats.push(`<div class="stat-card green"><div class="stat-label">Active Employees</div><div class="stat-value">${active.length}</div><div class="stat-sub">registered employees</div></div>`);
       }
       if (Auth.canAccessSystem(_session, 'budget')) {
-        const budget = await DB.read('budgetDB');
+        const budget = await DB.withPath('budget/db',()=>DB.read('budgetDB'));
         const expenses = budget.filter(b => b.type === 'expense' && b.status === 'approved');
         const total = expenses.reduce((s,b) => s + parseFloat(b.amount||0), 0);
         stats.push(`<div class="stat-card red"><div class="stat-label">Total Expenses</div><div class="stat-value">${UI.peso(total)}</div><div class="stat-sub">approved expenses</div></div>`);
