@@ -18,26 +18,35 @@
   </style>
 </head>
 <body>
-<div class="app-layout">
-  <nav class="navbar">
-    <div class="navbar-brand" id="navbar-brand">🏢 Enterprise System</div>
-    <div class="navbar-right">
-      <div class="user-chip">
-        <div class="avatar" id="user-avatar">A</div>
-        <div class="user-info"><span class="name" id="user-name"></span><span class="role" id="user-role"></span></div>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">📦</div>
+      <div>
+        <div class="logo-text">Inventory</div>
+        <div class="logo-sub">STOCK MANAGEMENT</div>
       </div>
-      <a href="../dashboard.html" class="btn btn-ghost btn-sm">🏠</a>
     </div>
-  </nav>
-  <aside class="sidebar" id="sidebar"></aside>
-  <main class="main">
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-bottom">
+      <div class="user-card" id="sidebar-user-card" onclick="UI.toggleProfileMenu()">
+        <div class="user-avatar" id="sidebar-avatar">A</div>
+        <div>
+          <div class="user-name" id="sidebar-name"></div>
+          <div class="user-role" id="sidebar-role"></div>
+        </div>
+        <span class="logout-btn">⋯</span>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <header class="topbar" id="topbar">
+    <button class="topbar-toggle sidebar-toggle-btn">☰</button>
+    <div class="topbar-breadcrumb"><span class="current">Inventory</span></div>
+    <div class="topbar-right" id="topbar-right"></div>
+  </header>
+  <main class="main-content" id="main-content">
     <div class="stats-grid" id="inv-stats"></div>
-
-    <div class="tabs">
-      <div class="tab active" data-tab="tab-products">📦 Products</div>
-      <div class="tab" data-tab="tab-movements" data-perm="reports">📊 Stock Movements</div>
-      <div class="tab" data-tab="tab-lowstock">⚠️ Low Stock</div>
-    </div>
 
     <!-- Products -->
     <div class="tab-pane active" id="tab-products">
@@ -182,10 +191,22 @@
   Auth.loadToken();
   const user = Auth.guard('inventory');
   if (!user) throw 0;
+  const TABS = [
+    { id:'tab-products',  icon:'📦', label:'Products' },
+    { id:'tab-movements', icon:'📊', label:'Stock Movements', perm:'reports' },
+    { id:'tab-lowstock',  icon:'⚠️', label:'Low Stock' }
+  ];
+  function switchTab(tabId, el) {
+    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+    const pane = document.getElementById(tabId);
+    if (pane) pane.classList.add('active');
+    document.querySelectorAll('#sidebar-nav .nav-item[data-tab]').forEach(n=>n.classList.remove('active'));
+    if (el) el.classList.add('active');
+    if (tabId==='tab-movements') loadMovements();
+  }
   UI.buildNavbar(user, 'Inventory');
-  UI.buildSidebar(user, 'inventory');
+  UI.buildSidebar(user, 'inventory', TABS);
   Auth.applyUIPermissions(user, 'inventory');
-  UI.initTabs();
   UserMgmt.init(user, 'inventory');
 
   let allProds = [], allMovs = [], editProdId = null, prodPage = 1, movPage = 1;
@@ -376,12 +397,6 @@
     </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--success);padding:30px">✅ All items have sufficient stock!</td></tr>';
     Auth.applyUIPermissions(user,'inventory');
   }
-
-  document.querySelectorAll('.tab').forEach(t=>{
-    t.addEventListener('click',()=>{
-      if(t.dataset.tab==='tab-movements') loadMovements();
-    });
-  });
 
   loadAll();
 </script>

@@ -14,27 +14,35 @@
   </script>
 </head>
 <body>
-<div class="app-layout">
-  <nav class="navbar">
-    <div class="navbar-brand" id="navbar-brand">🏢 Enterprise System</div>
-    <div class="navbar-right">
-      <div class="user-chip">
-        <div class="avatar" id="user-avatar">A</div>
-        <div class="user-info"><span class="name" id="user-name"></span><span class="role" id="user-role"></span></div>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">💰</div>
+      <div>
+        <div class="logo-text">Budget &amp; Finance</div>
+        <div class="logo-sub">FINANCE</div>
       </div>
-      <a href="../dashboard.html" class="btn btn-ghost btn-sm">🏠</a>
     </div>
-  </nav>
-  <aside class="sidebar" id="sidebar"></aside>
-  <main class="main">
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-bottom">
+      <div class="user-card" id="sidebar-user-card" onclick="UI.toggleProfileMenu()">
+        <div class="user-avatar" id="sidebar-avatar">A</div>
+        <div>
+          <div class="user-name" id="sidebar-name"></div>
+          <div class="user-role" id="sidebar-role"></div>
+        </div>
+        <span class="logout-btn">⋯</span>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <header class="topbar" id="topbar">
+    <button class="topbar-toggle sidebar-toggle-btn">☰</button>
+    <div class="topbar-breadcrumb"><span class="current">Budget &amp; Finance</span></div>
+    <div class="topbar-right" id="topbar-right"></div>
+  </header>
+  <main class="main-content" id="main-content">
     <div class="stats-grid" id="budget-stats"></div>
-
-    <div class="tabs">
-      <div class="tab active" data-tab="tab-overview">📊 Overview</div>
-      <div class="tab" data-tab="tab-expenses">💸 Expenses</div>
-      <div class="tab" data-tab="tab-income">📈 Income</div>
-      <div class="tab" data-tab="tab-debts">📝 Debts/Payables</div>
-    </div>
 
     <!-- Overview -->
     <div class="tab-pane active" id="tab-overview">
@@ -179,10 +187,25 @@
   Auth.loadToken();
   const user = Auth.guard('budget');
   if (!user) throw 0;
+  const TABS = [
+    { id:'tab-overview', icon:'📊', label:'Overview' },
+    { id:'tab-expenses', icon:'💸', label:'Expenses' },
+    { id:'tab-income',   icon:'📈', label:'Income' },
+    { id:'tab-debts',    icon:'📝', label:'Debts/Payables' }
+  ];
+  function switchTab(tabId, el) {
+    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+    const pane = document.getElementById(tabId);
+    if (pane) pane.classList.add('active');
+    document.querySelectorAll('#sidebar-nav .nav-item[data-tab]').forEach(n=>n.classList.remove('active'));
+    if (el) el.classList.add('active');
+    if (tabId==='tab-expenses') filterExpenses();
+    if (tabId==='tab-income') filterIncome();
+    if (tabId==='tab-debts') filterDebts();
+  }
   UI.buildNavbar(user,'Budget & Finance');
-  UI.buildSidebar(user,'budget');
+  UI.buildSidebar(user,'budget', TABS);
   Auth.applyUIPermissions(user,'budget');
-  UI.initTabs();
   UserMgmt.init(user, 'budget');
 
   let allEntries=[], editEntryId=null;
@@ -256,15 +279,6 @@
     if(pagId)UI.renderPagination(pagId,paged,p=>renderTypeTable(tbodyId,rows,pagId,p));
     Auth.applyUIPermissions(user,'budget');
   }
-
-  document.querySelectorAll('.tab').forEach(t=>{
-    t.addEventListener('click',()=>{
-      const tab=t.dataset.tab;
-      if(tab==='tab-expenses')filterExpenses();
-      if(tab==='tab-income')filterIncome();
-      if(tab==='tab-debts')filterDebts();
-    });
-  });
 
   function openAddEntry(type='expense'){
     editEntryId=null;

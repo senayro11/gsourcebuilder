@@ -272,6 +272,61 @@ const DB = (() => {
 })();
 
 // ============================================================
+//  SIDEBAR — collapsible topbar+sidebar chrome, ported from
+//  hr/js/hr-core.js's initSidebar() (desktop default OPEN + content
+//  push via .sb-pushed, mobile default CLOSED + overlay-only).
+//  Standalone (not part of UI) to match the hr-core.js original.
+// ============================================================
+function initSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const topbar  = document.getElementById('topbar');
+  const mainEl  = document.getElementById('main-content');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (!sidebar || !topbar || !mainEl) return;
+
+  const MOBILE_BP = 1024;
+  let sidebarOpen = false;
+
+  function isMobile() { return window.innerWidth <= MOBILE_BP; }
+
+  function applyOpen() {
+    sidebarOpen = true;
+    sidebar.classList.add('sb-open');
+    if (isMobile()) {
+      overlay.classList.add('sb-visible');
+    } else {
+      topbar.classList.add('sb-pushed');
+      mainEl.classList.add('sb-pushed');
+    }
+  }
+
+  function applyClose() {
+    sidebarOpen = false;
+    sidebar.classList.remove('sb-open');
+    overlay.classList.remove('sb-visible');
+    topbar.classList.remove('sb-pushed');
+    mainEl.classList.remove('sb-pushed');
+  }
+
+  function toggle() { if (sidebarOpen) applyClose(); else applyOpen(); }
+
+  if (isMobile()) applyClose(); else applyOpen();
+
+  document.querySelectorAll('.sidebar-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', e => { e.stopPropagation(); toggle(); });
+  });
+  if (overlay) overlay.addEventListener('click', () => applyClose());
+
+  let lastWasMobile = isMobile();
+  window.addEventListener('resize', () => {
+    const nowMobile = isMobile();
+    if (nowMobile === lastWasMobile) return;
+    lastWasMobile = nowMobile;
+    if (nowMobile) applyClose(); else applyOpen();
+  });
+}
+
+// ============================================================
 //  Auth — session/permissions, own copy (same session/token keys as
 //  root so a single root login works across every system)
 // ============================================================
@@ -344,12 +399,6 @@ const Auth = (() => {
       const roles = el.dataset.role.split(',').map(r => r.trim());
       if (!roles.includes(user.role)) el.style.display = 'none';
     });
-    const nameEl = document.getElementById('user-name');
-    const roleEl = document.getElementById('user-role');
-    const avEl   = document.getElementById('user-avatar');
-    if (nameEl) nameEl.textContent = user.full_name;
-    if (roleEl) roleEl.textContent = user.role.toUpperCase();
-    if (avEl)   avEl.textContent   = user.full_name.charAt(0).toUpperCase();
   }
 
   // No login() here -- POS never shows its own login form, only the
@@ -390,22 +439,6 @@ const UI = (() => {
     if (e.target.classList.contains('modal-backdrop')) e.target.classList.remove('active');
   });
 
-  function initTabs(containerSel) {
-    document.querySelectorAll(containerSel||'.tabs').forEach(tabs => {
-      tabs.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-          const paneId = tab.dataset.tab;
-          tabs.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-          const wrapper = tabs.closest('.tab-wrapper')||document.body;
-          wrapper.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-          tab.classList.add('active');
-          const pane = document.getElementById(paneId);
-          if (pane) pane.classList.add('active');
-        });
-      });
-    });
-  }
-
   function confirm(message, onConfirm, onCancel) {
     const id = 'cfm-'+Date.now();
     const div = document.createElement('div');
@@ -430,65 +463,85 @@ const UI = (() => {
     return `<span class="badge ${map[status]||'badge-gray'}">${status}</span>`;
   }
 
-  function buildSidebar(user, currentSystem) {
-    const sidebar = document.getElementById('sidebar');
-    if (!sidebar) return;
+  // Flat sidebar nav (no accordion groups -- this page is a single
+  // tab-based view, not a multi-page app like HR): Dashboard (only
+  // shown when it actually leads somewhere else -- superadmin or a
+  // multi-system user, since a single-system user's "home" already IS
+  // this page), this system's own tabs (passed in by the page's own
+  // inline script, since the tab list/icons differ per system), the
+  // other systems this user can reach, and User Management if allowed.
+  function buildSidebar(user, currentSystem, tabs) {
+    const nav = document.getElementById('sidebar-nav');
+    if (!nav) return;
     const isSuperAdmin = user.role === 'superadmin';
     const systems = Auth.getAccessibleSystems(user);
 
-    let sysItems = systems.map(s => {
-      const sys = SYSTEMS[s];
-      if (!sys) return '';
-      const active = s === currentSystem ? 'active' : '';
-      return `<a href="../${sys.file}" class="sidebar-item ${active}"><span class="icon">${sys.icon}</span>${sys.name}</a>`;
-    }).join('');
+    let html = '';
 
-    if (isSuperAdmin) {
-      sysItems += `<a href="../superadmin.html" class="sidebar-item ${currentSystem==='superadmin'?'active':''}"><span class="icon">⚙️</span>SuperAdmin Panel</a>`;
+    if (isSuperAdmin || systems.length > 1) {
+      html += `<div class="nav-group">
+        <a href="../dashboard.html" class="nav-item"><span class="nav-icon">🏠</span>Dashboard</a>
+      </div>`;
     }
 
-    let userMgmtLink = '';
+    if (tabs && tabs.length) {
+      const sys = SYSTEMS[currentSystem];
+      html += `<div class="nav-group">
+        <div class="nav-group-label">${sys ? sys.name : currentSystem}</div>
+        ${tabs.map((t, i) => `<div class="nav-item${i === 0 ? ' active' : ''}" data-tab="${t.id}"${t.perm ? ` data-perm="${t.perm}"` : ''} onclick="switchTab('${t.id}',this)"><span class="nav-icon">${t.icon}</span>${t.label}</div>`).join('')}
+      </div>`;
+    }
+
+    const otherSystems = systems.filter(s => s !== currentSystem);
+    if (otherSystems.length || isSuperAdmin) {
+      html += `<div class="nav-group">
+        <div class="nav-group-label">Systems</div>
+        ${otherSystems.map(s => {
+          const sys = SYSTEMS[s];
+          return sys ? `<a href="../${sys.file}" class="nav-item"><span class="nav-icon">${sys.icon}</span>${sys.name}</a>` : '';
+        }).join('')}
+        ${isSuperAdmin ? `<a href="../superadmin.html" class="nav-item"><span class="nav-icon">⚙️</span>SuperAdmin Panel</a>` : ''}
+      </div>`;
+    }
+
     if (currentSystem && Auth.hasPermission(user, currentSystem, 'manage_users')) {
-      userMgmtLink = `<hr class="sidebar-divider">
-        <div class="sidebar-section"><span class="sidebar-label">Management</span></div>
-        <a href="#" class="sidebar-item" onclick="openUserMgmt&&openUserMgmt();return false"><span class="icon">👥</span>User Management</a>`;
+      html += `<div class="nav-group">
+        <div class="nav-group-label">System</div>
+        <div class="nav-item" onclick="openUserMgmt&&openUserMgmt()"><span class="nav-icon">👥</span>User Management</div>
+      </div>`;
     }
 
-    const dashLink = isSuperAdmin
-      ? `<a href="../dashboard.html" class="sidebar-item ${!currentSystem?'active':''}"><span class="icon">🏠</span>Dashboard</a><hr class="sidebar-divider"><div class="sidebar-section"><span class="sidebar-label">Systems</span></div>`
-      : '';
+    nav.innerHTML = html;
 
-    sidebar.innerHTML = `
-      <div class="sidebar-section"><span class="sidebar-label">Navigation</span></div>
-      ${dashLink}
-      ${sysItems}
-      ${userMgmtLink}
-      <hr class="sidebar-divider">
-      <a href="#" class="sidebar-item" onclick="Auth.logout()"><span class="icon">🚪</span>Logout</a>`;
+    const avEl   = document.getElementById('sidebar-avatar');
+    const nameEl = document.getElementById('sidebar-name');
+    const roleEl = document.getElementById('sidebar-role');
+    if (avEl)   avEl.textContent   = user.full_name.charAt(0).toUpperCase();
+    if (nameEl) nameEl.textContent = user.full_name;
+    if (roleEl) roleEl.textContent = user.role.toUpperCase();
   }
 
   function buildNavbar(user, systemName) {
-    const brand = document.getElementById('navbar-brand');
-    const nameEl = document.getElementById('user-name');
-    const roleEl = document.getElementById('user-role');
-    const avEl   = document.getElementById('user-avatar');
-    if (brand && systemName) brand.innerHTML += ` <span class="system-badge">${systemName}</span>`;
-    if (nameEl) nameEl.textContent = user.full_name;
-    if (roleEl) roleEl.textContent = user.role.toUpperCase();
-    if (avEl)   avEl.textContent   = user.full_name.charAt(0).toUpperCase();
+    const crumb = document.querySelector('.topbar-breadcrumb .current');
+    if (crumb && systemName) crumb.textContent = systemName;
     mountSyncPill();
     mountProfileMenu(user);
+    initSidebar();
   }
 
   function mountProfileMenu(user) {
-    const chip = document.querySelector('.user-chip');
-    if (!chip || document.getElementById('profile-menu')) return;
+    const right = document.getElementById('topbar-right');
+    if (!right || document.getElementById('profile-menu')) return;
     const wrap = document.createElement('div');
     wrap.style.position = 'relative';
-    chip.parentNode.insertBefore(wrap, chip);
-    wrap.appendChild(chip);
-    chip.classList.add('clickable');
+    right.appendChild(wrap);
+
+    const chip = document.createElement('div');
+    chip.className = 'user-chip clickable';
+    chip.innerHTML = `<div class="avatar">${user.full_name.charAt(0).toUpperCase()}</div>
+      <div class="user-info"><span class="name">${user.full_name}</span><span class="role">${user.role.toUpperCase()}</span></div>`;
     chip.addEventListener('click', e => { e.stopPropagation(); toggleProfileMenu(); });
+    wrap.appendChild(chip);
 
     const menu = document.createElement('div');
     menu.id = 'profile-menu';
@@ -513,7 +566,7 @@ const UI = (() => {
     `;
     wrap.appendChild(menu);
     document.addEventListener('click', e => {
-      if (!e.target.closest('.user-chip') && !e.target.closest('#profile-menu')) closeProfileMenu();
+      if (!e.target.closest('.user-chip') && !e.target.closest('#profile-menu') && !e.target.closest('#sidebar-user-card')) closeProfileMenu();
     });
   }
   function toggleProfileMenu() {
@@ -534,7 +587,7 @@ const UI = (() => {
 
   function mountSyncPill() {
     if (typeof Sync === 'undefined') return;
-    const right = document.querySelector('.navbar-right');
+    const right = document.getElementById('topbar-right');
     if (!right || document.getElementById('sync-pill')) return;
     const pill = document.createElement('div');
     pill.id = 'sync-pill';
@@ -582,7 +635,8 @@ const UI = (() => {
     el.innerHTML=html;
   }
 
-  return { toast, loading, openModal, closeModal, initTabs, confirm,
+  return { toast, loading, openModal, closeModal, confirm,
            peso, dateStr, dateTimeStr, roleBadge, statusBadge,
-           buildSidebar, buildNavbar, paginate, renderPagination, toggleTheme };
+           buildSidebar, buildNavbar, paginate, renderPagination, toggleTheme,
+           toggleProfileMenu };
 })();
