@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Enterprise System — Login</title>
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    // Applied before first paint so a saved theme preference doesn't
+    // flash the wrong theme first -- default (no saved value) is dark,
+    // matching how this app has always looked.
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('ent_theme') === 'light' ? 'light' : 'dark');
+  </script>
   <style>
     body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:var(--bg); }
     .login-wrap { width:100%; max-width:420px; padding:24px; }

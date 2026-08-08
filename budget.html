@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Budget & Finance — Enterprise</title>
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    // Applied before first paint so a saved theme preference doesn't
+    // flash the wrong theme first -- default (no saved value) is dark,
+    // matching how this app has always looked.
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('ent_theme') === 'light' ? 'light' : 'dark');
+  </script>
 </head>
 <body>
 <div class="app-layout">
@@ -16,7 +22,6 @@
         <div class="user-info"><span class="name" id="user-name"></span><span class="role" id="user-role"></span></div>
       </div>
       <a href="dashboard.html" class="btn btn-ghost btn-sm">🏠</a>
-      <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">🚪</button>
     </div>
   </nav>
   <aside class="sidebar" id="sidebar"></aside>
