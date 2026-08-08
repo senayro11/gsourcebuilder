@@ -1,5 +1,5 @@
 // ============================================================
-//  INVENTORY-CONFIG.JS — GitHub settings for the Inventory system's own folder
+//  PM-CONFIG.JS — GitHub settings for the Project Management system's own folder
 // ============================================================
 
 const GITHUB_CONFIG = {
@@ -7,14 +7,14 @@ const GITHUB_CONFIG = {
   repo:  'gsourcebuilder',
   branch: 'main',
   token: '',
-  dbPath: 'inventory/db'
+  dbPath: 'pm/db'
 };
 
 // System definitions -- same file paths as the root's own copy (js/config.js)
 // so the sidebar/dashboard-card links stay identical regardless of which
 // page's copy of this map happens to be in effect. Paths are root-relative;
-// inventory-core.js's buildSidebar()/buildNavbar() prefix them with '../'
-// since this page always lives one folder deep.
+// pm-core.js's buildSidebar()/buildNavbar() prefix them with '../' since
+// this page always lives one folder deep.
 const SYSTEMS = {
   pos:        { name: 'Point of Sale',        icon: '🛒', file: 'pos/pos.html',        color: '#6366f1' },
   inventory:  { name: 'Inventory',            icon: '📦', file: 'inventory/inventory.html',  color: '#0ea5e9' },

@@ -156,11 +156,13 @@
   const grid = document.getElementById('system-grid');
   const accessible = Auth.getAccessibleSystems(_session);
   const descriptions = {
-    pos:       'Process transactions, receive payments, and generate receipts.',
-    inventory: 'Manage products, stock levels, and movements.',
-    attendance:'Manage HR, attendance, leave requests, and employee payroll.',
-    budget:    'Monitor business expenses, income, debts, and budget.',
-    users:     'Manage all user accounts and access rights.'
+    pos:        'Process transactions, receive payments, and generate receipts.',
+    inventory:  'Manage products, stock levels, and movements.',
+    attendance: 'Manage HR, attendance, leave requests, and employee payroll.',
+    budget:     'Monitor business expenses, income, debts, and budget.',
+    pm:         'Manage projects, cost, and timelines with a Gantt chart.',
+    preventive: 'Multi-client preventive maintenance scheduling and checklists.',
+    users:      'Manage all user accounts and access rights.'
   };
   grid.innerHTML = accessible.map(s => {
     const sys = SYSTEMS[s];
@@ -200,6 +202,15 @@
         const expenses = budget.filter(b => b.type === 'expense' && b.status === 'approved');
         const total = expenses.reduce((s,b) => s + parseFloat(b.amount||0), 0);
         stats.push(`<div class="stat-card red"><div class="stat-label">Total Expenses</div><div class="stat-value">${UI.peso(total)}</div><div class="stat-sub">approved expenses</div></div>`);
+      }
+      if (Auth.canAccessSystem(_session, 'pm')) {
+        const projects = await DB.withPath('pm/db',()=>DB.read('projectsDB'));
+        const ongoing = projects.filter(p => p.status === 'ongoing');
+        stats.push(`<div class="stat-card"><div class="stat-label">Ongoing Projects</div><div class="stat-value">${ongoing.length}</div><div class="stat-sub">of ${projects.length} total</div></div>`);
+      }
+      if (Auth.canAccessSystem(_session, 'preventive')) {
+        const clients = await DB.withPath('preventive/db',()=>DB.read('clientsDB'));
+        stats.push(`<div class="stat-card"><div class="stat-label">PM Clients</div><div class="stat-value">${clients.length}</div><div class="stat-sub">registered clients</div></div>`);
       }
       if (_session.role === 'superadmin') {
         const accounts = await DB.read('accountsDB');

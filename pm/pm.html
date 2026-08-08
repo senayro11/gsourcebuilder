@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Management — Enterprise</title>
+  <link rel="stylesheet" href="css/pm.css">
+  <script>
+    // Applied before first paint so a saved theme preference doesn't
+    // flash the wrong theme first -- default (no saved value) is dark,
+    // matching how this app has always looked. Own key (pm_theme),
+    // independent from the root app's and the other systems'.
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('pm_theme') === 'light' ? 'light' : 'dark');
+  </script>
+  <style>
+    .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .progress-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; background: var(--accent); }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">📁</div>
+      <div>
+        <div class="logo-text">Project Mgmt</div>
+        <div class="logo-sub">PROJECTS</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-bottom">
+      <div class="user-card" id="sidebar-user-card" onclick="UI.toggleProfileMenu()">
+        <div class="user-avatar" id="sidebar-avatar">A</div>
+        <div>
+          <div class="user-name" id="sidebar-name"></div>
+          <div class="user-role" id="sidebar-role"></div>
+        </div>
+        <span class="logout-btn">⋯</span>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <header class="topbar" id="topbar">
+    <button class="topbar-toggle sidebar-toggle-btn">☰</button>
+    <div class="topbar-breadcrumb"><span class="current">Project Management</span></div>
+    <div class="topbar-right" id="topbar-right"></div>
+  </header>
+  <main class="main-content" id="main-content">
+    <div class="stats-grid" id="pm-stats"></div>
+
+    <!-- Projects -->
+    <div class="tab-pane active" id="tab-projects">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div class="search-bar" style="max-width:280px">
+          <span>🔍</span>
+          <input type="text" id="proj-search" placeholder="Search project or client..." oninput="filterProjects()">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openAddProject()" data-perm="create">+ New Project</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Name</th><th>Client</th><th>Start</th><th>End</th><th>Budget</th><th>Status</th><th>Progress</th><th>Actions</th></tr></thead>
+            <tbody id="proj-tbody"></tbody>
+          </table>
+        </div>
+        <div id="proj-pagination"></div>
+      </div>
+    </div>
+
+    <!-- Gantt Chart -->
+    <div class="tab-pane" id="tab-gantt">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <select id="gantt-project" style="min-width:240px" onchange="loadGantt()"></select>
+        <button class="btn btn-primary btn-sm" onclick="openAddTask()" data-perm="create">+ Add Task</button>
+      </div>
+      <div class="card">
+        <div class="gantt-wrap">
+          <div class="gantt-chart" id="gantt-chart"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Project Cost -->
+    <div class="tab-pane" id="tab-cost">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <select id="cost-project" style="min-width:240px" onchange="loadCost()"></select>
+        <button class="btn btn-primary btn-sm" onclick="openAddCost()" data-perm="create">+ Add Cost Entry</button>
+      </div>
+      <div class="grid-2" style="margin-bottom:20px" id="cost-summary"></div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>By</th><th></th></tr></thead>
+            <tbody id="cost-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Add/Edit Project Modal -->
+<div class="modal-backdrop" id="proj-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="proj-modal-title">+ New Project</span>
+      <button class="modal-close" onclick="UI.closeModal('proj-modal')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Project Name *</label><input type="text" id="pf-name"></div>
+      <div class="form-group"><label>Client *</label><input type="text" id="pf-client"></div>
+    </div>
+    <div class="form-group"><label>Description</label><input type="text" id="pf-desc"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Start Date *</label><input type="date" id="pf-start"></div>
+      <div class="form-group"><label>End Date *</label><input type="date" id="pf-end"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Budget (₱)</label><input type="number" id="pf-budget" step="0.01"></div>
+      <div class="form-group"><label>Status</label>
+        <select id="pf-status">
+          <option value="planning">Planning</option>
+          <option value="ongoing">Ongoing</option>
+          <option value="onhold">On Hold</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Progress (%)</label><input type="number" id="pf-progress" min="0" max="100" value="0"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('proj-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProject()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Task Modal -->
+<div class="modal-backdrop" id="task-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="task-modal-title">+ Add Task</span>
+      <button class="modal-close" onclick="UI.closeModal('task-modal')">✕</button>
+    </div>
+    <div class="form-group"><label>Task Name *</label><input type="text" id="tf-name"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Start Date *</label><input type="date" id="tf-start"></div>
+      <div class="form-group"><label>End Date *</label><input type="date" id="tf-end"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Assigned To</label><input type="text" id="tf-assigned"></div>
+      <div class="form-group"><label>Progress (%)</label><input type="number" id="tf-progress" min="0" max="100" value="0"></div>
+    </div>
+    <div class="form-group"><label>Status</label>
+      <select id="tf-status">
+        <option value="not_started">Not Started</option>
+        <option value="in_progress">In Progress</option>
+        <option value="completed">Completed</option>
+        <option value="delayed">Delayed</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('task-modal')">Cancel</button>
+      <button class="btn btn-danger" id="task-delete-btn" style="display:none;margin-right:auto" onclick="deleteTask()">Delete</button>
+      <button class="btn btn-primary" onclick="saveTask()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Cost Entry Modal -->
+<div class="modal-backdrop" id="cost-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">+ Add Cost Entry</span>
+      <button class="modal-close" onclick="UI.closeModal('cost-modal')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Date *</label><input type="date" id="cf-date"></div>
+      <div class="form-group"><label>Category *</label><input type="text" id="cf-cat" placeholder="Labor, Materials, Equipment..."></div>
+    </div>
+    <div class="form-group"><label>Description *</label><input type="text" id="cf-desc"></div>
+    <div class="form-group"><label>Amount (₱) *</label><input type="number" id="cf-amount" step="0.01"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('cost-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCost()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<div id="loading-overlay" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
+
+<script src="js/pm-config.js"></script>
+<script src="../js/sync.js"></script>
+<script src="js/pm-core.js"></script>
+<script src="../js/usermgmt.js"></script>
+<script>
+Auth.loadToken();
+const user = Auth.guard('pm');
+if (!user) throw 0;
+const TABS = [
+  { id:'tab-projects', icon:'📁', label:'Projects' },
+  { id:'tab-gantt',    icon:'📊', label:'Gantt Chart' },
+  { id:'tab-cost',     icon:'💵', label:'Project Cost' }
+];
+function switchTab(tabId, el) {
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  const pane = document.getElementById(tabId);
+  if (pane) pane.classList.add('active');
+  document.querySelectorAll('#sidebar-nav .nav-item[data-tab]').forEach(n=>n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (tabId==='tab-gantt') loadGantt();
+  if (tabId==='tab-cost') loadCost();
+}
+UI.buildNavbar(user, 'Project Management');
+UI.buildSidebar(user, 'pm', TABS);
+Auth.applyUIPermissions(user, 'pm');
+UserMgmt.init(user, 'pm');
+
+let allProjects=[], projectTasks=[], projectCosts=[], editProjectId=null, editTaskId=null, ganttProjectId=null, costProjectId=null;
+
+function projStatusBadge(s) {
+  const map = { planning:'badge-info', ongoing:'badge-warning', onhold:'badge-gray', completed:'badge-success', cancelled:'badge-danger' };
+  const labels = { planning:'Planning', ongoing:'Ongoing', onhold:'On Hold', completed:'Completed', cancelled:'Cancelled' };
+  return `<span class="badge ${map[s]||'badge-gray'}">${labels[s]||s||''}</span>`;
+}
+
+async function loadAll() {
+  UI.loading(true, 'Loading projects...');
+  try {
+    allProjects = await DB.read('projectsDB', true);
+    allProjects.sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+    renderStats();
+    renderProjects(allProjects, 1);
+    populateProjectSelects();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+
+function renderStats() {
+  const ongoing = allProjects.filter(p=>p.status==='ongoing');
+  const completed = allProjects.filter(p=>p.status==='completed');
+  const totalBudget = allProjects.reduce((s,p)=>s+parseFloat(p.budget||0),0);
+  document.getElementById('pm-stats').innerHTML = `
+    <div class="stat-card blue"><div class="stat-label">Total Projects</div><div class="stat-value">${allProjects.length}</div></div>
+    <div class="stat-card yellow"><div class="stat-label">Ongoing</div><div class="stat-value">${ongoing.length}</div></div>
+    <div class="stat-card green"><div class="stat-label">Completed</div><div class="stat-value">${completed.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Budget</div><div class="stat-value" style="font-size:20px">${UI.peso(totalBudget)}</div></div>`;
+}
+
+function filterProjects() {
+  const q = document.getElementById('proj-search').value.toLowerCase();
+  const filtered = allProjects.filter(p => (p.name||'').toLowerCase().includes(q) || (p.client||'').toLowerCase().includes(q));
+  renderProjects(filtered, 1);
+}
+
+function renderProjects(rows, page) {
+  const paged = UI.paginate(rows, page, 12);
+  document.getElementById('proj-tbody').innerHTML = paged.rows.map(p => `<tr>
+    <td class="mono">${p.id}</td>
+    <td><strong>${p.name}</strong></td>
+    <td>${p.client}</td>
+    <td>${UI.dateStr(p.start_date)}</td>
+    <td>${UI.dateStr(p.end_date)}</td>
+    <td>${UI.peso(p.budget)}</td>
+    <td>${projStatusBadge(p.status)}</td>
+    <td style="min-width:110px">
+      <div class="progress-bar"><div class="progress-bar-fill" style="width:${p.progress||0}%"></div></div>
+      <small style="color:var(--text3)">${p.progress||0}%</small>
+    </td>
+    <td>
+      <button class="btn btn-ghost btn-sm" onclick="editProject('${p.id}')" data-perm="edit" title="Edit">✏️</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteProject('${p.id}')" data-perm="delete" title="Delete">🗑</button>
+    </td>
+  </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text3)">No projects yet</td></tr>';
+  UI.renderPagination('proj-pagination', paged, p => renderProjects(rows, p));
+  Auth.applyUIPermissions(user, 'pm');
+}
+
+function openAddProject() {
+  editProjectId = null;
+  ['pf-name','pf-client','pf-desc','pf-budget'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pf-start').value = '';
+  document.getElementById('pf-end').value = '';
+  document.getElementById('pf-status').value = 'planning';
+  document.getElementById('pf-progress').value = 0;
+  document.getElementById('proj-modal-title').textContent = '+ New Project';
+  UI.openModal('proj-modal');
+}
+function editProject(id) {
+  const p = allProjects.find(x=>x.id===id); if (!p) return;
+  editProjectId = id;
+  document.getElementById('pf-name').value = p.name;
+  document.getElementById('pf-client').value = p.client;
+  document.getElementById('pf-desc').value = p.description || '';
+  document.getElementById('pf-start').value = p.start_date;
+  document.getElementById('pf-end').value = p.end_date;
+  document.getElementById('pf-budget').value = p.budget;
+  document.getElementById('pf-status').value = p.status;
+  document.getElementById('pf-progress').value = p.progress || 0;
+  document.getElementById('proj-modal-title').textContent = '✏️ Edit Project';
+  UI.openModal('proj-modal');
+}
+async function saveProject() {
+  const name = document.getElementById('pf-name').value.trim();
+  const client = document.getElementById('pf-client').value.trim();
+  const start = document.getElementById('pf-start').value;
+  const end = document.getElementById('pf-end').value;
+  if (!name || !client || !start || !end) { UI.toast('Fill in the required fields','warning'); return; }
+  const data = {
+    name, client,
+    description: document.getElementById('pf-desc').value.trim(),
+    start_date: start, end_date: end,
+    budget: document.getElementById('pf-budget').value || '0',
+    status: document.getElementById('pf-status').value,
+    progress: document.getElementById('pf-progress').value || '0'
+  };
+  UI.loading(true,'Saving...');
+  try {
+    if (editProjectId) {
+      await DB.update('projectsDB', r=>r.id===editProjectId, data);
+      UI.toast('Updated ✅','success');
+    } else {
+      const all = await DB.read('projectsDB', true);
+      await DB.insert('projectsDB', { id: DB.nextId(all,'id','PROJ'), ...data, created_by: user.username, created_at: new Date().toISOString().split('T')[0] });
+      UI.toast('Added ✅','success');
+    }
+    UI.closeModal('proj-modal');
+    await loadAll();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+function deleteProject(id) {
+  UI.confirm('Delete this project? Task and cost entries for it will not be automatically deleted.', async () => {
+    UI.loading(true);
+    try { await DB.remove('projectsDB', r=>r.id===id); UI.toast('Deleted','success'); await loadAll(); }
+    catch(e) { UI.toast('Error: '+e.message,'error'); }
+    UI.loading(false);
+  });
+}
+
+function populateProjectSelects() {
+  const opts = allProjects.map(p => `<option value="${p.id}">${p.name} (${p.client})</option>`).join('');
+  const g = document.getElementById('gantt-project'), c = document.getElementById('cost-project');
+  g.innerHTML = opts || '<option value="">No projects yet</option>';
+  c.innerHTML = opts || '<option value="">No projects yet</option>';
+  if (allProjects.length) {
+    if (!ganttProjectId || !allProjects.find(p=>p.id===ganttProjectId)) ganttProjectId = allProjects[0].id;
+    if (!costProjectId || !allProjects.find(p=>p.id===costProjectId)) costProjectId = allProjects[0].id;
+    g.value = ganttProjectId; c.value = costProjectId;
+  }
+}
+
+// ---- Gantt Chart ----
+async function loadGantt() {
+  ganttProjectId = document.getElementById('gantt-project').value;
+  const chart = document.getElementById('gantt-chart');
+  if (!ganttProjectId) { chart.innerHTML = '<div class="gantt-empty">No project yet — create one in the Projects tab first.</div>'; return; }
+  UI.loading(true,'Loading Gantt chart...');
+  try {
+    projectTasks = (await DB.read('projectTasksDB', true))
+      .filter(t => t.project_id === ganttProjectId)
+      .sort((a,b) => (parseInt(a.sort_order)||0) - (parseInt(b.sort_order)||0) || (a.start_date||'').localeCompare(b.start_date||''));
+    renderGantt();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+
+function renderGantt() {
+  const chart = document.getElementById('gantt-chart');
+  if (!projectTasks.length) { chart.innerHTML = '<div class="gantt-empty">No tasks yet — click "+ Add Task" to add one.</div>'; return; }
+
+  const starts = projectTasks.map(t => new Date(t.start_date).getTime()).filter(n => !isNaN(n));
+  const ends   = projectTasks.map(t => new Date(t.end_date).getTime()).filter(n => !isNaN(n));
+  if (!starts.length || !ends.length) { chart.innerHTML = '<div class="gantt-empty">Tasks are missing valid start/end dates.</div>'; return; }
+  const rangeStart = Math.min(...starts);
+  const rangeEnd = Math.max(...ends);
+  const span = Math.max(1, rangeEnd - rangeStart);
+
+  const TICKS = 6;
+  let header = '<div class="gantt-header"><span></span>';
+  for (let i = 1; i <= TICKS; i++) {
+    const t = new Date(rangeStart + span * (i / TICKS));
+    header += `<span>${t.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}</span>`;
+  }
+  header += '</div>';
+
+  const statusColor = { not_started:'var(--text3)', in_progress:'var(--accent)', completed:'var(--success)', delayed:'var(--danger)' };
+
+  const rows = projectTasks.map(t => {
+    const s = new Date(t.start_date).getTime(), e = new Date(t.end_date).getTime();
+    const leftPct = ((s - rangeStart) / span) * 100;
+    const widthPct = Math.max(1.5, ((e - s) / span) * 100);
+    const color = statusColor[t.status] || 'var(--accent)';
+    return `<div class="gantt-row">
+      <div class="gantt-row-label" onclick="editTask('${t.id}')" title="${t.task_name}">${t.task_name}</div>
+      <div class="gantt-row-track">
+        <div class="gantt-bar" style="left:${leftPct}%;width:${widthPct}%;background:${color}" onclick="editTask('${t.id}')" title="${t.task_name} (${t.progress||0}%)">
+          <div class="gantt-bar-fill" style="width:${t.progress||0}%"></div>
+          <span>${t.progress||0}%</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  chart.innerHTML = header + rows;
+}
+
+function openAddTask() {
+  if (!ganttProjectId) { UI.toast('Select a project first','warning'); return; }
+  editTaskId = null;
+  document.getElementById('tf-name').value = '';
+  document.getElementById('tf-start').value = '';
+  document.getElementById('tf-end').value = '';
+  document.getElementById('tf-assigned').value = '';
+  document.getElementById('tf-progress').value = 0;
+  document.getElementById('tf-status').value = 'not_started';
+  document.getElementById('task-modal-title').textContent = '+ Add Task';
+  document.getElementById('task-delete-btn').style.display = 'none';
+  UI.openModal('task-modal');
+}
+function editTask(id) {
+  const t = projectTasks.find(x=>x.id===id); if (!t) return;
+  editTaskId = id;
+  document.getElementById('tf-name').value = t.task_name;
+  document.getElementById('tf-start').value = t.start_date;
+  document.getElementById('tf-end').value = t.end_date;
+  document.getElementById('tf-assigned').value = t.assigned_to || '';
+  document.getElementById('tf-progress').value = t.progress || 0;
+  document.getElementById('tf-status').value = t.status || 'not_started';
+  document.getElementById('task-modal-title').textContent = '✏️ Edit Task';
+  document.getElementById('task-delete-btn').style.display = '';
+  UI.openModal('task-modal');
+}
+async function saveTask() {
+  const name = document.getElementById('tf-name').value.trim();
+  const start = document.getElementById('tf-start').value;
+  const end = document.getElementById('tf-end').value;
+  if (!name || !start || !end) { UI.toast('Fill in the required fields','warning'); return; }
+  const data = {
+    task_name: name, start_date: start, end_date: end,
+    assigned_to: document.getElementById('tf-assigned').value.trim(),
+    progress: document.getElementById('tf-progress').value || '0',
+    status: document.getElementById('tf-status').value
+  };
+  UI.loading(true,'Saving...');
+  try {
+    if (editTaskId) {
+      await DB.update('projectTasksDB', r=>r.id===editTaskId, data);
+      UI.toast('Updated ✅','success');
+    } else {
+      const all = await DB.read('projectTasksDB', true);
+      const sortOrder = all.filter(r=>r.project_id===ganttProjectId).length;
+      await DB.insert('projectTasksDB', { id: DB.nextId(all,'id','TASK'), project_id: ganttProjectId, ...data, sort_order: String(sortOrder) });
+      UI.toast('Added ✅','success');
+    }
+    UI.closeModal('task-modal');
+    await loadGantt();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+function deleteTask() {
+  if (!editTaskId) return;
+  UI.confirm('Delete this task?', async () => {
+    UI.loading(true);
+    try { await DB.remove('projectTasksDB', r=>r.id===editTaskId); UI.toast('Deleted','success'); UI.closeModal('task-modal'); await loadGantt(); }
+    catch(e) { UI.toast('Error: '+e.message,'error'); }
+    UI.loading(false);
+  });
+}
+
+// ---- Project Cost ----
+async function loadCost() {
+  costProjectId = document.getElementById('cost-project').value;
+  if (!costProjectId) {
+    document.getElementById('cost-summary').innerHTML = '';
+    document.getElementById('cost-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3)">No project yet</td></tr>';
+    return;
+  }
+  UI.loading(true,'Loading cost data...');
+  try {
+    projectCosts = (await DB.read('projectCostsDB', true))
+      .filter(c => c.project_id === costProjectId)
+      .sort((a,b) => (b.date||'').localeCompare(a.date||''));
+    renderCost();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+function renderCost() {
+  const proj = allProjects.find(p=>p.id===costProjectId);
+  const budget = parseFloat(proj?.budget || 0);
+  const actual = projectCosts.reduce((s,c)=>s+parseFloat(c.amount||0),0);
+  const remaining = budget - actual;
+  document.getElementById('cost-summary').innerHTML = `
+    <div class="card"><div class="card-title" style="margin-bottom:12px">💰 Budget</div><div class="stat-value">${UI.peso(budget)}</div><small style="color:var(--text3)">Actual spend: ${UI.peso(actual)}</small></div>
+    <div class="card"><div class="card-title" style="margin-bottom:12px;color:${remaining<0?'var(--danger)':'var(--success)'}">${remaining<0?'⚠️ Over Budget':'✅ Remaining Budget'}</div><div class="stat-value" style="color:${remaining<0?'var(--danger)':'var(--text)'}">${UI.peso(Math.abs(remaining))}</div></div>`;
+  document.getElementById('cost-tbody').innerHTML = projectCosts.map(c => `<tr>
+    <td>${UI.dateStr(c.date)}</td>
+    <td>${c.category}</td>
+    <td>${c.description}</td>
+    <td><strong>${UI.peso(c.amount)}</strong></td>
+    <td>${c.recorded_by}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="deleteCost('${c.id}')" data-perm="delete">🗑</button></td>
+  </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text3)">No cost entries yet</td></tr>';
+  Auth.applyUIPermissions(user, 'pm');
+}
+function openAddCost() {
+  if (!costProjectId) { UI.toast('Select a project first','warning'); return; }
+  document.getElementById('cf-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('cf-cat').value = '';
+  document.getElementById('cf-desc').value = '';
+  document.getElementById('cf-amount').value = '';
+  UI.openModal('cost-modal');
+}
+async function saveCost() {
+  const date = document.getElementById('cf-date').value;
+  const cat = document.getElementById('cf-cat').value.trim();
+  const desc = document.getElementById('cf-desc').value.trim();
+  const amount = document.getElementById('cf-amount').value;
+  if (!date || !cat || !desc || !amount) { UI.toast('Fill in the required fields','warning'); return; }
+  UI.loading(true,'Saving...');
+  try {
+    const all = await DB.read('projectCostsDB', true);
+    await DB.insert('projectCostsDB', { id: DB.nextId(all,'id','COST'), project_id: costProjectId, date, category: cat, description: desc, amount, recorded_by: user.username });
+    UI.toast('Added ✅','success');
+    UI.closeModal('cost-modal');
+    await loadCost();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+function deleteCost(id) {
+  UI.confirm('Delete this cost entry?', async () => {
+    UI.loading(true);
+    try { await DB.remove('projectCostsDB', r=>r.id===id); UI.toast('Deleted','success'); await loadCost(); }
+    catch(e) { UI.toast('Error: '+e.message,'error'); }
+    UI.loading(false);
+  });
+}
+
+loadAll();
+</script>
+</body>
+</html>

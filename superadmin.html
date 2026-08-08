@@ -44,6 +44,8 @@
       <div class="tab" data-tab="sa-inventory">📦 Inventory</div>
       <div class="tab" data-tab="sa-attendance">🕐 Attendance</div>
       <div class="tab" data-tab="sa-budget">💰 Budget</div>
+      <div class="tab" data-tab="sa-pm">📁 Project Mgmt</div>
+      <div class="tab" data-tab="sa-preventive">🧯 Preventive</div>
       <div class="tab" data-tab="sa-sync">🔄 Sync Center</div>
     </div>
 
@@ -58,6 +60,8 @@
           <option value="inventory">Inventory</option>
           <option value="attendance">Attendance</option>
           <option value="budget">Budget</option>
+          <option value="pm">Project Mgmt</option>
+          <option value="preventive">Preventive</option>
         </select>
         <select id="sa-role-filter" style="padding:8px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text)" onchange="filterAll()">
           <option value="">All Roles</option>
@@ -86,6 +90,8 @@
     <div class="tab-pane" id="sa-inventory"><div id="sys-users-inventory"></div></div>
     <div class="tab-pane" id="sa-attendance"><div id="sys-users-attendance"></div></div>
     <div class="tab-pane" id="sa-budget"><div id="sys-users-budget"></div></div>
+    <div class="tab-pane" id="sa-pm"><div id="sys-users-pm"></div></div>
+    <div class="tab-pane" id="sa-preventive"><div id="sys-users-preventive"></div></div>
 
     <!-- Sync Center -->
     <div class="tab-pane" id="sa-sync">
@@ -147,6 +153,8 @@
           <option value="inventory">Inventory</option>
           <option value="attendance">Attendance & Payroll</option>
           <option value="budget">Budget & Finance</option>
+          <option value="pm">Project Management</option>
+          <option value="preventive">Preventive Maintenance</option>
         </select>
       </div>
     </div>
@@ -239,8 +247,8 @@ async function loadAll() {
 }
 
 function renderStats() {
-  const systems=['all','pos','inventory','attendance','budget'];
-  const labels=['SuperAdmin','POS','Inventory','Attendance','Budget'];
+  const systems=['all','pos','inventory','attendance','budget','pm','preventive'];
+  const labels=['SuperAdmin','POS','Inventory','Attendance','Budget','Project Mgmt','Preventive'];
   document.getElementById('sa-stats').innerHTML=systems.map((s,i)=>{
     const c=allUsers.filter(u=>u.assigned_system===s&&u.status==='active').length;
     return `<div class="stat-card"><div class="stat-label">${labels[i]}</div><div class="stat-value">${c}</div><div class="stat-sub">active users</div></div>`;
@@ -309,7 +317,7 @@ function renderSystemUsers(system, containerId) {
 // Tab listeners
 document.querySelectorAll('.tab').forEach(t=>{
   t.addEventListener('click',()=>{
-    const sys={'sa-pos':'pos','sa-inventory':'inventory','sa-attendance':'attendance','sa-budget':'budget'}[t.dataset.tab];
+    const sys={'sa-pos':'pos','sa-inventory':'inventory','sa-attendance':'attendance','sa-budget':'budget','sa-pm':'pm','sa-preventive':'preventive'}[t.dataset.tab];
     if(sys) renderSystemUsers(sys,`sys-users-${sys}`);
   });
 });
