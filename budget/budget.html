@@ -4,15 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Budget & Finance — Enterprise</title>
-  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="css/budget.css">
   <script>
     // Applied before first paint so a saved theme preference doesn't
     // flash the wrong theme first -- default (no saved value) is dark,
-    // matching how this app has always looked.
-    document.documentElement.setAttribute('data-theme', localStorage.getItem('ent_theme') === 'light' ? 'light' : 'dark');
-    // One folder deep -- shared root scripts (auth.js/ui.js/db.js) use
-    // this to build links back to root-level pages correctly.
-    const ROOT = '../';
+    // matching how this app has always looked. Own key (budget_theme),
+    // independent from the root app's and the other systems'.
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('budget_theme') === 'light' ? 'light' : 'dark');
   </script>
 </head>
 <body>
@@ -173,11 +171,9 @@
 <div id="toast-container"></div>
 <div id="loading-overlay" class="loading-overlay"><div class="spinner"></div><div>Loading...</div></div>
 
-<script src="../js/config.js"></script>
+<script src="js/budget-config.js"></script>
 <script src="../js/sync.js"></script>
-<script src="../js/db.js"></script>
-<script src="../js/auth.js"></script>
-<script src="../js/ui.js"></script>
+<script src="js/budget-core.js"></script>
 <script src="../js/usermgmt.js"></script>
 <script>
   Auth.loadToken();
@@ -194,7 +190,7 @@
   async function loadAll() {
     UI.loading(true,'Loading financial data...');
     try {
-      allEntries = await DB.withPath('budget/db',()=>DB.read('budgetDB',true));
+      allEntries = await DB.read('budgetDB',true);
       allEntries.sort((a,b)=>b.date.localeCompare(a.date));
       renderStats();
       loadOverview();
@@ -300,8 +296,8 @@
     UI.loading(true,'Saving...');
     try{
       const data={type,date,category:cat,description:desc,amount,reference:document.getElementById('ef-ref').value,recorded_by:user.username,status:document.getElementById('ef-status').value};
-      if(editEntryId){await DB.withPath('budget/db',()=>DB.update('budgetDB',r=>r.id===editEntryId,data));UI.toast('Updated ✅','success');}
-      else{const all=await DB.withPath('budget/db',()=>DB.read('budgetDB',true));await DB.withPath('budget/db',()=>DB.insert('budgetDB',{id:DB.nextId(all,'id','BUD'),...data}));UI.toast('Added ✅','success');}
+      if(editEntryId){await DB.update('budgetDB',r=>r.id===editEntryId,data);UI.toast('Updated ✅','success');}
+      else{const all=await DB.read('budgetDB',true);await DB.insert('budgetDB',{id:DB.nextId(all,'id','BUD'),...data});UI.toast('Added ✅','success');}
       UI.closeModal('entry-modal');await loadAll();
     }catch(e){UI.toast('Error: '+e.message,'error');}
     UI.loading(false);
@@ -310,7 +306,7 @@
   async function markPaid(id){
     UI.confirm('Mark this debt as paid?',async()=>{
       UI.loading(true);
-      try{await DB.withPath('budget/db',()=>DB.update('budgetDB',r=>r.id===id,{status:'paid'}));UI.toast('Marked as paid ✅','success');await loadAll();}
+      try{await DB.update('budgetDB',r=>r.id===id,{status:'paid'});UI.toast('Marked as paid ✅','success');await loadAll();}
       catch(e){UI.toast('Error: '+e.message,'error');}
       UI.loading(false);
     });
@@ -319,7 +315,7 @@
   async function deleteEntry(id){
     UI.confirm('Delete this entry?',async()=>{
       UI.loading(true);
-      try{await DB.withPath('budget/db',()=>DB.remove('budgetDB',r=>r.id===id));UI.toast('Deleted','success');await loadAll();}
+      try{await DB.remove('budgetDB',r=>r.id===id);UI.toast('Deleted','success');await loadAll();}
       catch(e){UI.toast('Error: '+e.message,'error');}
       UI.loading(false);
     });
