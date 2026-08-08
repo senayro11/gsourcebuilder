@@ -202,6 +202,7 @@
     if (tabId==='tab-expenses') filterExpenses();
     if (tabId==='tab-income') filterIncome();
     if (tabId==='tab-debts') filterDebts();
+    sessionStorage.setItem('budget_last_tab', tabId);
   }
   UI.buildNavbar(user,'Budget & Finance');
   UI.buildSidebar(user,'budget', TABS);
@@ -338,6 +339,16 @@
   // Set default month to current
   document.getElementById('ov-month').value=new Date().toISOString().substring(0,7);
   loadAll();
+
+  // Stay on whatever tab the user was on before a refresh, instead of
+  // always resetting to the first tab. Only restore if that nav item is
+  // still present and not permission-hidden.
+  (function restoreLastTab() {
+    const lastTab = sessionStorage.getItem('budget_last_tab');
+    if (!lastTab || lastTab === TABS[0].id) return;
+    const el = document.querySelector(`#sidebar-nav .nav-item[data-tab="${lastTab}"]`);
+    if (el && el.style.display !== 'none') switchTab(lastTab, el);
+  })();
 </script>
 </body>
 </html>

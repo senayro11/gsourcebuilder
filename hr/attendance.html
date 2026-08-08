@@ -1661,7 +1661,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     logoIcon.title = 'Click to change logo (superadmin only)';
     logoIcon.onclick = () => document.getElementById('hr-logo-input').click();
   }
-  navigate('dashboard');
+  // Stay on whatever page the user was on before a refresh, instead of
+  // always resetting to Dashboard. Only restore if that page still
+  // exists and its nav item isn't permission-hidden.
+  const lastPage = sessionStorage.getItem('hr_last_page');
+  const lastPageNav = lastPage && document.querySelector(`[data-page="${lastPage}"]`);
+  const lastPageValid = lastPage && document.getElementById(`page-${lastPage}`) &&
+    (!lastPageNav || lastPageNav.style.display !== 'none');
+  navigate(lastPageValid ? lastPage : 'dashboard');
 });
 
 async function loadSidebarLogo() {
@@ -1851,6 +1858,7 @@ function navigate(pageId) {
   setActiveNav(pageId);
   updateBreadcrumb(pageId);
   loadPage(pageId);
+  sessionStorage.setItem('hr_last_page', pageId);
 }
 
 function updateBreadcrumb(pageId) {
