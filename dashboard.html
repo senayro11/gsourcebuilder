@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard — Enterprise System</title>
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    // Applied before first paint so a saved theme preference doesn't
+    // flash the wrong theme first -- default (no saved value) is dark,
+    // matching how this app has always looked.
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('ent_theme') === 'light' ? 'light' : 'dark');
+  </script>
   <style>
     .system-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 24px; }
     .sys-card {
@@ -65,7 +71,6 @@
           <span class="role" id="user-role">ROLE</span>
         </div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">🚪 Logout</button>
     </div>
   </nav>
 

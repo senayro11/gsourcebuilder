@@ -4,28 +4,46 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
+/* Dark is the system default (matches how this app has always looked --
+   see the pre-paint snippet in each page's <head> that sets data-theme
+   before first paint). Light is available via the profile dropdown's
+   Dark Mode toggle. Only the neutral bg/surface/text/shadow scale
+   changes between themes -- accent/status colors stay identical in
+   both so buttons/badges look the same either way. */
 :root {
-  --bg:        #0f1117;
-  --surface:   #1a1d27;
-  --surface2:  #22263a;
-  --border:    #2e3349;
+  --bg:        #f4f6fb;
+  --surface:   #ffffff;
+  --surface2:  #f1f4f9;
+  --border:    #e2e6f0;
   --accent:    #6366f1;
   --accent2:   #818cf8;
   --success:   #10b981;
   --warning:   #f59e0b;
   --danger:    #ef4444;
   --info:      #0ea5e9;
-  --text:      #e2e8f0;
-  --text2:     #94a3b8;
-  --text3:     #64748b;
-  --white:     #ffffff;
+  --text:      #1e293b;
+  --text2:     #64748b;
+  --text3:     #94a3b8;
+  --white:     #0f172a;
   --radius:    10px;
   --radius-lg: 16px;
-  --shadow:    0 4px 24px rgba(0,0,0,0.4);
+  --shadow:    0 4px 24px rgba(15,23,42,0.08);
   --font:      'Inter', sans-serif;
   --mono:      'JetBrains Mono', monospace;
   --sidebar-w: 240px;
   --navbar-h:  60px;
+}
+
+[data-theme="dark"] {
+  --bg:        #0f1117;
+  --surface:   #1a1d27;
+  --surface2:  #22263a;
+  --border:    #2e3349;
+  --text:      #e2e8f0;
+  --text2:     #94a3b8;
+  --text3:     #64748b;
+  --white:     #ffffff;
+  --shadow:    0 4px 24px rgba(0,0,0,0.4);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -37,6 +55,7 @@ body {
   min-height: 100vh;
   font-size: 14px;
   line-height: 1.6;
+  transition: background-color .2s ease, color .2s ease;
 }
 
 /* ---- Layout ---- */
@@ -82,6 +101,48 @@ body {
 .user-chip .user-info { display: flex; flex-direction: column; line-height: 1.2; }
 .user-chip .user-info .name { font-weight: 600; font-size: 13px; }
 .user-chip .user-info .role { font-size: 10px; color: var(--text2); letter-spacing: 0.5px; }
+.user-chip.clickable { cursor: pointer; }
+
+/* Profile dropdown -- mounted dynamically by UI.buildNavbar() (js/ui.js)
+   right after .user-chip, inside the wrapper it also creates. */
+.profile-menu {
+  display: none; position: absolute; right: 0; top: 44px; width: 200px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow);
+  z-index: 500; overflow: hidden;
+}
+.profile-menu.open { display: block; }
+.pm-header { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.pm-header .pm-name { font-weight: 700; color: var(--white); font-size: 13px; }
+.pm-header .pm-role { font-size: 11px; color: var(--text3); text-transform: uppercase; }
+.pm-item {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 10px 16px; border: none; background: none;
+  font: inherit; font-size: 13px; color: var(--text);
+  text-align: left; cursor: pointer; text-decoration: none;
+}
+.pm-item:hover { background: var(--surface2); }
+.pm-item.danger { color: var(--danger); }
+.pm-divider { border-top: 1px solid var(--border); }
+.pm-theme-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 16px; color: var(--text2); font-size: 13px;
+}
+.theme-switch { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
+.theme-switch input { opacity: 0; width: 0; height: 0; }
+.theme-switch-track {
+  position: absolute; inset: 0; cursor: pointer;
+  background: var(--border); border: 1px solid var(--border);
+  border-radius: 22px; transition: background .15s ease;
+}
+.theme-switch-track::before {
+  content: ""; position: absolute; width: 16px; height: 16px;
+  left: 2px; top: 50%; transform: translateY(-50%);
+  background: var(--white); border-radius: 50%;
+  transition: transform .15s ease;
+}
+.theme-switch input:checked + .theme-switch-track { background: var(--accent); border-color: var(--accent); }
+.theme-switch input:checked + .theme-switch-track::before { transform: translate(16px,-50%); background: #fff; }
 
 .sync-pill {
   display: flex; align-items: center; gap: 6px;
