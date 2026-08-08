@@ -1,1 +1,2 @@
 id|project_id|task_name|start_date|end_date|progress|assigned_to|status|sort_order
+TASK001|PROJ002|Stadfhh|2026-08-01|2026-08-31|5||in_progress|0
