@@ -41,23 +41,23 @@ const Auth = (() => {
     }
   }
 
-  function logout() { clearSession(); window.location.href = 'index.html'; }
+  function logout() { clearSession(); window.location.href = _ROOT + 'index.html'; }
 
   // Guard — requiredSystem: null=dashboard, 'pos','inventory','attendance','budget','superadmin'
   function guard(requiredSystem) {
     const user = getSession();
-    if (!user) { window.location.href = 'index.html'; return null; }
+    if (!user) { window.location.href = _ROOT + 'index.html'; return null; }
     if (requiredSystem === null) return user; // dashboard: just check login
 
     // Superadmin page
     if (requiredSystem === 'superadmin') {
-      if (user.role !== 'superadmin') { window.location.href = 'dashboard.html'; return null; }
+      if (user.role !== 'superadmin') { window.location.href = _ROOT + 'dashboard.html'; return null; }
       return user;
     }
 
     if (!canAccessSystem(user, requiredSystem)) {
       alert('You don\'t have access to this system.');
-      window.location.href = 'dashboard.html';
+      window.location.href = _ROOT + 'dashboard.html';
       return null;
     }
     return user;
@@ -85,9 +85,9 @@ const Auth = (() => {
 
   // Returns redirect target after login based on role
   function getHomeUrl(user) {
-    if (user.role === 'superadmin') return 'dashboard.html';
+    if (user.role === 'superadmin') return _ROOT + 'dashboard.html';
     const sys = user.assigned_system;
-    return SYSTEMS[sys] ? SYSTEMS[sys].file : 'dashboard.html';
+    return _ROOT + (SYSTEMS[sys] ? SYSTEMS[sys].file : 'dashboard.html');
   }
 
   function applyUIPermissions(user, system) {

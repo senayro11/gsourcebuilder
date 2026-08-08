@@ -93,15 +93,24 @@ const Sync = (() => {
     return realOnline;
   }
 
-  // dbName may come from the root app (no prefix, using window.DB) or
-  // from the HR module (prefixed "hr_", using window.HRDB) — different
-  // engines because they point at different dbPaths/files even when some
-  // names coincide (e.g. "employeesDB").
-  function engineFor(dbName) {
-    if (dbName.startsWith('hr_')) {
-      return typeof HRDB !== 'undefined' ? { db: HRDB, realName: dbName.slice(3) } : null;
+  // A queue/cache key may come from the root app (bare dbName, using
+  // window.DB and whatever GITHUB_CONFIG.dbPath is current when the
+  // write eventually flushes), from the HR module (prefixed "hr_", using
+  // window.HRDB — different engine because it points at a different
+  // dbPath/files even when some names coincide, e.g. "employeesDB"), or
+  // from a root page that wrote via DB.withPath() to a folder other than
+  // its own default (e.g. pos/pos.html writing "transactionsDB" into
+  // pos/db) — those are queued as "path|dbName" so a flush that happens
+  // to run from a *different* page (whose own default dbPath wouldn't
+  // otherwise match) still commits to the right folder.
+  function engineFor(key) {
+    if (key.startsWith('hr_')) {
+      return typeof HRDB !== 'undefined' ? { db: HRDB, realName: key.slice(3) } : null;
     }
-    return typeof DB !== 'undefined' ? { db: DB, realName: dbName } : null;
+    if (typeof DB === 'undefined') return null;
+    const sep = key.indexOf('|');
+    if (sep !== -1) return { db: DB, realName: key.slice(sep + 1), path: key.slice(0, sep) };
+    return { db: DB, realName: key };
   }
 
   // Commit each pending dbName to GitHub using the right engine's
@@ -114,21 +123,22 @@ const Sync = (() => {
     flushing = true;
     let synced = 0;
     try {
-      let dbNames = Object.keys(getQueue());
-      for (const dbName of dbNames) {
-        const entry = getQueue()[dbName];
+      let keys = Object.keys(getQueue());
+      for (const key of keys) {
+        const entry = getQueue()[key];
         if (!entry) continue;
-        const engine = engineFor(dbName);
+        const engine = engineFor(key);
         if (!engine) continue; // not available on this page — try again on another page/flush
         try {
-          await engine.db.forceCommit(engine.realName, entry.rows, entry.header);
-          removeFromQueue(dbName);
+          const commit = () => engine.db.forceCommit(engine.realName, entry.rows, entry.header);
+          await (engine.path ? engine.db.withPath(engine.path, commit) : commit());
+          removeFromQueue(key);
           synced++;
         } catch (e) {
           if (isConnectivityError(e)) break; // went back offline mid-sync
           // Real error (e.g. validation/permission) — log it but keep it
           // in the queue to retry on the next flush.
-          lastError = `${dbName}: ${e.message}`;
+          lastError = `${engine.realName}: ${e.message}`;
         }
       }
       if (synced > 0) {

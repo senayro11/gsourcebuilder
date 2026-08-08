@@ -4,31 +4,51 @@ An integrated business management system deployed on GitHub Pages. Uses plain TX
 
 ## 📁 File Structure
 
+Each business system (POS, Inventory, Budget, HR) lives in its own folder
+with its own `db/` subfolder for the tables it exclusively owns. Tables used
+by more than one system (accounts, products) stay in the shared root `db/`
+instead of being duplicated — `js/db.js`'s `DB.withPath(path, fn)` lets a
+page temporarily read/write a different folder's table without changing its
+own default (e.g. `pos/pos.html` reading `productsDB` from the root `db/`
+while its own transactions stay in `pos/db/`).
+
 ```
 enterprise-system/
 ├── index.html          ← Login page
 ├── dashboard.html      ← Main hub
-├── pos.html            ← Point of Sale
-├── inventory.html      ← Inventory Management
-├── attendance.html     ← Attendance + Payroll
-├── budget.html         ← Budget & Finance
+├── attendance.html     ← Legacy standalone Attendance + Payroll (superseded by hr/)
 ├── users.html          ← User Management (SuperAdmin only)
+├── superadmin.html     ← SuperAdmin panel
+├── edit-profile.html   ← Self-service profile edit
+├── change-password.html ← Self-service password change
 ├── css/
-│   └── style.css       ← Global styles
+│   └── style.css       ← Global styles (shared by every system, incl. light/dark theme vars)
 ├── js/
-│   ├── config.js       ← ⚙️ Edit this! GitHub settings + permissions
+│   ├── config.js       ← ⚙️ Edit this! GitHub settings + permissions + per-system file paths
 │   ├── auth.js         ← Authentication engine
-│   ├── db.js           ← GitHub API database engine
-│   └── ui.js           ← Shared UI utilities
-└── db/
-    ├── accountsDB.txt  ← User accounts
-    ├── productsDB.txt  ← Products
-    ├── transactionsDB.txt ← POS transactions
-    ├── employeesDB.txt ← Employees
-    ├── attendanceDB.txt ← Attendance records
-    ├── payrollDB.txt   ← Payroll records
-    ├── budgetDB.txt    ← Budget entries
-    └── inventoryDB.txt ← Stock movements
+│   ├── db.js           ← GitHub API database engine (DB.withPath for cross-folder access)
+│   ├── ui.js            ← Shared UI utilities (navbar, sidebar, profile dropdown)
+│   ├── sync.js          ← Offline-first queue/cache, shared by root + hr/
+│   └── usermgmt.js      ← Per-system "Add/Edit User" modal
+├── db/                  ← Shared tables (used by more than one system)
+│   ├── accountsDB.txt   ← User accounts (global — every system)
+│   ├── productsDB.txt   ← Products (shared: POS + Inventory)
+│   ├── employeesDB.txt  ← Employees (legacy attendance.html only)
+│   ├── attendanceDB.txt ← Attendance records (legacy attendance.html only)
+│   └── payrollDB.txt    ← Payroll records (legacy attendance.html only)
+├── pos/
+│   ├── pos.html         ← Point of Sale
+│   └── db/transactionsDB.txt
+├── inventory/
+│   ├── inventory.html   ← Inventory Management
+│   └── db/inventoryDB.txt
+├── budget/
+│   ├── budget.html      ← Budget & Finance
+│   └── db/budgetDB.txt
+└── hr/                  ← Full HR/Attendance/Payroll system (own js/css/db, see below)
+    ├── attendance.html
+    ├── timein.html       ← Kiosk time in/out
+    ├── js/, css/, db/
 ```
 
 ## 🚀 Setup Instructions
