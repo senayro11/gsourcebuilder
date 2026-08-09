@@ -82,20 +82,18 @@
       <div class="page-header-row" style="margin-bottom:16px">
         <div class="page-header"><h1>📊 Gantt Chart</h1></div>
       </div>
-      <div class="page-header-row" style="margin-bottom:16px">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-          <select id="gantt-project" style="min-width:240px" onchange="loadGantt()"></select>
-          <div class="form-group" style="margin-bottom:0">
-            <label>Display From</label>
-            <input type="date" id="gantt-filter-from" onchange="renderGantt()">
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label>Display To</label>
-            <input type="date" id="gantt-filter-to" onchange="renderGantt()">
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="clearGanttDateFilter()">✕ Clear</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px">
+        <select id="gantt-project" style="width:240px" onchange="loadGantt()"></select>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Display From</label>
+          <input type="date" id="gantt-filter-from" onchange="renderGantt()">
         </div>
-        <button class="btn btn-primary btn-sm" onclick="openAddTask()" data-perm="create">+ Add Task</button>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Display To</label>
+          <input type="date" id="gantt-filter-to" onchange="renderGantt()">
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="clearGanttDateFilter()">✕ Clear</button>
+        <button class="btn btn-primary" style="height:37px;padding:0 20px;margin-left:auto" onclick="openAddTask()" data-perm="create">+ Add Task</button>
       </div>
       <div class="card">
         <div class="gantt-wrap">
