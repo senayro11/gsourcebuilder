@@ -540,10 +540,6 @@ input::placeholder { color: var(--text3); }
   color: var(--text3); white-space: nowrap; border-left: 1px solid var(--border);
   padding-left: 4px;
 }
-.gantt-tick-end {
-  border-left: none; border-right: 1px solid var(--border);
-  padding-left: 0; padding-right: 4px; text-align: right;
-}
 .gantt-row {
   display: flex; align-items: center; min-height: 40px;
   border-bottom: 1px solid var(--border); padding: 6px 0;
@@ -598,6 +594,25 @@ input::placeholder { color: var(--text3); }
      Logout button off the visible row. */
   .user-chip { padding: 6px; gap: 0; }
   .user-chip .user-info { display: none; }
+
+  /* The Gantt's side-by-side label+track layout needs a wide fixed
+     label column (300px) to stay legible -- on a phone that alone can
+     exceed the viewport, forcing horizontal scroll. Stack the label
+     above the track instead so both use the full available width and
+     the chart never needs to scroll sideways. buildGanttHeader() in
+     pm.html measures the spacer's actual rendered width (not a
+     hardcoded constant), so hiding it here automatically gives the
+     tick track the full width too. */
+  .gantt-header { flex-direction: column; }
+  .gantt-header-spacer { display: none; }
+  /* .gantt-header-track's "flex: 1" sets flex-basis: 0%, which governs
+     HEIGHT (not width) once the header becomes a column flex container
+     -- collapsing the tick row to 0px tall. Override back to a fixed
+     height here so the date labels stay visible on mobile. */
+  .gantt-header-track { flex: none; width: 100%; height: 16px; }
+  .gantt-row { flex-direction: column; align-items: stretch; }
+  .gantt-row-label { width: 100%; padding-right: 0; margin-bottom: 6px; }
+  .gantt-row-track { width: 100%; }
 }
 
 /* ---- Scrollbar ---- */
