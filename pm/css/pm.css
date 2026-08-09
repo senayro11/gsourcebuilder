@@ -612,7 +612,13 @@ input::placeholder { color: var(--text3); }
   .gantt-header-track { flex: none; width: 100%; height: 16px; }
   .gantt-row { flex-direction: column; align-items: stretch; }
   .gantt-row-label { width: 100%; padding-right: 0; margin-bottom: 6px; }
-  .gantt-row-track { width: 100%; }
+  /* Same "flex: 1" -> flex-basis: 0% height collapse as the header
+     track above, but here it's worse: .gantt-row has no explicit
+     height of its own on mobile (it's sized by its content), so the
+     flex-grow item expands into an indeterminate, often oversized
+     height instead of just collapsing -- that's what was pushing task
+     bars down into other rows and making them overlap. */
+  .gantt-row-track { flex: none; width: 100%; height: 26px; }
 }
 
 /* ---- Scrollbar ---- */
