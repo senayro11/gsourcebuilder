@@ -452,6 +452,16 @@ async function loadGantt() {
 const GANTT_DAY_MS = 24 * 60 * 60 * 1000;
 const GANTT_LABEL_W = 300; // must match .gantt-row-label's width in pm.css
 const GANTT_MIN_TICK_W = 60; // px -- narrowest a tick can get before escalating granularity (a rough density target; exact overlap avoidance is handled by measured-width collision detection in buildGanttHeader)
+const GANTT_MOBILE_TICK_W = 64; // px -- comfortable spacing per tick on a phone; the chart scrolls horizontally instead of shrinking ticks to fit
+const GANTT_MOBILE_MAX_TICKS = 60; // generous vs. desktop's width-fit cap -- mobile is allowed to render a wide, scrollable track instead of squeezing granularity down to what's visible
+
+// The row-track width (mobile: an explicit px value wide enough for
+// legible, scrollable ticks; desktop: null, meaning "fill 100%") is
+// decided once in buildGanttHeader() and read here so every task row's
+// track matches the header track exactly -- otherwise a %-based bar
+// position would land at a different pixel than the tick for the same
+// date.
+let ganttTrackWidthStyle = '';
 
 function ganttDailyTicks(rangeStart, rangeEnd) {
   const days = Math.max(1, Math.round((rangeEnd - rangeStart) / GANTT_DAY_MS) + 1);
@@ -523,17 +533,26 @@ function ganttMeasureTickWidths(labels) {
 function buildGanttHeader(rangeStart, rangeEnd, span) {
   const wrap = document.querySelector('.gantt-wrap');
   const containerWidth = wrap ? wrap.getBoundingClientRect().width : 900;
-  // Below the same breakpoint pm.css uses to stack the row label above
-  // the track (instead of beside it), the label column disappears from
-  // the row entirely -- so the track gets the full container width
-  // instead of container-minus-300px.
-  const isStacked = window.matchMedia('(max-width: 768px)').matches;
-  const availableWidth = Math.max(120, containerWidth - (isStacked ? 0 : GANTT_LABEL_W));
-  // N ticks span (N-1) gaps, not N -- without the "+ 1" this under-counts
-  // by one and escalates granularity a step earlier than the width
-  // actually requires.
-  const maxTicks = Math.max(2, Math.floor(availableWidth / GANTT_MIN_TICK_W) + 1);
-  const ticks = ganttPickTicks(rangeStart, rangeEnd, maxTicks);
+  const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+  let availableWidth, ticks;
+  if (isMobile) {
+    // Phones don't have room to shrink ticks down to fit and stay
+    // legible -- render at a fixed comfortable width per tick instead
+    // and let .gantt-wrap's horizontal scroll handle the overflow,
+    // same as scrolling a wide table.
+    ticks = ganttPickTicks(rangeStart, rangeEnd, GANTT_MOBILE_MAX_TICKS);
+    availableWidth = Math.max(containerWidth - GANTT_LABEL_W, ticks.length * GANTT_MOBILE_TICK_W);
+    ganttTrackWidthStyle = `width:${availableWidth}px;flex:none`;
+  } else {
+    availableWidth = Math.max(120, containerWidth - GANTT_LABEL_W);
+    // N ticks span (N-1) gaps, not N -- without the "+ 1" this under-counts
+    // by one and escalates granularity a step earlier than the width
+    // actually requires.
+    const maxTicks = Math.max(2, Math.floor(availableWidth / GANTT_MIN_TICK_W) + 1);
+    ticks = ganttPickTicks(rangeStart, rangeEnd, maxTicks);
+    ganttTrackWidthStyle = '';
+  }
   const widths = ganttMeasureTickWidths(ticks.map(tk => tk.label));
   const pxLeft = ticks.map(tk => Math.min(100, Math.max(0, ((tk.time - rangeStart) / span) * 100)) / 100 * availableWidth);
 
@@ -561,7 +580,7 @@ function buildGanttHeader(rangeStart, rangeEnd, span) {
 
   return `<div class="gantt-header">
     <div class="gantt-header-spacer"></div>
-    <div class="gantt-header-track">${tickHtml}</div>
+    <div class="gantt-header-track" style="${ganttTrackWidthStyle}">${tickHtml}</div>
   </div>`;
 }
 
@@ -653,7 +672,7 @@ function renderGantt() {
           <span class="gantt-row-progress-text">${t.progress||0}%</span>
         </span>
       </div>
-      <div class="gantt-row-track">${barHtml}</div>
+      <div class="gantt-row-track" style="${ganttTrackWidthStyle}">${barHtml}</div>
     </div>`;
   }
 
