@@ -473,8 +473,6 @@ function renderGantt() {
   // latest end only if the project has no dates set).
   const proj = allProjects.find(p => p.id === ganttProjectId);
   const DAY_MS = 24 * 60 * 60 * 1000;
-  const LABEL_W = 300; // must match .gantt-row-label's width in pm.css
-  const DAY_W = 48; // px per day column
   const projStart = proj?.start_date ? new Date(proj.start_date).getTime() : NaN;
   const projEnd = proj?.end_date ? new Date(proj.end_date).getTime() : NaN;
   const fromVal = document.getElementById('gantt-filter-from').value;
@@ -484,19 +482,17 @@ function renderGantt() {
   const span = Math.max(1, rangeEnd - rangeStart);
 
   // One tick per calendar day across the displayed window (e.g. Aug 8,
-  // Aug 9, Aug 10...) instead of a handful of evenly-spaced samples --
-  // both the header and every row's track get the same fixed pixel
-  // width (LABEL_W + totalDays*DAY_W) so the day columns and the bars
-  // underneath always line up, with the wrapper scrolling horizontally
-  // for long ranges.
+  // Aug 9, Aug 10...), each an equal flex share of the available width
+  // -- never a fixed pixel width -- so the whole chart always fits
+  // exactly within the page on desktop with no horizontal scrolling.
+  // A wide window just means narrower day columns; Display From/To is
+  // there to zoom into a shorter window when that gets too cramped.
   const totalDays = Math.max(1, Math.round(span / DAY_MS) + 1);
-  const trackWidth = totalDays * DAY_W;
-  chart.style.minWidth = (LABEL_W + trackWidth) + 'px';
 
-  let header = `<div class="gantt-header" style="margin-left:${LABEL_W}px;width:${trackWidth}px">`;
+  let header = '<div class="gantt-header">';
   for (let i = 0; i < totalDays; i++) {
     const t = new Date(rangeStart + i * DAY_MS);
-    header += `<span style="width:${DAY_W}px">${t.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}</span>`;
+    header += `<span>${t.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}</span>`;
   }
   header += '</div>';
 
@@ -527,7 +523,7 @@ function renderGantt() {
           <span class="gantt-row-progress-text">${t.progress||0}%</span>
         </span>
       </div>
-      <div class="gantt-row-track" style="width:${trackWidth}px">${barHtml}</div>
+      <div class="gantt-row-track">${barHtml}</div>
     </div>`;
   }
 

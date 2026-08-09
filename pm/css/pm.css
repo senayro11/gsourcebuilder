@@ -527,14 +527,14 @@ input::placeholder { color: var(--text3); }
    range, and one row per task with a bar positioned/sized via
    left/width percentages computed from that same range. */
 .gantt-wrap { overflow-x: auto; }
-.gantt-chart { min-width: 820px; }
 .gantt-header {
   display: flex; margin-left: 300px; padding-bottom: 8px;
   border-bottom: 1px solid var(--border); margin-bottom: 4px;
 }
 .gantt-header span {
-  flex: 0 0 auto; text-align: center; font-size: 10px; font-weight: 600;
+  flex: 1 1 0; min-width: 0; text-align: center; font-size: 10px; font-weight: 600;
   color: var(--text3); border-left: 1px solid var(--border);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .gantt-row {
   display: flex; align-items: center; min-height: 40px;
@@ -560,7 +560,7 @@ input::placeholder { color: var(--text3); }
 }
 .gantt-row-progress-fill { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
 .gantt-row-progress-text { font-size: 11px; font-weight: 600; color: var(--text3); }
-.gantt-row-track { flex: 0 0 auto; position: relative; height: 26px; }
+.gantt-row-track { flex: 1; min-width: 0; position: relative; height: 26px; }
 .gantt-bar {
   position: absolute; top: 0; height: 26px; min-width: 6px;
   border-radius: 6px; background: var(--accent); color: #fff;
