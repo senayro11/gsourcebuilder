@@ -451,7 +451,7 @@ async function loadGantt() {
 
 const GANTT_DAY_MS = 24 * 60 * 60 * 1000;
 const GANTT_LABEL_W = 300; // must match .gantt-row-label's width in pm.css
-const GANTT_MIN_TICK_W = 56; // px -- narrowest a tick can get before escalating granularity
+const GANTT_MIN_TICK_W = 60; // px -- narrowest a tick can get before escalating granularity (a rough density target; exact overlap avoidance is handled by measured-width collision detection in buildGanttHeader)
 
 function ganttDailyTicks(rangeStart, rangeEnd) {
   const days = Math.max(1, Math.round((rangeEnd - rangeStart) / GANTT_DAY_MS) + 1);
@@ -502,6 +502,20 @@ function ganttPickTicks(rangeStart, rangeEnd, maxTicks) {
   return ganttYearlyTicks(rangeStart, rangeEnd);
 }
 
+// Measures each label's real rendered width using actual .gantt-tick
+// styling (font, padding, border) via a temporary hidden DOM element,
+// instead of guessing at a fixed character width -- label width varies
+// noticeably between e.g. "Aug 1" and "Aug 29" or "Sep 2026".
+function ganttMeasureTickWidths(labels) {
+  const holder = document.createElement('div');
+  holder.style.cssText = 'position:absolute;visibility:hidden;height:0;overflow:hidden;white-space:nowrap;';
+  holder.innerHTML = labels.map(l => `<span class="gantt-tick" style="position:static;border:none;padding:0 4px">${l}</span>`).join('');
+  document.body.appendChild(holder);
+  const widths = Array.from(holder.children).map(el => el.getBoundingClientRect().width);
+  document.body.removeChild(holder);
+  return widths;
+}
+
 // Builds the header row: a fixed-width spacer matching the row-label
 // column, then a track the same width as every row's .gantt-row-track,
 // with ticks placed by %-of-span (identical math to the task bars) so
@@ -509,20 +523,40 @@ function ganttPickTicks(rangeStart, rangeEnd, maxTicks) {
 function buildGanttHeader(rangeStart, rangeEnd, span) {
   const wrap = document.querySelector('.gantt-wrap');
   const containerWidth = wrap ? wrap.getBoundingClientRect().width : 900;
-  const availableWidth = Math.max(120, containerWidth - GANTT_LABEL_W);
-  const maxTicks = Math.max(2, Math.floor(availableWidth / GANTT_MIN_TICK_W));
+  // Below the same breakpoint pm.css uses to stack the row label above
+  // the track (instead of beside it), the label column disappears from
+  // the row entirely -- so the track gets the full container width
+  // instead of container-minus-300px.
+  const isStacked = window.matchMedia('(max-width: 768px)').matches;
+  const availableWidth = Math.max(120, containerWidth - (isStacked ? 0 : GANTT_LABEL_W));
+  // N ticks span (N-1) gaps, not N -- without the "+ 1" this under-counts
+  // by one and escalates granularity a step earlier than the width
+  // actually requires.
+  const maxTicks = Math.max(2, Math.floor(availableWidth / GANTT_MIN_TICK_W) + 1);
   const ticks = ganttPickTicks(rangeStart, rangeEnd, maxTicks);
+  const widths = ganttMeasureTickWidths(ticks.map(tk => tk.label));
+  const pxLeft = ticks.map(tk => Math.min(100, Math.max(0, ((tk.time - rangeStart) / span) * 100)) / 100 * availableWidth);
 
-  // The last tick is the only one that can bleed past the track's right
-  // edge (labels grow rightward from their tick mark) -- anchor it from
-  // the right instead so its text grows leftward and never gets clipped.
+  // Every tick grows rightward from its date position except the very
+  // last one, which can bleed past the track's right edge -- so it's
+  // right-anchored (grows leftward) instead, UNLESS that would make it
+  // collide with the previous tick's label, in which case it's nudged
+  // just far enough right to clear it (measured widths make this exact
+  // instead of guessed).
+  const GAP = 6;
+  const lastIdx = ticks.length - 1;
   const tickHtml = ticks.map((tk, i) => {
-    const leftPct = Math.min(100, Math.max(0, ((tk.time - rangeStart) / span) * 100));
-    if (i === ticks.length - 1 && leftPct > 50) {
-      const rightPct = 100 - leftPct;
-      return `<span class="gantt-tick gantt-tick-end" style="right:${rightPct}%">${tk.label}</span>`;
+    if (i === lastIdx && i > 0) {
+      const leftAnchoredRight = pxLeft[i] + widths[i];
+      if (leftAnchoredRight <= availableWidth) {
+        return `<span class="gantt-tick" style="left:${pxLeft[i]}px">${tk.label}</span>`;
+      }
+      const prevRight = pxLeft[i - 1] + widths[i - 1];
+      const idealLeft = availableWidth - widths[i];
+      const clampedLeft = Math.max(idealLeft, prevRight + GAP);
+      return `<span class="gantt-tick" style="left:${clampedLeft}px">${tk.label}</span>`;
     }
-    return `<span class="gantt-tick" style="left:${leftPct}%">${tk.label}</span>`;
+    return `<span class="gantt-tick" style="left:${pxLeft[i]}px">${tk.label}</span>`;
   }).join('');
 
   return `<div class="gantt-header">
