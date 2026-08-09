@@ -469,7 +469,10 @@ function renderGantt() {
     return `<div class="gantt-row">
       <div class="gantt-row-label" onclick="editTask('${t.id}')" title="${t.task_name} (${t.progress||0}%)">
         <span class="gantt-row-name">${t.task_name}</span>
-        <span class="gantt-row-progress">${t.progress||0}%</span>
+        <span class="gantt-row-progress-wrap">
+          <span class="gantt-row-progress-bar"><span class="gantt-row-progress-fill" style="width:${t.progress||0}%"></span></span>
+          <span class="gantt-row-progress-text">${t.progress||0}%</span>
+        </span>
       </div>
       <div class="gantt-row-track">
         <div class="gantt-bar" style="left:${leftPct}%;width:${widthPct}%;background:${color}" onclick="editTask('${t.id}')" title="${t.task_name} (${t.progress||0}%)">
