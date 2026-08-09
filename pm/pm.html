@@ -49,7 +49,7 @@
     <div class="stats-grid" id="pm-stats"></div>
 
     <!-- Projects -->
-    <div class="tab-pane active" id="tab-projects">
+    <div class="tab-pane" id="tab-projects">
       <div class="page-header-row" style="margin-bottom:16px">
         <div class="search-bar" style="max-width:280px">
           <span>🔍</span>
@@ -68,8 +68,8 @@
       </div>
     </div>
 
-    <!-- Gantt Chart -->
-    <div class="tab-pane" id="tab-gantt">
+    <!-- Dashboard: project stat cards (see #pm-stats above) + the Gantt chart -->
+    <div class="tab-pane active" id="tab-gantt">
       <div class="page-header-row" style="margin-bottom:16px">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
           <select id="gantt-project" style="min-width:240px" onchange="loadGantt()"></select>
@@ -267,8 +267,8 @@ Auth.loadToken();
 const user = Auth.guard('pm');
 if (!user) throw 0;
 const TABS = [
+  { id:'tab-gantt',    icon:'🏠', label:'Dashboard' },
   { id:'tab-projects', icon:'📁', label:'Projects' },
-  { id:'tab-gantt',    icon:'📊', label:'Gantt Chart' },
   { id:'tab-tasks',    icon:'✅', label:'Task Tracker' },
   { id:'tab-cost',     icon:'💵', label:'Project Cost' }
 ];
@@ -304,6 +304,14 @@ async function loadAll() {
     renderStats();
     renderProjects(allProjects, 1);
     populateProjectSelects();
+    // The Dashboard tab (stat cards + Gantt chart) is the default
+    // landing view now, so its data needs loading up front -- every
+    // other tab only loads its data on switchTab(), since the user has
+    // to click into it first.
+    ganttProjectId = document.getElementById('gantt-project').value;
+    await loadTasksAndPhases();
+    renderGantt();
+    ensureGanttResizeObserver();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
 }
