@@ -1,4 +1,4 @@
 id|project_id|task_name|start_date|end_date|progress|assigned_to|status|sort_order
 TASK001|PROJ002|Stadfhh|2026-08-01|2026-08-31|5||in_progress|0
 TASK002|PROJ001|Prepare Hardware material needs|2026-08-10|2026-08-12|2|Ville|in_progress|0
-TASK003|PROJ001|Plan to research about seismic|2026-08-08|2026-08-11|0|Ville|not_started|1
+TASK003|PROJ001|Plan to research about seismic|2026-08-08|2026-08-11|3|Ville|not_started|1
