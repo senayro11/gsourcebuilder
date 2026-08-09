@@ -81,6 +81,44 @@
       </div>
     </div>
 
+    <!-- Task Tracker -->
+    <div class="tab-pane" id="tab-tasks">
+      <div class="card" style="margin-bottom:16px">
+        <div class="form-row" style="grid-template-columns:1fr 1fr 2fr;gap:12px">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Project</label>
+            <select id="tt-filter-project" onchange="loadTaskTracker()"><option value="">All Projects</option></select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Status</label>
+            <select id="tt-filter-status" onchange="loadTaskTracker()">
+              <option value="">All Status</option>
+              <option value="not_started">Not Started</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="delayed">Delayed</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Search</label>
+            <input type="text" id="tt-search" placeholder="Search task or assignee..." oninput="loadTaskTracker()">
+          </div>
+        </div>
+      </div>
+      <div class="page-header-row" style="margin-bottom:16px;justify-content:flex-end">
+        <button class="btn btn-primary btn-sm" onclick="openAddTask(document.getElementById('tt-filter-project').value)" data-perm="create">+ Add Task</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Project</th><th>Task Name</th><th>Start</th><th>End</th><th>Assigned To</th><th>Status</th><th>Progress</th><th>Actions</th></tr></thead>
+            <tbody id="tt-tbody"></tbody>
+          </table>
+        </div>
+        <div id="tt-pagination"></div>
+      </div>
+    </div>
+
     <!-- Project Cost -->
     <div class="tab-pane" id="tab-cost">
       <div class="page-header-row" style="margin-bottom:16px">
@@ -143,6 +181,7 @@
       <span class="modal-title" id="task-modal-title">+ Add Task</span>
       <button class="modal-close" onclick="UI.closeModal('task-modal')">✕</button>
     </div>
+    <div class="form-group"><label>Project *</label><select id="tf-project"></select></div>
     <div class="form-group"><label>Task Name *</label><input type="text" id="tf-name"></div>
     <div class="form-row">
       <div class="form-group"><label>Start Date *</label><input type="date" id="tf-start"></div>
@@ -202,6 +241,7 @@ if (!user) throw 0;
 const TABS = [
   { id:'tab-projects', icon:'📁', label:'Projects' },
   { id:'tab-gantt',    icon:'📊', label:'Gantt Chart' },
+  { id:'tab-tasks',    icon:'✅', label:'Task Tracker' },
   { id:'tab-cost',     icon:'💵', label:'Project Cost' }
 ];
 function switchTab(tabId, el) {
@@ -211,6 +251,7 @@ function switchTab(tabId, el) {
   document.querySelectorAll('#sidebar-nav .nav-item[data-tab]').forEach(n=>n.classList.remove('active'));
   if (el) el.classList.add('active');
   if (tabId==='tab-gantt') loadGantt();
+  if (tabId==='tab-tasks') loadTaskTracker();
   if (tabId==='tab-cost') loadCost();
   sessionStorage.setItem('pm_last_tab', tabId);
 }
@@ -344,8 +385,11 @@ function deleteProject(id) {
 function populateProjectSelects() {
   const opts = allProjects.map(p => `<option value="${p.id}">${p.name} (${p.client})</option>`).join('');
   const g = document.getElementById('gantt-project'), c = document.getElementById('cost-project');
+  const tf = document.getElementById('tf-project'), tt = document.getElementById('tt-filter-project');
   g.innerHTML = opts || '<option value="">No projects yet</option>';
   c.innerHTML = opts || '<option value="">No projects yet</option>';
+  tf.innerHTML = opts || '<option value="">No projects yet</option>';
+  tt.innerHTML = '<option value="">All Projects</option>' + opts;
   if (allProjects.length) {
     if (!ganttProjectId || !allProjects.find(p=>p.id===ganttProjectId)) ganttProjectId = allProjects[0].id;
     if (!costProjectId || !allProjects.find(p=>p.id===costProjectId)) costProjectId = allProjects[0].id;
@@ -354,15 +398,16 @@ function populateProjectSelects() {
 }
 
 // ---- Gantt Chart ----
+// projectTasks holds ALL tasks (every project), loaded fresh whenever
+// either the Gantt or Task Tracker tab is opened -- both are just
+// different views/filters over the same in-memory list, so a task
+// edited/deleted from one place is immediately consistent in the other
+// (see refreshTaskViews()).
 async function loadGantt() {
   ganttProjectId = document.getElementById('gantt-project').value;
-  const chart = document.getElementById('gantt-chart');
-  if (!ganttProjectId) { chart.innerHTML = '<div class="gantt-empty">No project yet — create one in the Projects tab first.</div>'; return; }
   UI.loading(true,'Loading Gantt chart...');
   try {
-    projectTasks = (await DB.read('projectTasksDB', true))
-      .filter(t => t.project_id === ganttProjectId)
-      .sort((a,b) => (parseInt(a.sort_order)||0) - (parseInt(b.sort_order)||0) || (a.start_date||'').localeCompare(b.start_date||''));
+    projectTasks = await DB.read('projectTasksDB', true);
     renderGantt();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
@@ -370,10 +415,13 @@ async function loadGantt() {
 
 function renderGantt() {
   const chart = document.getElementById('gantt-chart');
-  if (!projectTasks.length) { chart.innerHTML = '<div class="gantt-empty">No tasks yet — click "+ Add Task" to add one.</div>'; return; }
+  if (!ganttProjectId) { chart.innerHTML = '<div class="gantt-empty">No project yet — create one in the Projects tab first.</div>'; return; }
+  const tasks = projectTasks.filter(t => t.project_id === ganttProjectId)
+    .sort((a,b) => (parseInt(a.sort_order)||0) - (parseInt(b.sort_order)||0) || (a.start_date||'').localeCompare(b.start_date||''));
+  if (!tasks.length) { chart.innerHTML = '<div class="gantt-empty">No tasks yet — click "+ Add Task" to add one.</div>'; return; }
 
-  const starts = projectTasks.map(t => new Date(t.start_date).getTime()).filter(n => !isNaN(n));
-  const ends   = projectTasks.map(t => new Date(t.end_date).getTime()).filter(n => !isNaN(n));
+  const starts = tasks.map(t => new Date(t.start_date).getTime()).filter(n => !isNaN(n));
+  const ends   = tasks.map(t => new Date(t.end_date).getTime()).filter(n => !isNaN(n));
   if (!starts.length || !ends.length) { chart.innerHTML = '<div class="gantt-empty">Tasks are missing valid start/end dates.</div>'; return; }
   const rangeStart = Math.min(...starts);
   const rangeEnd = Math.max(...ends);
@@ -389,7 +437,7 @@ function renderGantt() {
 
   const statusColor = { not_started:'var(--text3)', in_progress:'var(--accent)', completed:'var(--success)', delayed:'var(--danger)' };
 
-  const rows = projectTasks.map(t => {
+  const rows = tasks.map(t => {
     const s = new Date(t.start_date).getTime(), e = new Date(t.end_date).getTime();
     const leftPct = ((s - rangeStart) / span) * 100;
     const widthPct = Math.max(1.5, ((e - s) / span) * 100);
@@ -408,9 +456,72 @@ function renderGantt() {
   chart.innerHTML = header + rows;
 }
 
-function openAddTask() {
-  if (!ganttProjectId) { UI.toast('Select a project first','warning'); return; }
+// ---- Task Tracker (all tasks, across every project) ----
+async function loadTaskTracker() {
+  UI.loading(true, 'Loading tasks...');
+  try {
+    projectTasks = await DB.read('projectTasksDB', true);
+    renderTaskTracker();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+
+const TASK_STATUS_LABELS = { not_started:'Not Started', in_progress:'In Progress', completed:'Completed', delayed:'Delayed' };
+function taskStatusBadge(s) {
+  const map = { not_started:'badge-gray', in_progress:'badge-warning', completed:'badge-success', delayed:'badge-danger' };
+  return `<span class="badge ${map[s]||'badge-gray'}">${TASK_STATUS_LABELS[s]||s||''}</span>`;
+}
+
+function renderTaskTracker() {
+  const projectFilter = document.getElementById('tt-filter-project').value;
+  const statusFilter = document.getElementById('tt-filter-status').value;
+  const q = document.getElementById('tt-search').value.toLowerCase();
+  let rows = projectTasks;
+  if (projectFilter) rows = rows.filter(t => t.project_id === projectFilter);
+  if (statusFilter) rows = rows.filter(t => t.status === statusFilter);
+  if (q) rows = rows.filter(t => (t.task_name||'').toLowerCase().includes(q) || (t.assigned_to||'').toLowerCase().includes(q));
+  rows = rows.slice().sort((a,b) => (a.start_date||'').localeCompare(b.start_date||''));
+  renderTaskTrackerTable(rows, 1);
+}
+
+function renderTaskTrackerTable(rows, page) {
+  const paged = UI.paginate(rows, page, 15);
+  document.getElementById('tt-tbody').innerHTML = paged.rows.map(t => {
+    const proj = allProjects.find(p=>p.id===t.project_id);
+    return `<tr>
+      <td>${proj ? proj.name : t.project_id}</td>
+      <td><strong>${t.task_name}</strong></td>
+      <td>${UI.dateStr(t.start_date)}</td>
+      <td>${UI.dateStr(t.end_date)}</td>
+      <td>${t.assigned_to || '—'}</td>
+      <td>${taskStatusBadge(t.status)}</td>
+      <td style="min-width:110px">
+        <div class="progress-bar"><div class="progress-bar-fill" style="width:${t.progress||0}%"></div></div>
+        <small style="color:var(--text3)">${t.progress||0}%</small>
+      </td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="editTask('${t.id}')" data-perm="edit" title="Edit">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteTaskById('${t.id}')" data-perm="delete" title="Delete">🗑</button>
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3)">No tasks found</td></tr>';
+  UI.renderPagination('tt-pagination', paged, p => renderTaskTrackerTable(rows, p));
+  Auth.applyUIPermissions(user, 'pm');
+}
+
+// Re-reads and re-renders whichever of Gantt/Task Tracker is currently
+// visible after any task CRUD, so the two views (same underlying data,
+// different filters) never go stale relative to each other.
+async function refreshTaskViews() {
+  projectTasks = await DB.read('projectTasksDB', true);
+  if (document.getElementById('tab-gantt').classList.contains('active')) renderGantt();
+  if (document.getElementById('tab-tasks').classList.contains('active')) renderTaskTracker();
+}
+
+function openAddTask(presetProjectId) {
+  if (!allProjects.length) { UI.toast('Create a project first','warning'); return; }
   editTaskId = null;
+  document.getElementById('tf-project').value = presetProjectId || ganttProjectId || allProjects[0].id;
   document.getElementById('tf-name').value = '';
   document.getElementById('tf-start').value = '';
   document.getElementById('tf-end').value = '';
@@ -424,6 +535,7 @@ function openAddTask() {
 function editTask(id) {
   const t = projectTasks.find(x=>x.id===id); if (!t) return;
   editTaskId = id;
+  document.getElementById('tf-project').value = t.project_id;
   document.getElementById('tf-name').value = t.task_name;
   document.getElementById('tf-start').value = t.start_date;
   document.getElementById('tf-end').value = t.end_date;
@@ -435,11 +547,13 @@ function editTask(id) {
   UI.openModal('task-modal');
 }
 async function saveTask() {
+  const projectId = document.getElementById('tf-project').value;
   const name = document.getElementById('tf-name').value.trim();
   const start = document.getElementById('tf-start').value;
   const end = document.getElementById('tf-end').value;
-  if (!name || !start || !end) { UI.toast('Fill in the required fields','warning'); return; }
+  if (!projectId || !name || !start || !end) { UI.toast('Fill in the required fields','warning'); return; }
   const data = {
+    project_id: projectId,
     task_name: name, start_date: start, end_date: end,
     assigned_to: document.getElementById('tf-assigned').value.trim(),
     progress: document.getElementById('tf-progress').value || '0',
@@ -452,12 +566,12 @@ async function saveTask() {
       UI.toast('Updated ✅','success');
     } else {
       const all = await DB.read('projectTasksDB', true);
-      const sortOrder = all.filter(r=>r.project_id===ganttProjectId).length;
-      await DB.insert('projectTasksDB', { id: DB.nextId(all,'id','TASK'), project_id: ganttProjectId, ...data, sort_order: String(sortOrder) });
+      const sortOrder = all.filter(r=>r.project_id===projectId).length;
+      await DB.insert('projectTasksDB', { id: DB.nextId(all,'id','TASK'), ...data, sort_order: String(sortOrder) });
       UI.toast('Added ✅','success');
     }
     UI.closeModal('task-modal');
-    await loadGantt();
+    await refreshTaskViews();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
 }
@@ -465,7 +579,15 @@ function deleteTask() {
   if (!editTaskId) return;
   UI.confirm('Delete this task?', async () => {
     UI.loading(true);
-    try { await DB.remove('projectTasksDB', r=>r.id===editTaskId); UI.toast('Deleted','success'); UI.closeModal('task-modal'); await loadGantt(); }
+    try { await DB.remove('projectTasksDB', r=>r.id===editTaskId); UI.toast('Deleted','success'); UI.closeModal('task-modal'); await refreshTaskViews(); }
+    catch(e) { UI.toast('Error: '+e.message,'error'); }
+    UI.loading(false);
+  });
+}
+function deleteTaskById(id) {
+  UI.confirm('Delete this task?', async () => {
+    UI.loading(true);
+    try { await DB.remove('projectTasksDB', r=>r.id===id); UI.toast('Deleted','success'); await refreshTaskViews(); }
     catch(e) { UI.toast('Error: '+e.message,'error'); }
     UI.loading(false);
   });
