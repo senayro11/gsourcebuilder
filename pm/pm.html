@@ -74,11 +74,11 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
           <select id="gantt-project" style="min-width:240px" onchange="loadGantt()"></select>
           <div class="form-group" style="margin-bottom:0">
-            <label>Start Date From</label>
+            <label>Display From</label>
             <input type="date" id="gantt-filter-from" onchange="renderGantt()">
           </div>
           <div class="form-group" style="margin-bottom:0">
-            <label>Start Date To</label>
+            <label>Display To</label>
             <input type="date" id="gantt-filter-to" onchange="renderGantt()">
           </div>
           <button class="btn btn-ghost btn-sm" onclick="clearGanttDateFilter()">✕ Clear</button>
@@ -457,21 +457,23 @@ function clearGanttDateFilter() {
 function renderGantt() {
   const chart = document.getElementById('gantt-chart');
   if (!ganttProjectId) { chart.innerHTML = '<div class="gantt-empty">No project yet — create one in the Projects tab first.</div>'; return; }
-  const allProjectTasks = projectTasks.filter(t => t.project_id === ganttProjectId);
-  if (!allProjectTasks.length) { chart.innerHTML = '<div class="gantt-empty">No tasks yet — click "+ Add Task" to add one.</div>'; return; }
-
-  const from = document.getElementById('gantt-filter-from').value;
-  const to = document.getElementById('gantt-filter-to').value;
-  const tasks = allProjectTasks
-    .filter(t => (!from || t.start_date >= from) && (!to || t.start_date <= to))
+  const tasks = projectTasks.filter(t => t.project_id === ganttProjectId)
     .sort((a,b) => (parseInt(a.sort_order)||0) - (parseInt(b.sort_order)||0) || (a.start_date||'').localeCompare(b.start_date||''));
-  if (!tasks.length) { chart.innerHTML = '<div class="gantt-empty">No tasks in this date range.</div>'; return; }
+  if (!tasks.length) { chart.innerHTML = '<div class="gantt-empty">No tasks yet — click "+ Add Task" to add one.</div>'; return; }
 
   const starts = tasks.map(t => new Date(t.start_date).getTime()).filter(n => !isNaN(n));
   const ends   = tasks.map(t => new Date(t.end_date).getTime()).filter(n => !isNaN(n));
   if (!starts.length || !ends.length) { chart.innerHTML = '<div class="gantt-empty">Tasks are missing valid start/end dates.</div>'; return; }
-  const rangeStart = Math.min(...starts);
-  const rangeEnd = Math.max(...ends);
+
+  // "Display From/To" controls the timeline WINDOW (the header ticks and
+  // where bars land) -- it never hides a task from the list on the left,
+  // it only changes what portion of the calendar the bars on the right
+  // are drawn against. Falls back to the full auto-computed span (every
+  // task's own earliest start / latest end) when left blank.
+  const fromVal = document.getElementById('gantt-filter-from').value;
+  const toVal = document.getElementById('gantt-filter-to').value;
+  const rangeStart = fromVal ? new Date(fromVal).getTime() : Math.min(...starts);
+  const rangeEnd = toVal ? new Date(toVal).getTime() : Math.max(...ends);
   const span = Math.max(1, rangeEnd - rangeStart);
 
   const TICKS = 6;
@@ -486,9 +488,21 @@ function renderGantt() {
 
   function taskRowHtml(t) {
     const s = new Date(t.start_date).getTime(), e = new Date(t.end_date).getTime();
-    const leftPct = ((s - rangeStart) / span) * 100;
-    const widthPct = Math.max(1.5, ((e - s) / span) * 100);
-    const color = statusColor[t.status] || 'var(--accent)';
+    // A task entirely outside the displayed window still gets its row
+    // (name/progress), just no bar -- so narrowing the display range
+    // never makes a task silently disappear from the list.
+    const overlapsWindow = e >= rangeStart && s <= rangeEnd;
+    let barHtml = '';
+    if (overlapsWindow) {
+      const leftPct = Math.max(0, ((s - rangeStart) / span) * 100);
+      const rightPct = Math.min(100, ((e - rangeStart) / span) * 100);
+      const widthPct = Math.max(1.5, rightPct - leftPct);
+      const color = statusColor[t.status] || 'var(--accent)';
+      barHtml = `<div class="gantt-bar" style="left:${leftPct}%;width:${widthPct}%;background:${color}" onclick="editTask('${t.id}')" title="${t.task_name} (${t.progress||0}%)">
+        <div class="gantt-bar-fill" style="width:${t.progress||0}%"></div>
+        <span>${t.progress||0}%</span>
+      </div>`;
+    }
     return `<div class="gantt-row">
       <div class="gantt-row-label" onclick="editTask('${t.id}')" title="${t.task_name} (${t.progress||0}%)">
         <span class="gantt-row-name">${t.task_name}</span>
@@ -497,12 +511,7 @@ function renderGantt() {
           <span class="gantt-row-progress-text">${t.progress||0}%</span>
         </span>
       </div>
-      <div class="gantt-row-track">
-        <div class="gantt-bar" style="left:${leftPct}%;width:${widthPct}%;background:${color}" onclick="editTask('${t.id}')" title="${t.task_name} (${t.progress||0}%)">
-          <div class="gantt-bar-fill" style="width:${t.progress||0}%"></div>
-          <span>${t.progress||0}%</span>
-        </div>
-      </div>
+      <div class="gantt-row-track">${barHtml}</div>
     </div>`;
   }
 
