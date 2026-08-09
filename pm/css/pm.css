@@ -528,13 +528,21 @@ input::placeholder { color: var(--text3); }
    left/width percentages computed from that same range. */
 .gantt-wrap { overflow-x: auto; }
 .gantt-header {
-  display: flex; margin-left: 300px; padding-bottom: 8px;
+  display: flex; padding-bottom: 8px;
   border-bottom: 1px solid var(--border); margin-bottom: 4px;
 }
-.gantt-header span {
-  flex: 1 1 0; min-width: 0; text-align: center; font-size: 10px; font-weight: 600;
-  color: var(--text3); border-left: 1px solid var(--border);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.gantt-header-spacer { width: 300px; flex-shrink: 0; }
+.gantt-header-track {
+  flex: 1; min-width: 0; position: relative; height: 16px; overflow: hidden;
+}
+.gantt-tick {
+  position: absolute; top: 0; font-size: 10px; font-weight: 600;
+  color: var(--text3); white-space: nowrap; border-left: 1px solid var(--border);
+  padding-left: 4px;
+}
+.gantt-tick-end {
+  border-left: none; border-right: 1px solid var(--border);
+  padding-left: 0; padding-right: 4px; text-align: right;
 }
 .gantt-row {
   display: flex; align-items: center; min-height: 40px;

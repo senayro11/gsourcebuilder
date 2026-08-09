@@ -444,8 +444,110 @@ async function loadGantt() {
   try {
     await loadTasksAndPhases();
     renderGantt();
+    ensureGanttResizeObserver();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
+}
+
+const GANTT_DAY_MS = 24 * 60 * 60 * 1000;
+const GANTT_LABEL_W = 300; // must match .gantt-row-label's width in pm.css
+const GANTT_MIN_TICK_W = 56; // px -- narrowest a tick can get before escalating granularity
+
+function ganttDailyTicks(rangeStart, rangeEnd) {
+  const days = Math.max(1, Math.round((rangeEnd - rangeStart) / GANTT_DAY_MS) + 1);
+  const ticks = [];
+  for (let i = 0; i < days; i++) {
+    const time = rangeStart + i * GANTT_DAY_MS;
+    ticks.push({ time, label: new Date(time).toLocaleDateString('en-PH', { month:'short', day:'numeric' }) });
+  }
+  return ticks;
+}
+function ganttWeeklyTicks(rangeStart, rangeEnd) {
+  const ticks = [];
+  for (let t = rangeStart; t <= rangeEnd; t += 7 * GANTT_DAY_MS) {
+    ticks.push({ time: t, label: new Date(t).toLocaleDateString('en-PH', { month:'short', day:'numeric' }) });
+  }
+  return ticks;
+}
+function ganttMonthlyTicks(rangeStart, rangeEnd) {
+  const ticks = [];
+  let d = new Date(rangeStart);
+  d = new Date(d.getFullYear(), d.getMonth(), 1);
+  while (d.getTime() <= rangeEnd) {
+    ticks.push({ time: d.getTime(), label: d.toLocaleDateString('en-PH', { month:'short', year:'numeric' }) });
+    d = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+  }
+  return ticks;
+}
+function ganttYearlyTicks(rangeStart, rangeEnd) {
+  const ticks = [];
+  const startYear = new Date(rangeStart).getFullYear();
+  const endYear = new Date(rangeEnd).getFullYear();
+  for (let y = startYear; y <= endYear; y++) {
+    ticks.push({ time: new Date(y, 0, 1).getTime(), label: String(y) });
+  }
+  return ticks;
+}
+
+// Picks the coarsest-to-finest granularity (day -> week -> month -> year)
+// whose tick count still fits within maxTicks, so the header never
+// crams more labels than the available width can legibly show.
+function ganttPickTicks(rangeStart, rangeEnd, maxTicks) {
+  const daily = ganttDailyTicks(rangeStart, rangeEnd);
+  if (daily.length <= maxTicks) return daily;
+  const weekly = ganttWeeklyTicks(rangeStart, rangeEnd);
+  if (weekly.length <= maxTicks) return weekly;
+  const monthly = ganttMonthlyTicks(rangeStart, rangeEnd);
+  if (monthly.length <= maxTicks) return monthly;
+  return ganttYearlyTicks(rangeStart, rangeEnd);
+}
+
+// Builds the header row: a fixed-width spacer matching the row-label
+// column, then a track the same width as every row's .gantt-row-track,
+// with ticks placed by %-of-span (identical math to the task bars) so
+// a tick and a bar for the same date always line up exactly.
+function buildGanttHeader(rangeStart, rangeEnd, span) {
+  const wrap = document.querySelector('.gantt-wrap');
+  const containerWidth = wrap ? wrap.getBoundingClientRect().width : 900;
+  const availableWidth = Math.max(120, containerWidth - GANTT_LABEL_W);
+  const maxTicks = Math.max(2, Math.floor(availableWidth / GANTT_MIN_TICK_W));
+  const ticks = ganttPickTicks(rangeStart, rangeEnd, maxTicks);
+
+  // The last tick is the only one that can bleed past the track's right
+  // edge (labels grow rightward from their tick mark) -- anchor it from
+  // the right instead so its text grows leftward and never gets clipped.
+  const tickHtml = ticks.map((tk, i) => {
+    const leftPct = Math.min(100, Math.max(0, ((tk.time - rangeStart) / span) * 100));
+    if (i === ticks.length - 1 && leftPct > 50) {
+      const rightPct = 100 - leftPct;
+      return `<span class="gantt-tick gantt-tick-end" style="right:${rightPct}%">${tk.label}</span>`;
+    }
+    return `<span class="gantt-tick" style="left:${leftPct}%">${tk.label}</span>`;
+  }).join('');
+
+  return `<div class="gantt-header">
+    <div class="gantt-header-spacer"></div>
+    <div class="gantt-header-track">${tickHtml}</div>
+  </div>`;
+}
+
+// Re-measures and re-renders the Gantt chart whenever its actual
+// rendered width changes (window resize, sidebar toggle push, etc.)
+// so tick density always matches the real available space instead of
+// staying stuck at whatever it was on first load.
+let ganttResizeTimer = null;
+let ganttResizeObserverStarted = false;
+function ensureGanttResizeObserver() {
+  if (ganttResizeObserverStarted) return;
+  const wrap = document.querySelector('.gantt-wrap');
+  if (!wrap || typeof ResizeObserver === 'undefined') return;
+  ganttResizeObserverStarted = true;
+  new ResizeObserver(() => {
+    clearTimeout(ganttResizeTimer);
+    ganttResizeTimer = setTimeout(() => {
+      if (document.getElementById('tab-gantt').classList.contains('active')) renderGantt();
+    }, 120);
+  }).observe(wrap);
 }
 
 function clearGanttDateFilter() {
@@ -472,7 +574,6 @@ function renderGantt() {
   // start/end date (falling back to the tasks' own earliest start /
   // latest end only if the project has no dates set).
   const proj = allProjects.find(p => p.id === ganttProjectId);
-  const DAY_MS = 24 * 60 * 60 * 1000;
   const projStart = proj?.start_date ? new Date(proj.start_date).getTime() : NaN;
   const projEnd = proj?.end_date ? new Date(proj.end_date).getTime() : NaN;
   const fromVal = document.getElementById('gantt-filter-from').value;
@@ -481,20 +582,15 @@ function renderGantt() {
   const rangeEnd = toVal ? new Date(toVal).getTime() : (!isNaN(projEnd) ? projEnd : Math.max(...ends));
   const span = Math.max(1, rangeEnd - rangeStart);
 
-  // One tick per calendar day across the displayed window (e.g. Aug 8,
-  // Aug 9, Aug 10...), each an equal flex share of the available width
-  // -- never a fixed pixel width -- so the whole chart always fits
-  // exactly within the page on desktop with no horizontal scrolling.
-  // A wide window just means narrower day columns; Display From/To is
-  // there to zoom into a shorter window when that gets too cramped.
-  const totalDays = Math.max(1, Math.round(span / DAY_MS) + 1);
-
-  let header = '<div class="gantt-header">';
-  for (let i = 0; i < totalDays; i++) {
-    const t = new Date(rangeStart + i * DAY_MS);
-    header += `<span>${t.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}</span>`;
-  }
-  header += '</div>';
+  // Tick granularity adapts to how much actual pixel width is available
+  // (measured live, so it responds to window resizes and sidebar
+  // toggles -- see the ResizeObserver set up below) and how wide the
+  // displayed date window is: day-by-day when it fits legibly, then
+  // escalating to weekly, monthly, or yearly ticks so labels never get
+  // cramped into unreadable "A..." truncation. Ticks are positioned by
+  // the same %-of-span math as the task bars (not evenly flexed), so
+  // e.g. a "Feb" tick lines up exactly where February 1 actually falls.
+  const header = buildGanttHeader(rangeStart, rangeEnd, span);
 
   const statusColor = { not_started:'var(--text3)', in_progress:'var(--accent)', completed:'var(--success)', delayed:'var(--danger)' };
 
