@@ -531,7 +531,10 @@ input::placeholder { color: var(--text3); }
   display: flex; padding-bottom: 8px;
   border-bottom: 1px solid var(--border); margin-bottom: 4px;
 }
-.gantt-header-spacer { width: 300px; flex-shrink: 0; }
+.gantt-header-spacer {
+  width: 300px; flex-shrink: 0;
+  position: sticky; left: 0; z-index: 2; background: var(--surface);
+}
 .gantt-header-track {
   flex: 1; min-width: 0; position: relative; height: 16px; overflow: hidden;
 }
@@ -548,6 +551,11 @@ input::placeholder { color: var(--text3); }
   width: 300px; flex-shrink: 0; padding-right: 12px;
   font-size: 13px; color: var(--text); cursor: pointer;
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  /* Pinned to the left of .gantt-wrap's own scroll so the task name
+     stays visible while the timeline scrolls underneath it (mobile) --
+     matters most there since the track can be much wider than the
+     screen, but harmless on desktop where there's nothing to scroll. */
+  position: sticky; left: 0; z-index: 2; background: var(--surface);
 }
 .gantt-row-label:hover { color: var(--accent2); }
 .gantt-row-name {
@@ -595,30 +603,17 @@ input::placeholder { color: var(--text3); }
   .user-chip { padding: 6px; gap: 0; }
   .user-chip .user-info { display: none; }
 
-  /* The Gantt's side-by-side label+track layout needs a wide fixed
-     label column (300px) to stay legible -- on a phone that alone can
-     exceed the viewport, forcing horizontal scroll. Stack the label
-     above the track instead so both use the full available width and
-     the chart never needs to scroll sideways. buildGanttHeader() in
-     pm.html measures the spacer's actual rendered width (not a
-     hardcoded constant), so hiding it here automatically gives the
-     tick track the full width too. */
-  .gantt-header { flex-direction: column; }
-  .gantt-header-spacer { display: none; }
-  /* .gantt-header-track's "flex: 1" sets flex-basis: 0%, which governs
-     HEIGHT (not width) once the header becomes a column flex container
-     -- collapsing the tick row to 0px tall. Override back to a fixed
-     height here so the date labels stay visible on mobile. */
-  .gantt-header-track { flex: none; width: 100%; height: 16px; }
-  .gantt-row { flex-direction: column; align-items: stretch; }
-  .gantt-row-label { width: 100%; padding-right: 0; margin-bottom: 6px; }
-  /* Same "flex: 1" -> flex-basis: 0% height collapse as the header
-     track above, but here it's worse: .gantt-row has no explicit
-     height of its own on mobile (it's sized by its content), so the
-     flex-grow item expands into an indeterminate, often oversized
-     height instead of just collapsing -- that's what was pushing task
-     bars down into other rows and making them overlap. */
-  .gantt-row-track { flex: none; width: 100%; height: 26px; }
+  /* .gantt-row/.gantt-header are flex containers with no explicit
+     width, so their default block width is just .gantt-wrap's visible
+     width -- their overflowing children (the wide mobile track) are
+     painted past that box but don't actually grow it. Since a sticky
+     child's "stuck" range is bounded by its own containing block, that
+     undersized box breaks the sticky label/spacer at any scroll
+     position beyond the first screenful. width: max-content makes the
+     row's layout box match its true (overflowing) content width, and
+     min-width: 100% keeps short ranges from collapsing narrower than
+     the visible card. */
+  .gantt-header, .gantt-row { width: max-content; min-width: 100%; }
 }
 
 /* ---- Scrollbar ---- */
