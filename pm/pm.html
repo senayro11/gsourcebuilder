@@ -71,7 +71,18 @@
     <!-- Gantt Chart -->
     <div class="tab-pane" id="tab-gantt">
       <div class="page-header-row" style="margin-bottom:16px">
-        <select id="gantt-project" style="min-width:240px" onchange="loadGantt()"></select>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <select id="gantt-project" style="min-width:240px" onchange="loadGantt()"></select>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Start Date From</label>
+            <input type="date" id="gantt-filter-from" onchange="renderGantt()">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Start Date To</label>
+            <input type="date" id="gantt-filter-to" onchange="renderGantt()">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="clearGanttDateFilter()">✕ Clear</button>
+        </div>
         <button class="btn btn-primary btn-sm" onclick="openAddTask()" data-perm="create">+ Add Task</button>
       </div>
       <div class="card">
@@ -437,12 +448,24 @@ async function loadGantt() {
   UI.loading(false);
 }
 
+function clearGanttDateFilter() {
+  document.getElementById('gantt-filter-from').value = '';
+  document.getElementById('gantt-filter-to').value = '';
+  renderGantt();
+}
+
 function renderGantt() {
   const chart = document.getElementById('gantt-chart');
   if (!ganttProjectId) { chart.innerHTML = '<div class="gantt-empty">No project yet — create one in the Projects tab first.</div>'; return; }
-  const tasks = projectTasks.filter(t => t.project_id === ganttProjectId)
+  const allProjectTasks = projectTasks.filter(t => t.project_id === ganttProjectId);
+  if (!allProjectTasks.length) { chart.innerHTML = '<div class="gantt-empty">No tasks yet — click "+ Add Task" to add one.</div>'; return; }
+
+  const from = document.getElementById('gantt-filter-from').value;
+  const to = document.getElementById('gantt-filter-to').value;
+  const tasks = allProjectTasks
+    .filter(t => (!from || t.start_date >= from) && (!to || t.start_date <= to))
     .sort((a,b) => (parseInt(a.sort_order)||0) - (parseInt(b.sort_order)||0) || (a.start_date||'').localeCompare(b.start_date||''));
-  if (!tasks.length) { chart.innerHTML = '<div class="gantt-empty">No tasks yet — click "+ Add Task" to add one.</div>'; return; }
+  if (!tasks.length) { chart.innerHTML = '<div class="gantt-empty">No tasks in this date range.</div>'; return; }
 
   const starts = tasks.map(t => new Date(t.start_date).getTime()).filter(n => !isNaN(n));
   const ends   = tasks.map(t => new Date(t.end_date).getTime()).filter(n => !isNaN(n));
