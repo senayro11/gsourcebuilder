@@ -467,7 +467,10 @@ function renderGantt() {
     const widthPct = Math.max(1.5, ((e - s) / span) * 100);
     const color = statusColor[t.status] || 'var(--accent)';
     return `<div class="gantt-row">
-      <div class="gantt-row-label" onclick="editTask('${t.id}')" title="${t.task_name}">${t.task_name}</div>
+      <div class="gantt-row-label" onclick="editTask('${t.id}')" title="${t.task_name} (${t.progress||0}%)">
+        <span class="gantt-row-name">${t.task_name}</span>
+        <span class="gantt-row-progress">${t.progress||0}%</span>
+      </div>
       <div class="gantt-row-track">
         <div class="gantt-bar" style="left:${leftPct}%;width:${widthPct}%;background:${color}" onclick="editTask('${t.id}')" title="${t.task_name} (${t.progress||0}%)">
           <div class="gantt-bar-fill" style="width:${t.progress||0}%"></div>

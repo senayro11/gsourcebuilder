@@ -543,10 +543,18 @@ input::placeholder { color: var(--text3); }
 }
 .gantt-row-label {
   width: 200px; flex-shrink: 0; padding-right: 12px;
-  font-size: 13px; color: var(--text); white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis; cursor: pointer;
+  font-size: 13px; color: var(--text); cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
 }
 .gantt-row-label:hover { color: var(--accent2); }
+.gantt-row-name {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 1; min-width: 0;
+}
+.gantt-row-progress {
+  flex-shrink: 0; font-size: 11px; font-weight: 700; color: var(--text3);
+  background: var(--surface2); border-radius: 10px; padding: 1px 7px;
+}
 .gantt-row-track { flex: 1; position: relative; height: 26px; }
 .gantt-bar {
   position: absolute; top: 0; height: 26px; min-width: 6px;
