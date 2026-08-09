@@ -1,6 +1,6 @@
 id|project_id|task_name|start_date|end_date|progress|assigned_to|status|sort_order|phase_id
 TASK001|PROJ002|Stadfhh|2026-08-01|2026-08-31|5||in_progress|0|PHASE001
-TASK002|PROJ001|Prepare Hardware material needs kdjdfjff eked|2026-08-10|2026-08-12|2|Ville|in_progress|0|PHASE002
+TASK002|PROJ001|Prepare Hardware material needs kdjdfjff eked|2026-08-01|2026-08-12|2|Ville|in_progress|0|PHASE002
 TASK003|PROJ001|Plan to research about seismic|2026-08-05|2026-08-11|60|Ville|not_started|1|PHASE002
 TASK004|PROJ001|Making schematic|2026-08-13|2026-08-18|1|Ville|in_progress|2|PHASE003
 TASK005|PROJ001|Make 3d case for hardware|2026-08-18|2026-10-22|0|Ville|not_started|3|PHASE003
