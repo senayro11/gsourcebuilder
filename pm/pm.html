@@ -84,7 +84,7 @@
     <!-- Task Tracker -->
     <div class="tab-pane" id="tab-tasks">
       <div class="card" style="margin-bottom:16px">
-        <div class="form-row" style="grid-template-columns:1fr 1fr 2fr;gap:12px">
+        <div class="form-row" style="grid-template-columns:repeat(5,1fr);gap:12px">
           <div class="form-group" style="margin-bottom:0">
             <label>Project</label>
             <select id="tt-filter-project" onchange="loadTaskTracker()"><option value="">All Projects</option></select>
@@ -100,6 +100,14 @@
             </select>
           </div>
           <div class="form-group" style="margin-bottom:0">
+            <label>Start Date From</label>
+            <input type="date" id="tt-filter-from" onchange="loadTaskTracker()">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Start Date To</label>
+            <input type="date" id="tt-filter-to" onchange="loadTaskTracker()">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
             <label>Search</label>
             <input type="text" id="tt-search" placeholder="Search task or assignee..." oninput="loadTaskTracker()">
           </div>
@@ -111,7 +119,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Project</th><th>Task Name</th><th>Start</th><th>End</th><th>Assigned To</th><th>Status</th><th>Progress</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Project</th><th>Phase</th><th>Task Name</th><th>Start</th><th>End</th><th>Assigned To</th><th>Status</th><th>Progress</th><th>Actions</th></tr></thead>
             <tbody id="tt-tbody"></tbody>
           </table>
         </div>
@@ -181,7 +189,16 @@
       <span class="modal-title" id="task-modal-title">+ Add Task</span>
       <button class="modal-close" onclick="UI.closeModal('task-modal')">✕</button>
     </div>
-    <div class="form-group"><label>Project *</label><select id="tf-project"></select></div>
+    <div class="form-group"><label>Project *</label><select id="tf-project" onchange="populatePhaseSelect(this.value,'')"></select></div>
+    <div class="form-group"><label>Phase</label>
+      <select id="tf-phase" onchange="handlePhaseSelectChange()">
+        <option value="">No Phase</option>
+      </select>
+    </div>
+    <div class="form-group" id="tf-new-phase-wrap" style="display:none">
+      <label>New Phase Title *</label>
+      <input type="text" id="tf-new-phase-name" placeholder="e.g. Phase 1: Planning">
+    </div>
     <div class="form-group"><label>Task Name *</label><input type="text" id="tf-name"></div>
     <div class="form-row">
       <div class="form-group"><label>Start Date *</label><input type="date" id="tf-start"></div>
@@ -260,7 +277,7 @@ UI.buildSidebar(user, 'pm', TABS);
 Auth.applyUIPermissions(user, 'pm');
 UserMgmt.init(user, 'pm');
 
-let allProjects=[], projectTasks=[], projectCosts=[], editProjectId=null, editTaskId=null, ganttProjectId=null, costProjectId=null;
+let allProjects=[], projectTasks=[], allPhases=[], projectCosts=[], editProjectId=null, editTaskId=null, ganttProjectId=null, costProjectId=null;
 
 function projStatusBadge(s) {
   const map = { planning:'badge-info', ongoing:'badge-warning', onhold:'badge-gray', completed:'badge-success', cancelled:'badge-danger' };
@@ -398,16 +415,23 @@ function populateProjectSelects() {
 }
 
 // ---- Gantt Chart ----
-// projectTasks holds ALL tasks (every project), loaded fresh whenever
-// either the Gantt or Task Tracker tab is opened -- both are just
-// different views/filters over the same in-memory list, so a task
-// edited/deleted from one place is immediately consistent in the other
-// (see refreshTaskViews()).
+// projectTasks/allPhases hold ALL rows (every project), loaded fresh
+// whenever either the Gantt or Task Tracker tab is opened -- both are
+// just different views/filters over the same in-memory lists, so a
+// task edited/deleted from one place is immediately consistent in the
+// other (see refreshTaskViews()).
+async function loadTasksAndPhases() {
+  [projectTasks, allPhases] = await Promise.all([
+    DB.read('projectTasksDB', true),
+    DB.read('projectPhasesDB', true)
+  ]);
+}
+
 async function loadGantt() {
   ganttProjectId = document.getElementById('gantt-project').value;
   UI.loading(true,'Loading Gantt chart...');
   try {
-    projectTasks = await DB.read('projectTasksDB', true);
+    await loadTasksAndPhases();
     renderGantt();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
@@ -437,7 +461,7 @@ function renderGantt() {
 
   const statusColor = { not_started:'var(--text3)', in_progress:'var(--accent)', completed:'var(--success)', delayed:'var(--danger)' };
 
-  const rows = tasks.map(t => {
+  function taskRowHtml(t) {
     const s = new Date(t.start_date).getTime(), e = new Date(t.end_date).getTime();
     const leftPct = ((s - rangeStart) / span) * 100;
     const widthPct = Math.max(1.5, ((e - s) / span) * 100);
@@ -451,16 +475,40 @@ function renderGantt() {
         </div>
       </div>
     </div>`;
-  }).join('');
+  }
 
-  chart.innerHTML = header + rows;
+  // Group tasks under their phase's title row (e.g. "Phase 1: Planning"),
+  // in phase sort order, with unphased tasks (or tasks whose phase was
+  // deleted) collected under a trailing "No Phase" group. If the project
+  // has no phases defined at all, fall back to a flat list.
+  const phases = allPhases.filter(p => p.project_id === ganttProjectId)
+    .sort((a,b) => (parseInt(a.sort_order)||0) - (parseInt(b.sort_order)||0));
+
+  let body = '';
+  if (phases.length) {
+    phases.forEach(ph => {
+      const phaseTasks = tasks.filter(t => t.phase_id === ph.id);
+      if (!phaseTasks.length) return;
+      body += `<div class="gantt-phase-header">${ph.phase_name}</div>`;
+      body += phaseTasks.map(taskRowHtml).join('');
+    });
+    const unphased = tasks.filter(t => !t.phase_id || !phases.some(p => p.id === t.phase_id));
+    if (unphased.length) {
+      body += `<div class="gantt-phase-header">No Phase</div>`;
+      body += unphased.map(taskRowHtml).join('');
+    }
+  } else {
+    body = tasks.map(taskRowHtml).join('');
+  }
+
+  chart.innerHTML = header + body;
 }
 
 // ---- Task Tracker (all tasks, across every project) ----
 async function loadTaskTracker() {
   UI.loading(true, 'Loading tasks...');
   try {
-    projectTasks = await DB.read('projectTasksDB', true);
+    await loadTasksAndPhases();
     renderTaskTracker();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
@@ -475,10 +523,14 @@ function taskStatusBadge(s) {
 function renderTaskTracker() {
   const projectFilter = document.getElementById('tt-filter-project').value;
   const statusFilter = document.getElementById('tt-filter-status').value;
+  const from = document.getElementById('tt-filter-from').value;
+  const to = document.getElementById('tt-filter-to').value;
   const q = document.getElementById('tt-search').value.toLowerCase();
   let rows = projectTasks;
   if (projectFilter) rows = rows.filter(t => t.project_id === projectFilter);
   if (statusFilter) rows = rows.filter(t => t.status === statusFilter);
+  if (from) rows = rows.filter(t => t.start_date >= from);
+  if (to) rows = rows.filter(t => t.start_date <= to);
   if (q) rows = rows.filter(t => (t.task_name||'').toLowerCase().includes(q) || (t.assigned_to||'').toLowerCase().includes(q));
   rows = rows.slice().sort((a,b) => (a.start_date||'').localeCompare(b.start_date||''));
   renderTaskTrackerTable(rows, 1);
@@ -488,8 +540,10 @@ function renderTaskTrackerTable(rows, page) {
   const paged = UI.paginate(rows, page, 15);
   document.getElementById('tt-tbody').innerHTML = paged.rows.map(t => {
     const proj = allProjects.find(p=>p.id===t.project_id);
+    const phase = allPhases.find(p=>p.id===t.phase_id);
     return `<tr>
       <td>${proj ? proj.name : t.project_id}</td>
+      <td>${phase ? phase.phase_name : '—'}</td>
       <td><strong>${t.task_name}</strong></td>
       <td>${UI.dateStr(t.start_date)}</td>
       <td>${UI.dateStr(t.end_date)}</td>
@@ -504,7 +558,7 @@ function renderTaskTrackerTable(rows, page) {
         <button class="btn btn-danger btn-sm" onclick="deleteTaskById('${t.id}')" data-perm="delete" title="Delete">🗑</button>
       </td>
     </tr>`;
-  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3)">No tasks found</td></tr>';
+  }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text3)">No tasks found</td></tr>';
   UI.renderPagination('tt-pagination', paged, p => renderTaskTrackerTable(rows, p));
   Auth.applyUIPermissions(user, 'pm');
 }
@@ -513,15 +567,39 @@ function renderTaskTrackerTable(rows, page) {
 // visible after any task CRUD, so the two views (same underlying data,
 // different filters) never go stale relative to each other.
 async function refreshTaskViews() {
-  projectTasks = await DB.read('projectTasksDB', true);
+  await loadTasksAndPhases();
   if (document.getElementById('tab-gantt').classList.contains('active')) renderGantt();
   if (document.getElementById('tab-tasks').classList.contains('active')) renderTaskTracker();
+}
+
+// Phase dropdown for the Add/Edit Task modal -- scoped to whichever
+// project is currently selected in that same modal (a task's phase
+// only makes sense within its own project), with a trailing "+ Add New
+// Phase..." option that reveals a free-text title field (see
+// handlePhaseSelectChange()); the new phase itself isn't created until
+// Save, so cancelling the modal never leaves an orphaned phase behind.
+function populatePhaseSelect(projectId, selectedPhaseId) {
+  const sel = document.getElementById('tf-phase');
+  const phases = allPhases.filter(p => p.project_id === projectId)
+    .sort((a,b) => (parseInt(a.sort_order)||0) - (parseInt(b.sort_order)||0));
+  sel.innerHTML = '<option value="">No Phase</option>'
+    + phases.map(p => `<option value="${p.id}">${p.phase_name}</option>`).join('')
+    + '<option value="__new__">+ Add New Phase...</option>';
+  sel.value = selectedPhaseId && phases.some(p=>p.id===selectedPhaseId) ? selectedPhaseId : '';
+  document.getElementById('tf-new-phase-wrap').style.display = 'none';
+  document.getElementById('tf-new-phase-name').value = '';
+}
+function handlePhaseSelectChange() {
+  const isNew = document.getElementById('tf-phase').value === '__new__';
+  document.getElementById('tf-new-phase-wrap').style.display = isNew ? '' : 'none';
 }
 
 function openAddTask(presetProjectId) {
   if (!allProjects.length) { UI.toast('Create a project first','warning'); return; }
   editTaskId = null;
-  document.getElementById('tf-project').value = presetProjectId || ganttProjectId || allProjects[0].id;
+  const projectId = presetProjectId || ganttProjectId || allProjects[0].id;
+  document.getElementById('tf-project').value = projectId;
+  populatePhaseSelect(projectId, '');
   document.getElementById('tf-name').value = '';
   document.getElementById('tf-start').value = '';
   document.getElementById('tf-end').value = '';
@@ -536,6 +614,7 @@ function editTask(id) {
   const t = projectTasks.find(x=>x.id===id); if (!t) return;
   editTaskId = id;
   document.getElementById('tf-project').value = t.project_id;
+  populatePhaseSelect(t.project_id, t.phase_id || '');
   document.getElementById('tf-name').value = t.task_name;
   document.getElementById('tf-start').value = t.start_date;
   document.getElementById('tf-end').value = t.end_date;
@@ -552,15 +631,29 @@ async function saveTask() {
   const start = document.getElementById('tf-start').value;
   const end = document.getElementById('tf-end').value;
   if (!projectId || !name || !start || !end) { UI.toast('Fill in the required fields','warning'); return; }
-  const data = {
-    project_id: projectId,
-    task_name: name, start_date: start, end_date: end,
-    assigned_to: document.getElementById('tf-assigned').value.trim(),
-    progress: document.getElementById('tf-progress').value || '0',
-    status: document.getElementById('tf-status').value
-  };
+  let phaseId = document.getElementById('tf-phase').value;
+  let newPhaseName = '';
+  if (phaseId === '__new__') {
+    newPhaseName = document.getElementById('tf-new-phase-name').value.trim();
+    if (!newPhaseName) { UI.toast('Type the new phase title','warning'); return; }
+  }
   UI.loading(true,'Saving...');
   try {
+    if (phaseId === '__new__') {
+      const allP = await DB.read('projectPhasesDB', true);
+      const sortOrder = allP.filter(p=>p.project_id===projectId).length;
+      const newPhase = { id: DB.nextId(allP,'id','PHASE'), project_id: projectId, phase_name: newPhaseName, sort_order: String(sortOrder) };
+      await DB.insert('projectPhasesDB', newPhase);
+      allPhases.push(newPhase);
+      phaseId = newPhase.id;
+    }
+    const data = {
+      project_id: projectId, phase_id: phaseId,
+      task_name: name, start_date: start, end_date: end,
+      assigned_to: document.getElementById('tf-assigned').value.trim(),
+      progress: document.getElementById('tf-progress').value || '0',
+      status: document.getElementById('tf-status').value
+    };
     if (editTaskId) {
       await DB.update('projectTasksDB', r=>r.id===editTaskId, data);
       UI.toast('Updated ✅','success');
