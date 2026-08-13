@@ -1,1 +1,2 @@
 id|project_id|date|category|description|amount|recorded_by
+COST001|PROJ001|2026-08-13|Materials|filament|500|superadmin
