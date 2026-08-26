@@ -1,2 +1,0 @@
-id|unit_id|date_checked|status|problem_desc|expiration_date|checked_by
-CHK001|UNIT001|2026-08-08|good|Jdjd idkdkd kdjd|2028-08-08|

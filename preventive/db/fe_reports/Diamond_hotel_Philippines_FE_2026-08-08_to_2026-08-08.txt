@@ -1,0 +1,2 @@
+unit_id|serial_no|floor|location|type|capacity_lb|date_checked|status|problem_desc|expiration_date
+UNIT001|5F-001|5|Hallway|AFFF|10|2026-08-08|good|Jdjd idkdkd kdjd|2028-08-08

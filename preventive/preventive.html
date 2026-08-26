@@ -80,7 +80,10 @@
             <select id="unit-filter-client" style="width:240px" onchange="filterUnits()"><option value="">All Clients</option></select>
           </div>
         </div>
-        <button class="btn btn-primary" style="height:37px;padding:0 20px" onclick="openAddUnit()" data-perm="create">+ Add Unit</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" style="height:37px;padding:0 20px" onclick="openGenerateModal()" data-perm="create">🔄 Generate Inspection</button>
+          <button class="btn btn-primary" style="height:37px;padding:0 20px" onclick="openAddUnit()" data-perm="create">+ Add Unit</button>
+        </div>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-title">Registered Units</span></div>
@@ -93,75 +96,57 @@
       </div>
     </div>
 
-    <!-- Fire Extinguisher: Inspection Log -- one row per preventive
-         visit, referencing an existing unit above. This is the record
-         that actually repeats on a schedule (monthly/quarterly/
-         semi-annual). -->
+    <!-- Fire Extinguisher: Inspection Log -- lists generated inspection
+         batches (one per Generate click: a client + date range,
+         snapshotting every unit registered for that client at that
+         time). Each batch is its own .txt file under
+         preventive/db/fe_reports/, so it stays a clean, readable table
+         on its own even outside the app -- "View" drills into that
+         file's rows for editing, right in this same tab. -->
     <div class="tab-pane" id="tab-fe-log">
       <div class="page-header-row" style="margin-bottom:16px">
         <div class="page-header"><h1>📋 Inspection Log</h1></div>
       </div>
-      <div class="card" style="margin-bottom:16px">
-        <div class="form-row" style="grid-template-columns:repeat(6,1fr);gap:12px">
+
+      <!-- List view: every generated batch -->
+      <div id="batch-list-view">
+        <div class="page-header-row" style="margin-bottom:16px">
           <div class="form-group" style="margin-bottom:0">
             <label>Client</label>
-            <select id="fe-filter-client" onchange="filterFireExt()"><option value="">All Clients</option></select>
+            <select id="batch-filter-client" style="width:240px" onchange="filterBatchList()"><option value="">All Clients</option></select>
           </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label>Floor</label>
-            <input type="text" id="fe-filter-floor" placeholder="e.g. 5" oninput="filterFireExt()">
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label>Status</label>
-            <select id="fe-filter-status" onchange="filterFireExt()">
-              <option value="">All Status</option>
-              <option value="good">Good</option>
-              <option value="low pressure">Low Pressure</option>
-              <option value="not check">Not Check</option>
-              <option value="pullout">Pullout</option>
-              <option value="missing">Missing</option>
-              <option value="defective">Defective</option>
-            </select>
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label>Type</label>
-            <select id="fe-filter-type" onchange="filterFireExt()">
-              <option value="">All Types</option>
-              <option value="AFFF">AFFF</option>
-              <option value="CO2">CO2</option>
-              <option value="Dry Chem">Dry Chem</option>
-              <option value="HFC-236fa">HFC-236fa</option>
-              <option value="Class K">Class K</option>
-              <option value="HCFC-123">HCFC-123</option>
-              <option value="none">None</option>
-            </select>
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label>Date Check From</label>
-            <input type="date" id="fe-filter-from" onchange="filterFireExt()">
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label>Date Check To</label>
-            <input type="date" id="fe-filter-to" onchange="filterFireExt()">
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Generated Inspections</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Client</th><th>Date From</th><th>Date To</th><th>Actions</th></tr></thead>
+              <tbody id="batch-tbody"></tbody>
+            </table>
           </div>
         </div>
       </div>
-      <div class="page-header-row" style="margin-bottom:16px">
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-ghost btn-sm" onclick="printFireExt()">🖨 Print</button>
-          <button class="btn btn-ghost btn-sm" onclick="downloadFireExt()">⬇ Download</button>
+
+      <!-- Detail view: one batch's unit rows, editable -->
+      <div id="batch-detail-view" style="display:none">
+        <div class="page-header-row" style="margin-bottom:16px">
+          <button class="btn btn-ghost btn-sm" onclick="backToBatchList()">← Back to Inspection Log</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="printFireExt()">🖨 Print</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadFireExt()">⬇ Download</button>
+          </div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="openAddFireExt()" data-perm="create">+ Log Inspection</button>
-      </div>
-      <div class="card">
-        <div class="card-header"><span class="card-title">Inspection Log</span></div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Serial #</th><th>Date Check</th><th>Floor</th><th>Location</th><th>Type</th><th>Capacity (lb)</th><th>Status</th><th>Problem Desc</th><th>Expiration</th><th>Actions</th></tr></thead>
-            <tbody id="fe-tbody"></tbody>
-          </table>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title" id="batch-detail-title">Batch</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Serial #</th><th>Date Check</th><th>Floor</th><th>Location</th><th>Type</th><th>Capacity (lb)</th><th>Status</th><th>Problem Desc</th><th>Expiration</th><th>Actions</th></tr></thead>
+              <tbody id="fe-tbody"></tbody>
+            </table>
+          </div>
         </div>
-        <div id="fe-pagination"></div>
       </div>
     </div>
 
@@ -279,19 +264,41 @@
   </div>
 </div>
 
-<!-- Add/Edit Inspection Modal -- one row per preventive visit, always
-     against an existing unit above (no re-typing its serial/floor/
-     location/type/capacity every time). -->
+<!-- Generate Inspection Modal -- snapshots every unit currently
+     registered for a client into a brand-new batch (its own .txt file
+     under preventive/db/fe_reports/), ready to be filled in as the
+     inspector actually checks each one. -->
+<div class="modal-backdrop" id="generate-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🔄 Generate Inspection</span>
+      <button class="modal-close" onclick="UI.closeModal('generate-modal')">✕</button>
+    </div>
+    <p style="color:var(--text2);font-size:12px;margin-bottom:14px">Every unit currently registered for this client will be added to a new inspection batch for the date range below.</p>
+    <div class="form-group"><label>Client *</label><select id="gen-client"></select></div>
+    <div class="form-row">
+      <div class="form-group"><label>Date From *</label><input type="date" id="gen-from"></div>
+      <div class="form-group"><label>Date To *</label><input type="date" id="gen-to"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('generate-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveGenerate()">Generate</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Inspection Entry Modal -- one unit's row within the currently
+     viewed generated batch. Client/unit/serial/floor/location/type/
+     capacity are fixed (set at generation time); only what the
+     inspector actually found is editable here. -->
 <div class="modal-backdrop" id="fe-modal">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title" id="fe-modal-title">+ Log Inspection</span>
+      <span class="modal-title">✏️ Edit Inspection Entry</span>
       <button class="modal-close" onclick="UI.closeModal('fe-modal')">✕</button>
     </div>
-    <div class="form-group"><label>Client *</label><select id="fef-client" onchange="populateUnitSelect(this.value,'')"></select></div>
-    <div class="form-group"><label>Unit *</label><select id="fef-unit"></select></div>
     <div class="form-row">
-      <div class="form-group"><label>Date Checked *</label><input type="date" id="fef-date"></div>
+      <div class="form-group"><label>Date Checked</label><input type="date" id="fef-date"></div>
       <div class="form-group"><label>Expiration Date</label><input type="date" id="fef-expiration"></div>
     </div>
     <div class="form-group"><label>Status</label>
@@ -350,7 +357,8 @@ function switchTab(tabId, el) {
   document.querySelectorAll('#sidebar-nav .nav-item[data-tab]').forEach(n=>n.classList.remove('active'));
   if (el) el.classList.add('active');
   if (el && el.dataset.group) expandNavGroup(el.dataset.group);
-  if (tabId==='tab-fe-units' || tabId==='tab-fe-log') loadFireExt();
+  if (tabId==='tab-fe-units') loadFireExt();
+  if (tabId==='tab-fe-log') { backToBatchList(); loadFeBatches(); }
   sessionStorage.setItem('preventive_last_tab', tabId);
 }
 UI.buildNavbar(user, 'Preventive Maintenance');
@@ -358,8 +366,9 @@ UI.buildSidebar(user, 'preventive', TABS);
 Auth.applyUIPermissions(user, 'preventive');
 UserMgmt.init(user, 'preventive');
 
-let allClients=[], allClientPreventives=[], allFireExtUnits=[], allFireExtChecks=[], feFilteredRows=[];
+let allClients=[], allClientPreventives=[], allFireExtUnits=[], allFeBatches=[], feFilteredRows=[];
 let editClientId=null, managingClientId=null, editUnitId=null, editFireExtId=null;
+let currentBatch=null, currentBatchRows=[];
 
 function clientName(id) { return allClients.find(c=>c.id===id)?.client_name || id; }
 
@@ -542,14 +551,10 @@ function feStatusBadge(s) {
 function unitById(id) { return allFireExtUnits.find(u=>u.id===id); }
 
 async function loadFireExt() {
-  UI.loading(true, 'Loading fire extinguisher records...');
+  UI.loading(true, 'Loading registered units...');
   try {
-    [allFireExtUnits, allFireExtChecks] = await Promise.all([
-      DB.read('fireExtinguisherUnitsDB', true),
-      DB.read('fireExtinguisherChecksDB', true)
-    ]);
+    allFireExtUnits = await DB.read('fireExtinguisherUnitsDB', true);
     filterUnits();
-    filterFireExt();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
 }
@@ -652,44 +657,120 @@ function suggestSerial() {
   document.getElementById('uf-serial').value = `${floor}F-${String(next).padStart(3,'0')}`;
 }
 
-// ---- Inspection Log ----
-function populateUnitSelect(clientId, selectedUnitId) {
-  const sel = document.getElementById('fef-unit');
+// ---- Generate Inspection ----
+// Turns "sanitize a filename" into a repo-safe string -- filenames
+// are built as ClientName_FE_DateFrom_to_DateTo so each batch's own
+// file is self-describing at a glance in preventive/db/fe_reports/.
+function sanitizeFilename(s) {
+  return (s||'').trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'unknown';
+}
+function openGenerateModal() {
+  if (!allClients.length) { UI.toast('Add a client first','warning'); return; }
+  const sel = document.getElementById('gen-client');
+  sel.innerHTML = allClients.map(c => `<option value="${c.id}">${c.client_name}</option>`).join('');
+  sel.value = document.getElementById('unit-filter-client').value || allClients[0].id;
+  document.getElementById('gen-from').value = '';
+  document.getElementById('gen-to').value = '';
+  UI.openModal('generate-modal');
+}
+async function saveGenerate() {
+  const clientId = document.getElementById('gen-client').value;
+  const dateFrom = document.getElementById('gen-from').value;
+  const dateTo = document.getElementById('gen-to').value;
+  if (!clientId || !dateFrom || !dateTo) { UI.toast('Fill in the required fields','warning'); return; }
+  if (dateTo < dateFrom) { UI.toast('Date To must be on or after Date From','warning'); return; }
   const units = allFireExtUnits.filter(u => u.client_id === clientId);
-  sel.innerHTML = units.map(u => `<option value="${u.id}">${u.serial_no} — Floor ${u.floor}${u.location?' ('+u.location+')':''}</option>`).join('')
-    || '<option value="">No units registered for this client</option>';
-  if (selectedUnitId && units.some(u=>u.id===selectedUnitId)) sel.value = selectedUnitId;
+  if (!units.length) { UI.toast('No units registered for this client yet','warning'); return; }
+  UI.loading(true, 'Generating...');
+  try {
+    const allBatches = await DB.read('fireExtinguisherBatchesDB', true);
+    const dup = allBatches.find(b => b.client_id===clientId && b.date_from===dateFrom && b.date_to===dateTo);
+    if (dup) { UI.toast('A batch for this client and date range already exists','warning'); UI.loading(false); return; }
+    const filename = `${sanitizeFilename(clientName(clientId))}_FE_${dateFrom}_to_${dateTo}`;
+    // Each unit's serial/floor/location/type/capacity is copied in as
+    // it stands right now -- a snapshot, not a live join -- so this
+    // report file stays accurate to what it looked like on generation
+    // day even if the registry changes later.
+    const rows = units.map(u => ({
+      unit_id: u.id, serial_no: u.serial_no, floor: u.floor, location: u.location||'',
+      type: u.type||'', capacity_lb: u.capacity_lb||'',
+      date_checked: '', status: 'not check', problem_desc: '', expiration_date: ''
+    }));
+    await DB.withPath('preventive/db/fe_reports', () => DB.write(filename, rows, `Generate FE batch ${filename}`));
+    await DB.insert('fireExtinguisherBatchesDB', {
+      id: DB.nextId(allBatches,'id','BATCH'), client_id: clientId, date_from: dateFrom, date_to: dateTo,
+      filename, created_by: user.username, created_at: new Date().toISOString().split('T')[0]
+    });
+    UI.toast(`Generated ✅ (${rows.length} unit${rows.length===1?'':'s'})`,'success');
+    UI.closeModal('generate-modal');
+    switchTab('tab-fe-log', document.querySelector('.nav-item[data-tab="tab-fe-log"]'));
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
 }
 
-function joinedChecks() {
-  return allFireExtChecks.map(c => {
-    const u = unitById(c.unit_id) || {};
-    return { ...c, serial_no: u.serial_no||'—', floor: u.floor||'—', location: u.location, type: u.type, capacity_lb: u.capacity_lb, client_id: u.client_id };
+// ---- Inspection Log: list of generated batches ----
+async function loadFeBatches() {
+  UI.loading(true, 'Loading inspection batches...');
+  try {
+    allFeBatches = await DB.read('fireExtinguisherBatchesDB', true);
+    const sel = document.getElementById('batch-filter-client');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">All Clients</option>' + allClients.map(c => `<option value="${c.id}">${c.client_name}</option>`).join('');
+    sel.value = cur;
+    filterBatchList();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+function filterBatchList() {
+  const client = document.getElementById('batch-filter-client').value;
+  let rows = allFeBatches;
+  if (client) rows = rows.filter(b => b.client_id === client);
+  rows = rows.slice().sort((a,b) => (b.created_at||'').localeCompare(a.created_at||'') || (b.date_from||'').localeCompare(a.date_from||''));
+  renderBatchList(rows);
+}
+function renderBatchList(rows) {
+  document.getElementById('batch-tbody').innerHTML = rows.map(b => `<tr>
+    <td>${clientName(b.client_id)}</td>
+    <td>${UI.dateStr(b.date_from)}</td>
+    <td>${UI.dateStr(b.date_to)}</td>
+    <td>
+      <button class="btn btn-ghost btn-sm" onclick="viewBatch('${b.id}')" title="View">👁 View</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteBatch('${b.id}')" data-perm="delete" title="Delete">🗑</button>
+    </td>
+  </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text3)">No generated inspections yet — use "Generate Inspection" in Registry Units</td></tr>';
+  Auth.applyUIPermissions(user, 'preventive');
+}
+function deleteBatch(id) {
+  UI.confirm('Delete this generated inspection from the list? Its report file stays in the repository but will no longer appear here.', async () => {
+    UI.loading(true);
+    try { await DB.remove('fireExtinguisherBatchesDB', r=>r.id===id); UI.toast('Deleted','success'); await loadFeBatches(); }
+    catch(e) { UI.toast('Error: '+e.message,'error'); }
+    UI.loading(false);
   });
 }
 
-function filterFireExt() {
-  const client = document.getElementById('fe-filter-client').value;
-  const floor = document.getElementById('fe-filter-floor').value.trim();
-  const status = document.getElementById('fe-filter-status').value;
-  const type = document.getElementById('fe-filter-type').value;
-  const from = document.getElementById('fe-filter-from').value;
-  const to = document.getElementById('fe-filter-to').value;
-  let rows = joinedChecks();
-  if (client) rows = rows.filter(r => r.client_id === client);
-  if (floor) rows = rows.filter(r => r.floor === floor);
-  if (status) rows = rows.filter(r => r.status === status);
-  if (type) rows = rows.filter(r => r.type === type);
-  if (from) rows = rows.filter(r => r.date_checked >= from);
-  if (to) rows = rows.filter(r => r.date_checked <= to);
-  rows = rows.sort((a,b) => (b.date_checked||'').localeCompare(a.date_checked||''));
-  renderFireExt(rows, 1);
+// ---- Inspection Log: one batch's rows (view + edit) ----
+async function viewBatch(id) {
+  const batch = allFeBatches.find(b=>b.id===id); if (!batch) return;
+  currentBatch = batch;
+  UI.loading(true, 'Loading batch...');
+  try {
+    currentBatchRows = await DB.withPath('preventive/db/fe_reports', () => DB.read(batch.filename, true));
+    document.getElementById('batch-detail-title').textContent = `${clientName(batch.client_id)} — ${UI.dateStr(batch.date_from)} to ${UI.dateStr(batch.date_to)}`;
+    renderBatchDetail();
+    document.getElementById('batch-list-view').style.display = 'none';
+    document.getElementById('batch-detail-view').style.display = '';
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
 }
-
-function renderFireExt(rows, page) {
-  feFilteredRows = rows;
-  const paged = UI.paginate(rows, page, 15);
-  document.getElementById('fe-tbody').innerHTML = paged.rows.map(r => `<tr>
+function backToBatchList() {
+  currentBatch = null; currentBatchRows = [];
+  document.getElementById('batch-detail-view').style.display = 'none';
+  document.getElementById('batch-list-view').style.display = '';
+}
+function renderBatchDetail() {
+  feFilteredRows = currentBatchRows;
+  document.getElementById('fe-tbody').innerHTML = currentBatchRows.map(r => `<tr>
     <td class="mono">${r.serial_no}</td>
     <td>${UI.dateStr(r.date_checked)}</td>
     <td>${r.floor}</td>
@@ -700,79 +781,42 @@ function renderFireExt(rows, page) {
     <td>${r.problem_desc||'—'}</td>
     <td>${UI.dateStr(r.expiration_date)}</td>
     <td>
-      <button class="btn btn-ghost btn-sm" onclick="editFireExt('${r.id}')" data-perm="edit" title="Edit">✏️</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteFireExt('${r.id}')" data-perm="delete" title="Delete">🗑</button>
+      <button class="btn btn-ghost btn-sm" onclick="editFireExt('${r.unit_id}')" data-perm="edit" title="Edit">✏️</button>
     </td>
-  </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--text3)">No records found</td></tr>';
-  UI.renderPagination('fe-pagination', paged, p => renderFireExt(rows, p));
+  </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--text3)">No units in this batch</td></tr>';
   Auth.applyUIPermissions(user, 'preventive');
 }
-
-function openAddFireExt() {
-  if (!allFireExtUnits.length) { UI.toast('Register a unit first','warning'); return; }
-  editFireExtId = null;
-  const client = document.getElementById('fe-filter-client').value || allFireExtUnits[0].client_id;
-  document.getElementById('fef-client').value = client;
-  populateUnitSelect(client, '');
-  document.getElementById('fef-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('fef-status').value = 'good';
-  document.getElementById('fef-problem').value = '';
-  document.getElementById('fef-expiration').value = '';
-  document.getElementById('fe-modal-title').textContent = '+ Log Inspection';
-  UI.openModal('fe-modal');
-}
-function editFireExt(id) {
-  const c = allFireExtChecks.find(x=>x.id===id); if (!c) return;
-  const u = unitById(c.unit_id);
-  editFireExtId = id;
-  document.getElementById('fef-client').value = u ? u.client_id : '';
-  populateUnitSelect(u ? u.client_id : '', c.unit_id);
-  document.getElementById('fef-date').value = c.date_checked;
-  document.getElementById('fef-status').value = c.status || 'good';
-  document.getElementById('fef-problem').value = c.problem_desc || '';
-  document.getElementById('fef-expiration').value = c.expiration_date || '';
-  document.getElementById('fe-modal-title').textContent = '✏️ Edit Inspection';
+function editFireExt(unitId) {
+  const r = currentBatchRows.find(x=>x.unit_id===unitId); if (!r) return;
+  editFireExtId = unitId;
+  document.getElementById('fef-date').value = r.date_checked || '';
+  document.getElementById('fef-status').value = r.status || 'not check';
+  document.getElementById('fef-problem').value = r.problem_desc || '';
+  document.getElementById('fef-expiration').value = r.expiration_date || '';
   UI.openModal('fe-modal');
 }
 async function saveFireExt() {
-  const unitId = document.getElementById('fef-unit').value;
-  const dateChecked = document.getElementById('fef-date').value;
-  if (!unitId || !dateChecked) { UI.toast('Fill in the required fields','warning'); return; }
+  if (!currentBatch) return;
   const data = {
-    unit_id: unitId, date_checked: dateChecked,
+    date_checked: document.getElementById('fef-date').value,
     status: document.getElementById('fef-status').value,
     problem_desc: document.getElementById('fef-problem').value.trim(),
-    expiration_date: document.getElementById('fef-expiration').value,
-    checked_by: user.username
+    expiration_date: document.getElementById('fef-expiration').value
   };
   UI.loading(true,'Saving...');
   try {
-    if (editFireExtId) {
-      await DB.update('fireExtinguisherChecksDB', r=>r.id===editFireExtId, data);
-      UI.toast('Updated ✅','success');
-    } else {
-      const all = await DB.read('fireExtinguisherChecksDB', true);
-      await DB.insert('fireExtinguisherChecksDB', { id: DB.nextId(all,'id','CHK'), ...data });
-      UI.toast('Added ✅','success');
-    }
+    await DB.withPath('preventive/db/fe_reports', () => DB.update(currentBatch.filename, r=>r.unit_id===editFireExtId, data));
+    currentBatchRows = await DB.withPath('preventive/db/fe_reports', () => DB.read(currentBatch.filename, true));
+    UI.toast('Updated ✅','success');
     UI.closeModal('fe-modal');
-    await loadFireExt();
+    renderBatchDetail();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
 }
-function deleteFireExt(id) {
-  UI.confirm('Delete this inspection record?', async () => {
-    UI.loading(true);
-    try { await DB.remove('fireExtinguisherChecksDB', r=>r.id===id); UI.toast('Deleted','success'); await loadFireExt(); }
-    catch(e) { UI.toast('Error: '+e.message,'error'); }
-    UI.loading(false);
-  });
-}
 
 async function buildFireExtReportHtml() {
-  const clientFilter = document.getElementById('fe-filter-client').value;
-  const clientLabel = clientFilter ? clientName(clientFilter) : 'All Clients';
   const rows = feFilteredRows || [];
+  const label = currentBatch ? `${clientName(currentBatch.client_id)} (${UI.dateStr(currentBatch.date_from)} – ${UI.dateStr(currentBatch.date_to)})` : '';
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fire Extinguisher Report</title>
   <style>
     body{font-family:Arial,sans-serif;padding:24px;color:#1e293b}
@@ -783,7 +827,7 @@ async function buildFireExtReportHtml() {
     th{background:#f1f5f9}
   </style></head><body>
   <h1>🧯 Fire Extinguisher Preventive Maintenance Report</h1>
-  <p>Client: ${clientLabel} &nbsp;|&nbsp; Generated: ${new Date().toLocaleString('en-PH')}</p>
+  <p>${label} &nbsp;|&nbsp; Generated: ${new Date().toLocaleString('en-PH')}</p>
   <table><thead><tr><th>Serial #</th><th>Date Check</th><th>Floor</th><th>Location</th><th>Type</th><th>Capacity (lb)</th><th>Status</th><th>Problem Desc</th><th>Expiration</th></tr></thead>
   <tbody>${rows.map(r=>`<tr><td>${r.serial_no}</td><td>${r.date_checked||''}</td><td>${r.floor}</td><td>${r.location||''}</td><td>${r.type||''}</td><td>${r.capacity_lb||''}</td><td>${r.status||''}</td><td>${r.problem_desc||''}</td><td>${r.expiration_date||''}</td></tr>`).join('')}</tbody>
   </table></body></html>`;
@@ -801,7 +845,7 @@ async function downloadFireExt() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `Fire_Extinguisher_Report_${new Date().toISOString().split('T')[0]}.doc`;
+  a.download = `${currentBatch ? currentBatch.filename : 'Fire_Extinguisher_Report_' + new Date().toISOString().split('T')[0]}.doc`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
