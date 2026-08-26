@@ -1,0 +1,2 @@
+id|client_id|serial_no|floor|location|type|capacity_lb|created_at
+UNIT001|CLI001|5F-001|5|Hallway|AFFF|10|2026-08-08
