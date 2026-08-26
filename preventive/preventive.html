@@ -148,6 +148,10 @@
         <div class="card">
           <div class="card-header">
             <span class="card-title" id="batch-detail-title">Batch</span>
+            <div class="search-bar" style="max-width:260px">
+              <span>🔍</span>
+              <input type="text" id="batch-detail-search" placeholder="Search serial, floor, location..." oninput="filterBatchDetail()">
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -789,7 +793,8 @@ async function viewBatch(id) {
   try {
     currentBatchRows = await DB.withPath('preventive/db/fe_reports', () => DB.read(batch.filename, true));
     document.getElementById('batch-detail-title').textContent = `${clientName(batch.client_id)} — ${UI.dateStr(batch.date_from)} to ${UI.dateStr(batch.date_to)}`;
-    renderBatchDetail();
+    document.getElementById('batch-detail-search').value = '';
+    filterBatchDetail();
     document.getElementById('batch-list-view').style.display = 'none';
     document.getElementById('batch-detail-view').style.display = '';
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
@@ -800,9 +805,25 @@ function backToBatchList() {
   document.getElementById('batch-detail-view').style.display = 'none';
   document.getElementById('batch-list-view').style.display = '';
 }
-function renderBatchDetail() {
-  feFilteredRows = currentBatchRows;
-  document.getElementById('fe-tbody').innerHTML = currentBatchRows.map(r => `<tr>
+function filterBatchDetail() {
+  const q = (document.getElementById('batch-detail-search').value || '').trim().toLowerCase();
+  let rows = currentBatchRows;
+  if (q) {
+    rows = rows.filter(r =>
+      (r.serial_no||'').toLowerCase().includes(q) ||
+      (r.floor||'').toLowerCase().includes(q) ||
+      (r.location||'').toLowerCase().includes(q) ||
+      (r.type||'').toLowerCase().includes(q) ||
+      (r.status||'').toLowerCase().includes(q) ||
+      (r.problem_desc||'').toLowerCase().includes(q)
+    );
+  }
+  renderBatchDetail(rows);
+}
+function renderBatchDetail(rows) {
+  rows = rows || currentBatchRows;
+  feFilteredRows = rows;
+  document.getElementById('fe-tbody').innerHTML = rows.map(r => `<tr>
     <td class="mono">${r.serial_no}</td>
     <td>${UI.dateStr(r.date_checked)}</td>
     <td>${r.floor}</td>
@@ -815,7 +836,7 @@ function renderBatchDetail() {
     <td>
       <button class="btn btn-ghost btn-sm" onclick="editFireExt('${r.unit_id}')" data-perm="edit" title="Edit">✏️</button>
     </td>
-  </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--text3)">No units in this batch</td></tr>';
+  </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--text3)">No units found</td></tr>';
   Auth.applyUIPermissions(user, 'preventive');
 }
 function editFireExt(unitId) {
@@ -841,7 +862,7 @@ async function saveFireExt() {
     currentBatchRows = await DB.withPath('preventive/db/fe_reports', () => DB.read(currentBatch.filename, true));
     UI.toast('Updated ✅','success');
     UI.closeModal('fe-modal');
-    renderBatchDetail();
+    filterBatchDetail();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
 }
