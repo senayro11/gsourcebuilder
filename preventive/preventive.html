@@ -334,8 +334,10 @@ const PREVENTIVE_TYPES = [
 
 const TABS = [
   { id:'tab-clients',       icon:'🏢', label:'Clients' },
-  { id:'tab-fe-units',      icon:'🧯', label:'FE - Registry Units' },
-  { id:'tab-fe-log',        icon:'📋', label:'FE - Inspection Log' },
+  { id:'tab-fire-ext',      icon:'🧯', label:'Fire Extinguisher', children: [
+      { id:'tab-fe-units', icon:'📋', label:'Registry Units' },
+      { id:'tab-fe-log',   icon:'📝', label:'Inspection Log' }
+  ]},
   { id:'tab-seismic',       icon:'📐', label:'Seismic' },
   { id:'tab-firepump',      icon:'🚒', label:'Fire Pump' },
   { id:'tab-transferpump',  icon:'🔄', label:'Transfer Pump' },
@@ -347,6 +349,7 @@ function switchTab(tabId, el) {
   if (pane) pane.classList.add('active');
   document.querySelectorAll('#sidebar-nav .nav-item[data-tab]').forEach(n=>n.classList.remove('active'));
   if (el) el.classList.add('active');
+  if (el && el.dataset.group) expandNavGroup(el.dataset.group);
   if (tabId==='tab-fe-units' || tabId==='tab-fe-log') loadFireExt();
   sessionStorage.setItem('preventive_last_tab', tabId);
 }

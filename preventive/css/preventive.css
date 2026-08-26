@@ -205,6 +205,14 @@ body {
 .nav-item:hover { background: var(--surface2); color: var(--text); }
 .nav-item.active { background: var(--accent-glow); color: var(--accent2); border: 1px solid var(--accent-glow); }
 .nav-icon { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; }
+
+/* ---- Sidebar submenu (expand/collapse group) ---- */
+.nav-item-parent { justify-content: space-between; }
+.nav-caret { font-size: 10px; color: var(--text3); transition: transform 0.15s; }
+.nav-item-parent.expanded .nav-caret { transform: rotate(90deg); }
+.nav-children { display: none; }
+.nav-children.expanded { display: block; }
+.nav-children .nav-item { padding-left: 40px; }
 .nav-badge {
   margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px;
   border-radius: 999px; background: var(--danger); color: #fff;

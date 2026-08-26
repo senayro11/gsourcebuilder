@@ -486,9 +486,24 @@ const UI = (() => {
 
     if (tabs && tabs.length) {
       const sys = SYSTEMS[currentSystem];
+      // A tab with a `children` array renders as an expand/collapse
+      // group instead of its own clickable pane -- the group row only
+      // toggles open/closed, and each child underneath is a normal tab
+      // (switchTab() still drives it, just with an extra data-group
+      // attribute so activating a child can auto-expand its parent).
       html += `<div class="nav-group">
         <div class="nav-group-label">${sys ? sys.name : currentSystem}</div>
-        ${tabs.map((t, i) => `<div class="nav-item${i === 0 ? ' active' : ''}" data-tab="${t.id}"${t.perm ? ` data-perm="${t.perm}"` : ''} onclick="switchTab('${t.id}',this)"><span class="nav-icon">${t.icon}</span>${t.label}</div>`).join('')}
+        ${tabs.map((t, i) => {
+          if (t.children && t.children.length) {
+            return `<div class="nav-item nav-item-parent" data-group="${t.id}"${t.perm ? ` data-perm="${t.perm}"` : ''} onclick="toggleNavGroup('${t.id}')">
+              <span class="nav-icon">${t.icon}</span>${t.label}<span class="nav-caret">▸</span>
+            </div>
+            <div class="nav-children" id="navgroup-${t.id}">
+              ${t.children.map(c => `<div class="nav-item" data-tab="${c.id}" data-group="${t.id}"${c.perm ? ` data-perm="${c.perm}"` : ''} onclick="switchTab('${c.id}',this)"><span class="nav-icon">${c.icon}</span>${c.label}</div>`).join('')}
+            </div>`;
+          }
+          return `<div class="nav-item${i === 0 ? ' active' : ''}" data-tab="${t.id}"${t.perm ? ` data-perm="${t.perm}"` : ''} onclick="switchTab('${t.id}',this)"><span class="nav-icon">${t.icon}</span>${t.label}</div>`;
+        }).join('')}
       </div>`;
     }
 
@@ -640,3 +655,20 @@ const UI = (() => {
            buildSidebar, buildNavbar, paginate, renderPagination, toggleTheme,
            toggleProfileMenu };
 })();
+
+// Expand/collapse a sidebar nav group rendered by buildSidebar() (a tab
+// entry with `children`) -- plain globals since they're invoked from
+// inline onclick attributes built into that HTML, same as switchTab().
+function toggleNavGroup(groupId) {
+  const children = document.getElementById('navgroup-'+groupId);
+  const parent = document.querySelector(`.nav-item-parent[data-group="${groupId}"]`);
+  if (!children || !parent) return;
+  const isOpen = children.classList.toggle('expanded');
+  parent.classList.toggle('expanded', isOpen);
+}
+function expandNavGroup(groupId) {
+  const children = document.getElementById('navgroup-'+groupId);
+  const parent = document.querySelector(`.nav-item-parent[data-group="${groupId}"]`);
+  if (children) children.classList.add('expanded');
+  if (parent) parent.classList.add('expanded');
+}
