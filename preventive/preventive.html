@@ -65,16 +65,14 @@
       </div>
     </div>
 
-    <!-- Fire Extinguisher -->
-    <div class="tab-pane" id="tab-fire-ext">
+    <!-- Fire Extinguisher: Registry Units -- the physical fire
+         extinguishers per client, set up once (serial/floor/location/
+         type/capacity) so an inspection visit never needs to re-type
+         them -- just pick the unit and log what was found. -->
+    <div class="tab-pane" id="tab-fe-units">
       <div class="page-header-row" style="margin-bottom:16px">
-        <div class="page-header"><h1>🧯 Fire Extinguisher</h1></div>
+        <div class="page-header"><h1>🧯 Registry Units</h1></div>
       </div>
-
-      <!-- Units: the physical fire extinguishers per client, set up once
-           (serial/floor/location/type/capacity) so an inspection visit
-           never needs to re-type them -- just pick the unit and log
-           what was found. -->
       <div class="page-header-row" style="margin-bottom:12px">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
           <div class="form-group" style="margin-bottom:0">
@@ -84,7 +82,7 @@
         </div>
         <button class="btn btn-primary" style="height:37px;padding:0 20px" onclick="openAddUnit()" data-perm="create">+ Add Unit</button>
       </div>
-      <div class="card" style="margin-bottom:24px">
+      <div class="card">
         <div class="card-header"><span class="card-title">Registered Units</span></div>
         <div class="table-wrap">
           <table>
@@ -93,10 +91,16 @@
           </table>
         </div>
       </div>
+    </div>
 
-      <!-- Inspection Log: one row per preventive visit, referencing an
-           existing unit above -- this is the record that actually
-           repeats on a schedule (monthly/quarterly/semi-annual). -->
+    <!-- Fire Extinguisher: Inspection Log -- one row per preventive
+         visit, referencing an existing unit above. This is the record
+         that actually repeats on a schedule (monthly/quarterly/
+         semi-annual). -->
+    <div class="tab-pane" id="tab-fe-log">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div class="page-header"><h1>📋 Inspection Log</h1></div>
+      </div>
       <div class="card" style="margin-bottom:16px">
         <div class="form-row" style="grid-template-columns:repeat(6,1fr);gap:12px">
           <div class="form-group" style="margin-bottom:0">
@@ -330,7 +334,8 @@ const PREVENTIVE_TYPES = [
 
 const TABS = [
   { id:'tab-clients',       icon:'🏢', label:'Clients' },
-  { id:'tab-fire-ext',      icon:'🧯', label:'Fire Extinguisher' },
+  { id:'tab-fe-units',      icon:'🧯', label:'FE - Registry Units' },
+  { id:'tab-fe-log',        icon:'📋', label:'FE - Inspection Log' },
   { id:'tab-seismic',       icon:'📐', label:'Seismic' },
   { id:'tab-firepump',      icon:'🚒', label:'Fire Pump' },
   { id:'tab-transferpump',  icon:'🔄', label:'Transfer Pump' },
@@ -342,7 +347,7 @@ function switchTab(tabId, el) {
   if (pane) pane.classList.add('active');
   document.querySelectorAll('#sidebar-nav .nav-item[data-tab]').forEach(n=>n.classList.remove('active'));
   if (el) el.classList.add('active');
-  if (tabId==='tab-fire-ext') loadFireExt();
+  if (tabId==='tab-fe-units' || tabId==='tab-fe-log') loadFireExt();
   sessionStorage.setItem('preventive_last_tab', tabId);
 }
 UI.buildNavbar(user, 'Preventive Maintenance');
