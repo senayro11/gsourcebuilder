@@ -735,6 +735,7 @@ function renderBatchList(rows) {
     <td>${UI.dateStr(b.date_to)}</td>
     <td>
       <button class="btn btn-ghost btn-sm" onclick="viewBatch('${b.id}')" title="View">👁 View</button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadBatch('${b.id}')" title="Download">⬇ Download</button>
       <button class="btn btn-danger btn-sm" onclick="deleteBatch('${b.id}')" data-perm="delete" title="Delete">🗑</button>
     </td>
   </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text3)">No generated inspections yet — use "Generate Inspection" in Registry Units</td></tr>';
@@ -814,9 +815,14 @@ async function saveFireExt() {
   UI.loading(false);
 }
 
-async function buildFireExtReportHtml() {
-  const rows = feFilteredRows || [];
-  const label = currentBatch ? `${clientName(currentBatch.client_id)} (${UI.dateStr(currentBatch.date_from)} – ${UI.dateStr(currentBatch.date_to)})` : '';
+// batch/rows default to whichever batch is currently open in the
+// detail view (Print/Download there), but can also be passed in
+// explicitly so a batch can be downloaded straight from the list
+// row without first clicking View.
+async function buildFireExtReportHtml(batch, rows) {
+  batch = batch || currentBatch;
+  rows = rows || feFilteredRows || [];
+  const label = batch ? `${clientName(batch.client_id)} (${UI.dateStr(batch.date_from)} – ${UI.dateStr(batch.date_to)})` : '';
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fire Extinguisher Report</title>
   <style>
     body{font-family:Arial,sans-serif;padding:24px;color:#1e293b}
@@ -839,17 +845,27 @@ async function printFireExt() {
   win.document.close();
   setTimeout(() => { win.focus(); win.print(); }, 300);
 }
-async function downloadFireExt() {
-  if (!feFilteredRows.length) { UI.toast('No records to download','warning'); return; }
-  const blob = new Blob(['﻿', await buildFireExtReportHtml()], { type: 'application/msword' });
+async function downloadReport(batch, rows) {
+  if (!rows.length) { UI.toast('No records to download','warning'); return; }
+  const blob = new Blob(['﻿', await buildFireExtReportHtml(batch, rows)], { type: 'application/msword' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${currentBatch ? currentBatch.filename : 'Fire_Extinguisher_Report_' + new Date().toISOString().split('T')[0]}.doc`;
+  a.download = `${batch ? batch.filename : 'Fire_Extinguisher_Report_' + new Date().toISOString().split('T')[0]}.doc`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+async function downloadFireExt() { await downloadReport(currentBatch, feFilteredRows); }
+async function downloadBatch(id) {
+  const batch = allFeBatches.find(b=>b.id===id); if (!batch) return;
+  UI.loading(true, 'Preparing download...');
+  try {
+    const rows = await DB.withPath('preventive/db/fe_reports', () => DB.read(batch.filename, true));
+    await downloadReport(batch, rows);
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
 }
 
 loadAll();
