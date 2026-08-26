@@ -65,6 +65,15 @@
       </div>
     </div>
 
+    <!-- Fire Extinguisher: Dashboard -- quick aggregate stats, same
+         cards-only pattern as the Project Management Dashboard. -->
+    <div class="tab-pane" id="tab-fe-dashboard">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div class="page-header"><h1>🏠 Fire Extinguisher Dashboard</h1></div>
+      </div>
+      <div class="stats-grid" id="fe-dashboard-stats"></div>
+    </div>
+
     <!-- Fire Extinguisher: Registry Units -- the physical fire
          extinguishers per client, set up once (serial/floor/location/
          type/capacity) so an inspection visit never needs to re-type
@@ -342,8 +351,9 @@ const PREVENTIVE_TYPES = [
 const TABS = [
   { id:'tab-clients',       icon:'🏢', label:'Clients' },
   { id:'tab-fire-ext',      icon:'🧯', label:'Fire Extinguisher', children: [
-      { id:'tab-fe-units', icon:'📋', label:'Registry Units' },
-      { id:'tab-fe-log',   icon:'📝', label:'Inspection Log' }
+      { id:'tab-fe-dashboard', icon:'🏠', label:'Dashboard' },
+      { id:'tab-fe-units',     icon:'📋', label:'Registry Units' },
+      { id:'tab-fe-log',       icon:'📝', label:'Inspection Log' }
   ]},
   { id:'tab-seismic',       icon:'📐', label:'Seismic' },
   { id:'tab-firepump',      icon:'🚒', label:'Fire Pump' },
@@ -357,6 +367,7 @@ function switchTab(tabId, el) {
   document.querySelectorAll('#sidebar-nav .nav-item[data-tab]').forEach(n=>n.classList.remove('active'));
   if (el) el.classList.add('active');
   if (el && el.dataset.group) expandNavGroup(el.dataset.group);
+  if (tabId==='tab-fe-dashboard') loadFeDashboard();
   if (tabId==='tab-fe-units') loadFireExt();
   if (tabId==='tab-fe-log') { backToBatchList(); loadFeBatches(); }
   sessionStorage.setItem('preventive_last_tab', tabId);
@@ -549,6 +560,26 @@ function feStatusBadge(s) {
   return `<span class="badge ${map[s]||'badge-gray'}">${s||''}</span>`;
 }
 function unitById(id) { return allFireExtUnits.find(u=>u.id===id); }
+
+// ---- Dashboard ----
+async function loadFeDashboard() {
+  UI.loading(true, 'Loading dashboard...');
+  try {
+    [allFireExtUnits, allFeBatches] = await Promise.all([
+      DB.read('fireExtinguisherUnitsDB', true),
+      DB.read('fireExtinguisherBatchesDB', true)
+    ]);
+    renderFeDashboard();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+function renderFeDashboard() {
+  const clientsWithUnits = new Set(allFireExtUnits.map(u=>u.client_id)).size;
+  document.getElementById('fe-dashboard-stats').innerHTML = `
+    <div class="stat-card blue"><div class="stat-label">Registered Units</div><div class="stat-value">${allFireExtUnits.length}</div></div>
+    <div class="stat-card yellow"><div class="stat-label">Clients with Units</div><div class="stat-value">${clientsWithUnits}</div></div>
+    <div class="stat-card green"><div class="stat-label">Generated Inspections</div><div class="stat-value">${allFeBatches.length}</div></div>`;
+}
 
 async function loadFireExt() {
   UI.loading(true, 'Loading registered units...');
