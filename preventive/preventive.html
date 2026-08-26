@@ -46,6 +46,9 @@
     <!-- Clients -->
     <div class="tab-pane active" id="tab-clients">
       <div class="page-header-row" style="margin-bottom:16px">
+        <div class="page-header"><h1>🏢 Clients</h1></div>
+      </div>
+      <div class="page-header-row" style="margin-bottom:16px">
         <div class="search-bar" style="max-width:280px">
           <span>🔍</span>
           <input type="text" id="client-search" placeholder="Search client..." oninput="filterClients()">
@@ -64,6 +67,36 @@
 
     <!-- Fire Extinguisher -->
     <div class="tab-pane" id="tab-fire-ext">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div class="page-header"><h1>🧯 Fire Extinguisher</h1></div>
+      </div>
+
+      <!-- Units: the physical fire extinguishers per client, set up once
+           (serial/floor/location/type/capacity) so an inspection visit
+           never needs to re-type them -- just pick the unit and log
+           what was found. -->
+      <div class="page-header-row" style="margin-bottom:12px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Client</label>
+            <select id="unit-filter-client" style="width:240px" onchange="filterUnits()"><option value="">All Clients</option></select>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="height:37px;padding:0 20px" onclick="openAddUnit()" data-perm="create">+ Add Unit</button>
+      </div>
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-header"><span class="card-title">Registered Units</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Client</th><th>Serial #</th><th>Floor</th><th>Location</th><th>Type</th><th>Capacity (lb)</th><th>Actions</th></tr></thead>
+            <tbody id="unit-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Inspection Log: one row per preventive visit, referencing an
+           existing unit above -- this is the record that actually
+           repeats on a schedule (monthly/quarterly/semi-annual). -->
       <div class="card" style="margin-bottom:16px">
         <div class="form-row" style="grid-template-columns:repeat(6,1fr);gap:12px">
           <div class="form-group" style="margin-bottom:0">
@@ -114,9 +147,10 @@
           <button class="btn btn-ghost btn-sm" onclick="printFireExt()">🖨 Print</button>
           <button class="btn btn-ghost btn-sm" onclick="downloadFireExt()">⬇ Download</button>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="openAddFireExt()" data-perm="create">+ Add Fire Extinguisher</button>
+        <button class="btn btn-primary btn-sm" onclick="openAddFireExt()" data-perm="create">+ Log Inspection</button>
       </div>
       <div class="card">
+        <div class="card-header"><span class="card-title">Inspection Log</span></div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>Serial #</th><th>Date Check</th><th>Floor</th><th>Location</th><th>Type</th><th>Capacity (lb)</th><th>Status</th><th>Problem Desc</th><th>Expiration</th><th>Actions</th></tr></thead>
@@ -129,6 +163,7 @@
 
     <!-- Placeholder preventive types -- details to be specified later, one at a time -->
     <div class="tab-pane" id="tab-seismic">
+      <div class="page-header-row" style="margin-bottom:16px"><div class="page-header"><h1>📐 Seismic</h1></div></div>
       <div class="card"><div class="empty-state">
         <div class="icon">📐</div>
         <h3>Seismic Preventive Maintenance</h3>
@@ -136,6 +171,7 @@
       </div></div>
     </div>
     <div class="tab-pane" id="tab-firepump">
+      <div class="page-header-row" style="margin-bottom:16px"><div class="page-header"><h1>🚒 Fire Pump</h1></div></div>
       <div class="card"><div class="empty-state">
         <div class="icon">🚒</div>
         <h3>Fire Pump Preventive Maintenance</h3>
@@ -143,6 +179,7 @@
       </div></div>
     </div>
     <div class="tab-pane" id="tab-transferpump">
+      <div class="page-header-row" style="margin-bottom:16px"><div class="page-header"><h1>🔄 Transfer Pump</h1></div></div>
       <div class="card"><div class="empty-state">
         <div class="icon">🔄</div>
         <h3>Transfer Pump Preventive Maintenance</h3>
@@ -150,6 +187,7 @@
       </div></div>
     </div>
     <div class="tab-pane" id="tab-firehose">
+      <div class="page-header-row" style="margin-bottom:16px"><div class="page-header"><h1>🚿 Fire Hose &amp; Cabinet</h1></div></div>
       <div class="card"><div class="empty-state">
         <div class="icon">🚿</div>
         <h3>Fire Hose &amp; Cabinet Preventive Maintenance</h3>
@@ -195,28 +233,30 @@
   </div>
 </div>
 
-<!-- Add/Edit Fire Extinguisher Modal -->
-<div class="modal-backdrop" id="fe-modal">
+<!-- Add/Edit Unit Modal -- the physical fire extinguisher itself
+     (serial/floor/location/type/capacity), set up once and reused by
+     every inspection log entry logged against it. -->
+<div class="modal-backdrop" id="unit-modal">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title" id="fe-modal-title">+ Add Fire Extinguisher</span>
-      <button class="modal-close" onclick="UI.closeModal('fe-modal')">✕</button>
+      <span class="modal-title" id="unit-modal-title">+ Add Unit</span>
+      <button class="modal-close" onclick="UI.closeModal('unit-modal')">✕</button>
     </div>
-    <div class="form-group"><label>Client *</label><select id="fef-client"></select></div>
+    <div class="form-group"><label>Client *</label><select id="uf-client"></select></div>
     <div class="form-row">
-      <div class="form-group"><label>Floor *</label><input type="text" id="fef-floor" placeholder="e.g. 5"></div>
-      <div class="form-group"><label>Location</label><input type="text" id="fef-location" placeholder="e.g. Near Stairwell A"></div>
+      <div class="form-group"><label>Floor *</label><input type="text" id="uf-floor" placeholder="e.g. 5"></div>
+      <div class="form-group"><label>Location</label><input type="text" id="uf-location" placeholder="e.g. Near Stairwell A"></div>
     </div>
     <div class="form-group">
       <label>Serial # *</label>
       <div style="display:flex;gap:8px">
-        <input type="text" id="fef-serial" placeholder="e.g. 5F-001" style="flex:1">
+        <input type="text" id="uf-serial" placeholder="e.g. 5F-001" style="flex:1">
         <button type="button" class="btn btn-ghost btn-sm" onclick="suggestSerial()">🔢 Suggest</button>
       </div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Type</label>
-        <select id="fef-type">
+        <select id="uf-type">
           <option value="AFFF">AFFF</option>
           <option value="CO2">CO2</option>
           <option value="Dry Chem">Dry Chem</option>
@@ -226,8 +266,26 @@
           <option value="none">None</option>
         </select>
       </div>
-      <div class="form-group"><label>Capacity (lb)</label><input type="number" id="fef-capacity" step="0.1"></div>
+      <div class="form-group"><label>Capacity (lb)</label><input type="number" id="uf-capacity" step="0.1"></div>
     </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('unit-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUnit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Inspection Modal -- one row per preventive visit, always
+     against an existing unit above (no re-typing its serial/floor/
+     location/type/capacity every time). -->
+<div class="modal-backdrop" id="fe-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="fe-modal-title">+ Log Inspection</span>
+      <button class="modal-close" onclick="UI.closeModal('fe-modal')">✕</button>
+    </div>
+    <div class="form-group"><label>Client *</label><select id="fef-client" onchange="populateUnitSelect(this.value,'')"></select></div>
+    <div class="form-group"><label>Unit *</label><select id="fef-unit"></select></div>
     <div class="form-row">
       <div class="form-group"><label>Date Checked *</label><input type="date" id="fef-date"></div>
       <div class="form-group"><label>Expiration Date</label><input type="date" id="fef-expiration"></div>
@@ -292,8 +350,8 @@ UI.buildSidebar(user, 'preventive', TABS);
 Auth.applyUIPermissions(user, 'preventive');
 UserMgmt.init(user, 'preventive');
 
-let allClients=[], allClientPreventives=[], allFireExt=[], feFilteredRows=[];
-let editClientId=null, managingClientId=null, editFireExtId=null;
+let allClients=[], allClientPreventives=[], allFireExtUnits=[], allFireExtChecks=[], feFilteredRows=[];
+let editClientId=null, managingClientId=null, editUnitId=null, editFireExtId=null;
 
 function clientName(id) { return allClients.find(c=>c.id===id)?.client_name || id; }
 
@@ -301,8 +359,12 @@ function populateClientSelects() {
   const opts = allClients.map(c => `<option value="${c.id}">${c.client_name}</option>`).join('');
   const filterSel = document.getElementById('fe-filter-client');
   if (filterSel) { const cur = filterSel.value; filterSel.innerHTML = '<option value="">All Clients</option>' + opts; filterSel.value = cur; }
+  const unitFilterSel = document.getElementById('unit-filter-client');
+  if (unitFilterSel) { const cur = unitFilterSel.value; unitFilterSel.innerHTML = '<option value="">All Clients</option>' + opts; unitFilterSel.value = cur; }
   const modalSel = document.getElementById('fef-client');
   if (modalSel) modalSel.innerHTML = opts || '<option value="">No clients yet</option>';
+  const unitModalSel = document.getElementById('uf-client');
+  if (unitModalSel) unitModalSel.innerHTML = opts || '<option value="">No clients yet</option>';
 }
 
 // ---- Clients ----
@@ -329,7 +391,8 @@ function renderClients(rows) {
     const types = allClientPreventives.filter(cp=>cp.client_id===c.id);
     const badges = types.map(t => {
       const def = PREVENTIVE_TYPES.find(p=>p.key===t.preventive_type);
-      return `<span class="badge badge-info" style="margin:2px 2px 2px 0">${def?def.icon:''} ${def?def.label:t.preventive_type}</span>`;
+      const due = t.next_due_date ? ` · Due ${UI.dateStr(t.next_due_date)}` : '';
+      return `<span class="badge badge-info" style="margin:2px 2px 2px 0">${def?def.icon:''} ${def?def.label:t.preventive_type}${due}</span>`;
     }).join('') || '<span style="color:var(--text3);font-size:12px">None assigned</span>';
     return `<tr>
       <td class="mono">${c.id}</td>
@@ -414,6 +477,8 @@ function renderTypesModalBody(assigned) {
           </select>
         </div>
         <div class="form-group" style="margin-bottom:0"><label>Floor Scope</label><input type="text" id="mt-floors-${pt.key}" value="${row?.floors||''}" placeholder="e.g. 1-27, or 5,7,9"></div>
+        <div class="form-group" style="margin-bottom:0"><label>Last Preventive Date</label><input type="date" id="mt-last-${pt.key}" value="${row?.last_preventive_date||''}"></div>
+        <div class="form-group" style="margin-bottom:0"><label>Next Due Date</label><input type="date" id="mt-next-${pt.key}" value="${row?.next_due_date||''}"></div>
       </div>
     </div>`;
   }).join('');
@@ -444,7 +509,9 @@ async function saveTypes() {
           id, client_id: managingClientId, preventive_type: pt.key,
           frequency: document.getElementById('mt-freq-'+pt.key).value,
           floors: document.getElementById('mt-floors-'+pt.key).value.trim(),
-          notes: existing?.notes || ''
+          notes: existing?.notes || '',
+          last_preventive_date: document.getElementById('mt-last-'+pt.key).value,
+          next_due_date: document.getElementById('mt-next-'+pt.key).value
         });
       }
     });
@@ -456,19 +523,141 @@ async function saveTypes() {
   UI.loading(false);
 }
 
-// ---- Fire Extinguisher ----
+// ---- Fire Extinguisher: Units (the physical asset, set up once per
+// client) + Inspection Log (one row per preventive visit, referencing
+// a unit) -- kept as two separate DBs so logging a check never needs
+// to re-enter the unit's serial/floor/location/type/capacity. ----
 function feStatusBadge(s) {
   const map = { good:'badge-success', 'low pressure':'badge-warning', 'not check':'badge-gray', pullout:'badge-warning', missing:'badge-danger', defective:'badge-danger' };
   return `<span class="badge ${map[s]||'badge-gray'}">${s||''}</span>`;
 }
+function unitById(id) { return allFireExtUnits.find(u=>u.id===id); }
 
 async function loadFireExt() {
   UI.loading(true, 'Loading fire extinguisher records...');
   try {
-    allFireExt = await DB.read('fireExtinguisherDB', true);
+    [allFireExtUnits, allFireExtChecks] = await Promise.all([
+      DB.read('fireExtinguisherUnitsDB', true),
+      DB.read('fireExtinguisherChecksDB', true)
+    ]);
+    filterUnits();
     filterFireExt();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
+}
+
+// ---- Units ----
+function filterUnits() {
+  const client = document.getElementById('unit-filter-client').value;
+  let rows = allFireExtUnits;
+  if (client) rows = rows.filter(u => u.client_id === client);
+  rows = rows.slice().sort((a,b) => (clientName(a.client_id)).localeCompare(clientName(b.client_id)) || (a.floor||'').localeCompare(b.floor||''));
+  renderUnits(rows);
+}
+function renderUnits(rows) {
+  document.getElementById('unit-tbody').innerHTML = rows.map(u => `<tr>
+    <td>${clientName(u.client_id)}</td>
+    <td class="mono">${u.serial_no}</td>
+    <td>${u.floor}</td>
+    <td>${u.location||'—'}</td>
+    <td>${u.type||'—'}</td>
+    <td>${u.capacity_lb||'—'}</td>
+    <td>
+      <button class="btn btn-ghost btn-sm" onclick="editUnit('${u.id}')" data-perm="edit" title="Edit">✏️</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteUnit('${u.id}')" data-perm="delete" title="Delete">🗑</button>
+    </td>
+  </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text3)">No units registered yet</td></tr>';
+  Auth.applyUIPermissions(user, 'preventive');
+}
+function openAddUnit() {
+  if (!allClients.length) { UI.toast('Add a client first','warning'); return; }
+  editUnitId = null;
+  document.getElementById('uf-client').value = document.getElementById('unit-filter-client').value || allClients[0].id;
+  document.getElementById('uf-floor').value = '';
+  document.getElementById('uf-location').value = '';
+  document.getElementById('uf-serial').value = '';
+  document.getElementById('uf-type').value = 'none';
+  document.getElementById('uf-capacity').value = '';
+  document.getElementById('unit-modal-title').textContent = '+ Add Unit';
+  UI.openModal('unit-modal');
+}
+function editUnit(id) {
+  const u = unitById(id); if (!u) return;
+  editUnitId = id;
+  document.getElementById('uf-client').value = u.client_id;
+  document.getElementById('uf-floor').value = u.floor;
+  document.getElementById('uf-location').value = u.location || '';
+  document.getElementById('uf-serial').value = u.serial_no;
+  document.getElementById('uf-type').value = u.type || 'none';
+  document.getElementById('uf-capacity').value = u.capacity_lb || '';
+  document.getElementById('unit-modal-title').textContent = '✏️ Edit Unit';
+  UI.openModal('unit-modal');
+}
+async function saveUnit() {
+  const client = document.getElementById('uf-client').value;
+  const floor = document.getElementById('uf-floor').value.trim();
+  const serial = document.getElementById('uf-serial').value.trim();
+  if (!client || !floor || !serial) { UI.toast('Fill in the required fields','warning'); return; }
+  const data = {
+    client_id: client, floor, serial_no: serial,
+    location: document.getElementById('uf-location').value.trim(),
+    type: document.getElementById('uf-type').value,
+    capacity_lb: document.getElementById('uf-capacity').value
+  };
+  UI.loading(true,'Saving...');
+  try {
+    if (editUnitId) {
+      await DB.update('fireExtinguisherUnitsDB', r=>r.id===editUnitId, data);
+      UI.toast('Updated ✅','success');
+    } else {
+      const all = await DB.read('fireExtinguisherUnitsDB', true);
+      await DB.insert('fireExtinguisherUnitsDB', { id: DB.nextId(all,'id','UNIT'), ...data, created_at: new Date().toISOString().split('T')[0] });
+      UI.toast('Added ✅','success');
+    }
+    UI.closeModal('unit-modal');
+    await loadFireExt();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+function deleteUnit(id) {
+  UI.confirm('Delete this unit? Its inspection history will stay on record but will no longer show serial/floor/location details.', async () => {
+    UI.loading(true);
+    try { await DB.remove('fireExtinguisherUnitsDB', r=>r.id===id); UI.toast('Deleted','success'); await loadFireExt(); }
+    catch(e) { UI.toast('Error: '+e.message,'error'); }
+    UI.loading(false);
+  });
+}
+
+// Proposes the next "<floor>F-<seq>" serial for the selected client+floor,
+// matching the numbering convention already used on real printed tags
+// (e.g. 5F-001, 5F-002 on the 5th floor; 7F-001 on the 7th floor) --
+// the field stays editable so it can still be corrected to match a tag.
+function suggestSerial() {
+  const client = document.getElementById('uf-client').value;
+  const floor = document.getElementById('uf-floor').value.trim();
+  if (!client || !floor) { UI.toast('Select the Client and Floor first','warning'); return; }
+  const existing = allFireExtUnits.filter(u => u.client_id === client && u.floor === floor);
+  const esc = floor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp('^' + esc + 'F-(\\d+)$', 'i');
+  const nums = existing.map(u => { const m = (u.serial_no||'').match(re); return m ? parseInt(m[1],10) : 0; });
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  document.getElementById('uf-serial').value = `${floor}F-${String(next).padStart(3,'0')}`;
+}
+
+// ---- Inspection Log ----
+function populateUnitSelect(clientId, selectedUnitId) {
+  const sel = document.getElementById('fef-unit');
+  const units = allFireExtUnits.filter(u => u.client_id === clientId);
+  sel.innerHTML = units.map(u => `<option value="${u.id}">${u.serial_no} — Floor ${u.floor}${u.location?' ('+u.location+')':''}</option>`).join('')
+    || '<option value="">No units registered for this client</option>';
+  if (selectedUnitId && units.some(u=>u.id===selectedUnitId)) sel.value = selectedUnitId;
+}
+
+function joinedChecks() {
+  return allFireExtChecks.map(c => {
+    const u = unitById(c.unit_id) || {};
+    return { ...c, serial_no: u.serial_no||'—', floor: u.floor||'—', location: u.location, type: u.type, capacity_lb: u.capacity_lb, client_id: u.client_id };
+  });
 }
 
 function filterFireExt() {
@@ -478,14 +667,14 @@ function filterFireExt() {
   const type = document.getElementById('fe-filter-type').value;
   const from = document.getElementById('fe-filter-from').value;
   const to = document.getElementById('fe-filter-to').value;
-  let rows = allFireExt;
+  let rows = joinedChecks();
   if (client) rows = rows.filter(r => r.client_id === client);
   if (floor) rows = rows.filter(r => r.floor === floor);
   if (status) rows = rows.filter(r => r.status === status);
   if (type) rows = rows.filter(r => r.type === type);
   if (from) rows = rows.filter(r => r.date_checked >= from);
   if (to) rows = rows.filter(r => r.date_checked <= to);
-  rows = rows.slice().sort((a,b) => (b.date_checked||'').localeCompare(a.date_checked||''));
+  rows = rows.sort((a,b) => (b.date_checked||'').localeCompare(a.date_checked||''));
   renderFireExt(rows, 1);
 }
 
@@ -512,60 +701,50 @@ function renderFireExt(rows, page) {
 }
 
 function openAddFireExt() {
-  if (!allClients.length) { UI.toast('Add a client first','warning'); return; }
+  if (!allFireExtUnits.length) { UI.toast('Register a unit first','warning'); return; }
   editFireExtId = null;
-  document.getElementById('fef-client').value = document.getElementById('fe-filter-client').value || allClients[0].id;
-  document.getElementById('fef-serial').value = '';
+  const client = document.getElementById('fe-filter-client').value || allFireExtUnits[0].client_id;
+  document.getElementById('fef-client').value = client;
+  populateUnitSelect(client, '');
   document.getElementById('fef-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('fef-floor').value = document.getElementById('fe-filter-floor').value || '';
-  document.getElementById('fef-location').value = '';
-  document.getElementById('fef-type').value = 'none';
-  document.getElementById('fef-capacity').value = '';
   document.getElementById('fef-status').value = 'good';
   document.getElementById('fef-problem').value = '';
   document.getElementById('fef-expiration').value = '';
-  document.getElementById('fe-modal-title').textContent = '+ Add Fire Extinguisher';
+  document.getElementById('fe-modal-title').textContent = '+ Log Inspection';
   UI.openModal('fe-modal');
 }
 function editFireExt(id) {
-  const r = allFireExt.find(x=>x.id===id); if (!r) return;
+  const c = allFireExtChecks.find(x=>x.id===id); if (!c) return;
+  const u = unitById(c.unit_id);
   editFireExtId = id;
-  document.getElementById('fef-client').value = r.client_id;
-  document.getElementById('fef-serial').value = r.serial_no;
-  document.getElementById('fef-date').value = r.date_checked;
-  document.getElementById('fef-floor').value = r.floor;
-  document.getElementById('fef-location').value = r.location || '';
-  document.getElementById('fef-type').value = r.type || 'none';
-  document.getElementById('fef-capacity').value = r.capacity_lb || '';
-  document.getElementById('fef-status').value = r.status || 'good';
-  document.getElementById('fef-problem').value = r.problem_desc || '';
-  document.getElementById('fef-expiration').value = r.expiration_date || '';
-  document.getElementById('fe-modal-title').textContent = '✏️ Edit Fire Extinguisher';
+  document.getElementById('fef-client').value = u ? u.client_id : '';
+  populateUnitSelect(u ? u.client_id : '', c.unit_id);
+  document.getElementById('fef-date').value = c.date_checked;
+  document.getElementById('fef-status').value = c.status || 'good';
+  document.getElementById('fef-problem').value = c.problem_desc || '';
+  document.getElementById('fef-expiration').value = c.expiration_date || '';
+  document.getElementById('fe-modal-title').textContent = '✏️ Edit Inspection';
   UI.openModal('fe-modal');
 }
 async function saveFireExt() {
-  const client = document.getElementById('fef-client').value;
-  const serial = document.getElementById('fef-serial').value.trim();
+  const unitId = document.getElementById('fef-unit').value;
   const dateChecked = document.getElementById('fef-date').value;
-  const floor = document.getElementById('fef-floor').value.trim();
-  if (!client || !serial || !dateChecked || !floor) { UI.toast('Fill in the required fields','warning'); return; }
+  if (!unitId || !dateChecked) { UI.toast('Fill in the required fields','warning'); return; }
   const data = {
-    client_id: client, serial_no: serial, date_checked: dateChecked, floor,
-    location: document.getElementById('fef-location').value.trim(),
-    type: document.getElementById('fef-type').value,
-    capacity_lb: document.getElementById('fef-capacity').value,
+    unit_id: unitId, date_checked: dateChecked,
     status: document.getElementById('fef-status').value,
     problem_desc: document.getElementById('fef-problem').value.trim(),
-    expiration_date: document.getElementById('fef-expiration').value
+    expiration_date: document.getElementById('fef-expiration').value,
+    checked_by: user.username
   };
   UI.loading(true,'Saving...');
   try {
     if (editFireExtId) {
-      await DB.update('fireExtinguisherDB', r=>r.id===editFireExtId, data);
+      await DB.update('fireExtinguisherChecksDB', r=>r.id===editFireExtId, data);
       UI.toast('Updated ✅','success');
     } else {
-      const all = await DB.read('fireExtinguisherDB', true);
-      await DB.insert('fireExtinguisherDB', { id: DB.nextId(all,'id','FE'), ...data });
+      const all = await DB.read('fireExtinguisherChecksDB', true);
+      await DB.insert('fireExtinguisherChecksDB', { id: DB.nextId(all,'id','CHK'), ...data });
       UI.toast('Added ✅','success');
     }
     UI.closeModal('fe-modal');
@@ -574,28 +753,12 @@ async function saveFireExt() {
   UI.loading(false);
 }
 function deleteFireExt(id) {
-  UI.confirm('Delete this fire extinguisher record?', async () => {
+  UI.confirm('Delete this inspection record?', async () => {
     UI.loading(true);
-    try { await DB.remove('fireExtinguisherDB', r=>r.id===id); UI.toast('Deleted','success'); await loadFireExt(); }
+    try { await DB.remove('fireExtinguisherChecksDB', r=>r.id===id); UI.toast('Deleted','success'); await loadFireExt(); }
     catch(e) { UI.toast('Error: '+e.message,'error'); }
     UI.loading(false);
   });
-}
-
-// Proposes the next "<floor>F-<seq>" serial for the selected client+floor,
-// matching the numbering convention already used on real printed tags
-// (e.g. 5F-001, 5F-002 on the 5th floor; 7F-001 on the 7th floor) --
-// the field stays editable so it can still be corrected to match a tag.
-function suggestSerial() {
-  const client = document.getElementById('fef-client').value;
-  const floor = document.getElementById('fef-floor').value.trim();
-  if (!client || !floor) { UI.toast('Select the Client and Floor first','warning'); return; }
-  const existing = allFireExt.filter(r => r.client_id === client && r.floor === floor);
-  const esc = floor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp('^' + esc + 'F-(\\d+)$', 'i');
-  const nums = existing.map(r => { const m = (r.serial_no||'').match(re); return m ? parseInt(m[1],10) : 0; });
-  const next = (nums.length ? Math.max(...nums) : 0) + 1;
-  document.getElementById('fef-serial').value = `${floor}F-${String(next).padStart(3,'0')}`;
 }
 
 async function buildFireExtReportHtml() {

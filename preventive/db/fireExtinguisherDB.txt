@@ -1,2 +1,0 @@
-id|client_id|serial_no|date_checked|floor|location|type|capacity_lb|status|problem_desc|expiration_date
-FE001|CLI001|5F-001|2026-08-08|5|Hallway|AFFF|10|good|Jdjd idkdkd kdjd|2028-08-08
