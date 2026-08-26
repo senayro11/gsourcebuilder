@@ -538,6 +538,16 @@ input::placeholder { color: var(--text3); }
      Logout button off the visible row. */
   .user-chip { padding: 6px; gap: 0; }
   .user-chip .user-info { display: none; }
+
+  /* Pins the Serial # column in place while the rest of a wide table
+     scrolls horizontally underneath it -- needs its own background so
+     the scrolling cells don't show through as they pass behind it. */
+  .sticky-col {
+    position: sticky; left: 0; z-index: 1;
+    background: var(--surface);
+  }
+  th.sticky-col { background: var(--surface2); z-index: 2; }
+  tr:hover td.sticky-col { background: var(--surface); }
 }
 
 /* ---- Scrollbar ---- */

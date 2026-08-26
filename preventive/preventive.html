@@ -155,7 +155,7 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Serial #</th><th>Date Check</th><th>Floor</th><th>Location</th><th>Type</th><th>Capacity (lb)</th><th>Status</th><th>Problem Desc</th><th>Expiration</th><th>Actions</th></tr></thead>
+              <thead><tr><th class="sticky-col">Serial #</th><th>Date Check</th><th>Floor</th><th>Location</th><th>Type</th><th>Capacity (lb)</th><th>Status</th><th>Problem Desc</th><th>Expiration</th><th>Actions</th></tr></thead>
               <tbody id="fe-tbody"></tbody>
             </table>
           </div>
@@ -824,7 +824,7 @@ function renderBatchDetail(rows) {
   rows = rows || currentBatchRows;
   feFilteredRows = rows;
   document.getElementById('fe-tbody').innerHTML = rows.map(r => `<tr>
-    <td class="mono">${r.serial_no}</td>
+    <td class="mono sticky-col">${r.serial_no}</td>
     <td>${UI.dateStr(r.date_checked)}</td>
     <td>${r.floor}</td>
     <td>${r.location||'—'}</td>
