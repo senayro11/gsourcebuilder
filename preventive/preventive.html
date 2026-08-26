@@ -735,7 +735,7 @@ function renderBatchList(rows) {
     <td>${UI.dateStr(b.date_to)}</td>
     <td>
       <button class="btn btn-ghost btn-sm" onclick="viewBatch('${b.id}')" title="View">👁 View</button>
-      <button class="btn btn-ghost btn-sm" onclick="downloadBatch('${b.id}')" title="Download">⬇ Download</button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadBatch('${b.id}')" title="Download">⬇</button>
       <button class="btn btn-danger btn-sm" onclick="deleteBatch('${b.id}')" data-perm="delete" title="Delete">🗑</button>
     </td>
   </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text3)">No generated inspections yet — use "Generate Inspection" in Registry Units</td></tr>';
