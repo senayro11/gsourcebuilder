@@ -768,8 +768,8 @@ function renderBatchList(rows) {
     <td>${clientName(b.client_id)}</td>
     <td>${UI.dateStr(b.date_from)}</td>
     <td>${UI.dateStr(b.date_to)}</td>
-    <td>
-      <button class="btn btn-ghost btn-sm" onclick="viewBatch('${b.id}')" title="View">👁 View</button>
+    <td style="white-space:nowrap">
+      <button class="btn btn-ghost btn-sm" onclick="viewBatch('${b.id}')" title="View">👁</button>
       <button class="btn btn-ghost btn-sm" onclick="downloadBatch('${b.id}')" title="Download">⬇</button>
       <button class="btn btn-danger btn-sm" onclick="deleteBatch('${b.id}')" data-perm="delete" title="Delete">🗑</button>
     </td>
