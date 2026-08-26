@@ -126,7 +126,13 @@
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><span class="card-title">Generated Inspections</span></div>
+          <div class="card-header">
+            <span class="card-title">Generated Inspections</span>
+            <div class="search-bar" style="max-width:260px">
+              <span>🔍</span>
+              <input type="text" id="batch-list-search" placeholder="Search client..." oninput="filterBatchList()">
+            </div>
+          </div>
           <div class="table-wrap">
             <table>
               <thead><tr><th>Client</th><th>Date From</th><th>Date To</th><th>Actions</th></tr></thead>
@@ -758,8 +764,10 @@ async function loadFeBatches() {
 }
 function filterBatchList() {
   const client = document.getElementById('batch-filter-client').value;
+  const q = (document.getElementById('batch-list-search').value || '').trim().toLowerCase();
   let rows = allFeBatches;
   if (client) rows = rows.filter(b => b.client_id === client);
+  if (q) rows = rows.filter(b => clientName(b.client_id).toLowerCase().includes(q));
   rows = rows.slice().sort((a,b) => (b.created_at||'').localeCompare(a.created_at||'') || (b.date_from||'').localeCompare(a.date_from||''));
   renderBatchList(rows);
 }
