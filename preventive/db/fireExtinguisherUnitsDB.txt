@@ -1,2 +1,3 @@
 id|client_id|serial_no|floor|location|type|capacity_lb|created_at
 UNIT002|CLI001|B2-001|B2|Y2 Service Area|HFC-236fa|10|2026-08-26
+UNIT003|CLI001|B2-002|B2|Y2 Chiller|CO2|100|2026-08-26
