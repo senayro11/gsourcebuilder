@@ -636,9 +636,29 @@ async function saveTypes() {
 // client) + Inspection Log (one row per preventive visit, referencing
 // a unit) -- kept as two separate DBs so logging a check never needs
 // to re-enter the unit's serial/floor/location/type/capacity. ----
-function feStatusBadge(s) {
-  const map = { good:'badge-success', 'low pressure':'badge-warning', 'not check':'badge-gray', pullout:'badge-warning', missing:'badge-danger', defective:'badge-danger' };
-  return `<span class="badge ${map[s]||'badge-gray'}">${s||''}</span>`;
+const FE_STATUS_OPTIONS = [
+  ['good','Good'], ['low pressure','Low Pressure'], ['not check','Not Check'],
+  ['pullout','Pullout'], ['missing','Missing'], ['defective','Defective']
+];
+// Inline status editor for the batch detail table -- lets the inspector
+// update just the status without opening the full Edit modal.
+function feStatusSelect(unitId, status) {
+  const colorMap = { good:'success', 'low pressure':'warning', 'not check':'text2', pullout:'warning', missing:'danger', defective:'danger' };
+  const color = colorMap[status] || 'text2';
+  return `<select class="fe-status-select" style="color:var(--${color})" data-perm="edit" onchange="updateFeStatus('${unitId}', this.value)">
+    ${FE_STATUS_OPTIONS.map(([v,l]) => `<option value="${v}"${status===v?' selected':''}>${l}</option>`).join('')}
+  </select>`;
+}
+async function updateFeStatus(unitId, newStatus) {
+  if (!currentBatch) return;
+  UI.loading(true, 'Updating status...');
+  try {
+    await DB.withPath('preventive/db/fe_reports', () => DB.update(currentBatch.filename, r=>r.unit_id===unitId, { status: newStatus }));
+    currentBatchRows = await DB.withPath('preventive/db/fe_reports', () => DB.read(currentBatch.filename, true));
+    UI.toast('Status updated ✅','success');
+    filterBatchDetail();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
 }
 function unitById(id) { return allFireExtUnits.find(u=>u.id===id); }
 
@@ -931,7 +951,7 @@ function renderBatchDetail(rows) {
     <td>${r.location||'—'}</td>
     <td>${r.type||'—'}</td>
     <td>${r.capacity_lb||'—'}</td>
-    <td>${feStatusBadge(r.status)}</td>
+    <td>${feStatusSelect(r.unit_id, r.status)}</td>
     <td>${r.problem_desc||'—'}</td>
     <td>${UI.dateStr(r.expiration_date)}</td>
     <td>

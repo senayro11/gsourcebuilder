@@ -422,6 +422,16 @@ input::placeholder { color: var(--text3); }
 .badge-purple  { background: rgba(99,102,241,0.15); color: var(--accent2); }
 .badge-gray    { background: rgba(100,116,139,0.15);color: var(--text2); }
 
+/* Inline status dropdown in the batch detail table -- a badge-shaped
+   <select> so the status reads the same as before but can be changed
+   right in the row, not just via the Edit modal. */
+.fe-status-select {
+  width: auto; padding: 3px 8px;
+  font-size: 11px; font-weight: 600;
+  border-radius: 20px; background: var(--surface2);
+  border: 1px solid var(--border); cursor: pointer;
+}
+
 /* ---- Modal ---- */
 .modal-backdrop {
   display: none; position: fixed; inset: 0;
