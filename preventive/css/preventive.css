@@ -529,14 +529,8 @@ input::placeholder { color: var(--text3); }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 
 /* ---- Responsive ---- */
-/* The batch detail view's "+ Add" button has two copies -- one next to
-   Print/Download, one icon-only in the card header next to the search
-   box -- so it can sit in a different row on mobile without JS. */
-.add-btn-mobile { display: none; }
 @media (max-width: 768px) {
   .main-content { padding: 16px; }
-  .add-btn-desktop { display: none; }
-  .add-btn-mobile { display: inline-flex; }
   .form-row, .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
   /* Just the avatar circle in the navbar on a narrow phone -- the
