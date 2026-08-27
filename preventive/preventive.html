@@ -95,7 +95,13 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-header"><span class="card-title">Registered Units</span></div>
+        <div class="card-header">
+          <span class="card-title">Registered Units</span>
+          <div class="search-bar" style="max-width:260px">
+            <span>🔍</span>
+            <input type="text" id="unit-search" placeholder="Search serial, floor, location..." oninput="filterUnits()">
+          </div>
+        </div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>Client</th><th>Serial #</th><th>Floor</th><th>Location</th><th>Type</th><th>Capacity (lb)</th><th>Actions</th></tr></thead>
@@ -659,8 +665,17 @@ async function loadFireExt() {
 // ---- Units ----
 function filterUnits() {
   const client = document.getElementById('unit-filter-client').value;
+  const q = (document.getElementById('unit-search').value || '').trim().toLowerCase();
   let rows = allFireExtUnits;
   if (client) rows = rows.filter(u => u.client_id === client);
+  if (q) {
+    rows = rows.filter(u =>
+      (u.serial_no||'').toLowerCase().includes(q) ||
+      (u.floor||'').toLowerCase().includes(q) ||
+      (u.location||'').toLowerCase().includes(q) ||
+      (u.type||'').toLowerCase().includes(q)
+    );
+  }
   rows = rows.slice().sort((a,b) => (clientName(a.client_id)).localeCompare(clientName(b.client_id)) || (a.floor||'').localeCompare(b.floor||''));
   renderUnits(rows);
 }
