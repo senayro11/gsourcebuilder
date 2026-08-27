@@ -2,3 +2,4 @@ id|client_id|date_from|date_to|filename|created_by|created_at
 BATCH001|CLI001|2026-08-08|2026-08-08|Diamond_hotel_Philippines_FE_2026-08-08_to_2026-08-08||2026-08-08
 BATCH002|CLI001|2026-09-01|2026-09-30|Diamond_hotel_Philippines_FE_2026-09-01_to_2026-09-30|superadmin|2026-08-26
 BATCH003|CLI001|2026-08-01|2026-08-31|Diamond_hotel_Philippines_FE_2026-08-01_to_2026-08-31|superadmin|2026-08-26
+BATCH004|CLI001|2026-10-01|2026-10-31|Diamond_hotel_Philippines_FE_2026-10-01_to_2026-10-31|superadmin|2026-08-27
