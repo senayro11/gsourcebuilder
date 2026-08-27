@@ -136,7 +136,7 @@
             <span class="card-title">Generated Inspections</span>
             <div class="search-bar" style="max-width:260px">
               <span>🔍</span>
-              <input type="text" id="batch-list-search" placeholder="Search client..." oninput="filterBatchList()">
+              <input type="text" id="batch-list-search" placeholder="Search client, date..." oninput="filterBatchList()">
             </div>
           </div>
           <div class="table-wrap">
@@ -838,7 +838,15 @@ function filterBatchList() {
   const q = (document.getElementById('batch-list-search').value || '').trim().toLowerCase();
   let rows = allFeBatches;
   if (client) rows = rows.filter(b => b.client_id === client);
-  if (q) rows = rows.filter(b => clientName(b.client_id).toLowerCase().includes(q));
+  if (q) {
+    rows = rows.filter(b =>
+      clientName(b.client_id).toLowerCase().includes(q) ||
+      (b.date_from||'').toLowerCase().includes(q) ||
+      (b.date_to||'').toLowerCase().includes(q) ||
+      UI.dateStr(b.date_from).toLowerCase().includes(q) ||
+      UI.dateStr(b.date_to).toLowerCase().includes(q)
+    );
+  }
   rows = rows.slice().sort((a,b) => (b.created_at||'').localeCompare(a.created_at||'') || (b.date_from||'').localeCompare(a.date_from||''));
   renderBatchList(rows);
 }
