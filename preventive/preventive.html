@@ -149,6 +149,7 @@
           <div style="display:flex;gap:8px">
             <button class="btn btn-ghost btn-sm" onclick="printFireExt()">🖨 Print</button>
             <button class="btn btn-ghost btn-sm" onclick="downloadFireExt()">⬇ Download</button>
+            <button class="btn btn-primary btn-sm" onclick="openAddFeItem()" data-perm="edit">+ Add</button>
           </div>
         </div>
         <div class="card">
@@ -334,6 +335,61 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="UI.closeModal('fe-modal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveFireExt()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Item to Open Inspection -- for a unit discovered mid-inspection
+     that isn't in the registry yet. Saving both registers it in
+     fireExtinguisherUnitsDB (so it stays for future inspections) and
+     appends it as a row in the currently open batch file. -->
+<div class="modal-backdrop" id="add-fe-item-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">+ Add Item to This Inspection</span>
+      <button class="modal-close" onclick="UI.closeModal('add-fe-item-modal')">✕</button>
+    </div>
+    <p style="color:var(--text2);font-size:12px;margin-bottom:14px">For a unit found during inspection that isn't registered yet. It will be added to Registry Units and to this inspection.</p>
+    <div class="form-row">
+      <div class="form-group"><label>Floor *</label><input type="text" id="fai-floor" placeholder="e.g. 5"></div>
+      <div class="form-group"><label>Location</label><input type="text" id="fai-location" placeholder="e.g. Near Stairwell A"></div>
+    </div>
+    <div class="form-group">
+      <label>Serial # *</label>
+      <input type="text" id="fai-serial" placeholder="e.g. 5F-001">
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Type</label>
+        <select id="fai-type">
+          <option value="AFFF">AFFF</option>
+          <option value="CO2">CO2</option>
+          <option value="Dry Chem">Dry Chem</option>
+          <option value="HFC-236fa">HFC-236fa</option>
+          <option value="Class K">Class K</option>
+          <option value="HCFC-123">HCFC-123</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Capacity (lb)</label><input type="number" id="fai-capacity" step="0.1"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Date Checked</label><input type="date" id="fai-date"></div>
+      <div class="form-group"><label>Expiration Date</label><input type="date" id="fai-expiration"></div>
+    </div>
+    <div class="form-group"><label>Status</label>
+      <select id="fai-status">
+        <option value="good">Good</option>
+        <option value="low pressure">Low Pressure</option>
+        <option value="not check">Not Check</option>
+        <option value="pullout">Pullout</option>
+        <option value="missing">Missing</option>
+        <option value="defective">Defective</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Problem Description</label><input type="text" id="fai-problem"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="UI.closeModal('add-fe-item-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAddFeItem()">Save</button>
     </div>
   </div>
 </div>
@@ -870,6 +926,56 @@ async function saveFireExt() {
     currentBatchRows = await DB.withPath('preventive/db/fe_reports', () => DB.read(currentBatch.filename, true));
     UI.toast('Updated ✅','success');
     UI.closeModal('fe-modal');
+    filterBatchDetail();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+
+// For a unit found mid-inspection that isn't registered yet -- saving
+// both registers it in fireExtinguisherUnitsDB (so it's there for
+// future inspections too) and appends it as a row in the batch file
+// currently open in the detail view.
+function openAddFeItem() {
+  if (!currentBatch) return;
+  document.getElementById('fai-floor').value = '';
+  document.getElementById('fai-location').value = '';
+  document.getElementById('fai-serial').value = '';
+  document.getElementById('fai-type').value = 'none';
+  document.getElementById('fai-capacity').value = '';
+  document.getElementById('fai-date').value = '';
+  document.getElementById('fai-expiration').value = '';
+  document.getElementById('fai-status').value = 'not check';
+  document.getElementById('fai-problem').value = '';
+  UI.openModal('add-fe-item-modal');
+}
+async function saveAddFeItem() {
+  if (!currentBatch) return;
+  const floor = document.getElementById('fai-floor').value.trim();
+  const serial = document.getElementById('fai-serial').value.trim();
+  if (!floor || !serial) { UI.toast('Fill in the required fields','warning'); return; }
+  const location = document.getElementById('fai-location').value.trim();
+  const type = document.getElementById('fai-type').value;
+  const capacity_lb = document.getElementById('fai-capacity').value;
+  UI.loading(true,'Adding...');
+  try {
+    const allUnits = await DB.read('fireExtinguisherUnitsDB', true);
+    const newUnit = {
+      id: DB.nextId(allUnits,'id','UNIT'), client_id: currentBatch.client_id,
+      serial_no: serial, floor, location, type, capacity_lb,
+      created_at: new Date().toISOString().split('T')[0]
+    };
+    await DB.insert('fireExtinguisherUnitsDB', newUnit);
+    allFireExtUnits = [...allUnits, newUnit];
+    await DB.withPath('preventive/db/fe_reports', () => DB.insert(currentBatch.filename, {
+      unit_id: newUnit.id, serial_no: serial, floor, location, type, capacity_lb,
+      date_checked: document.getElementById('fai-date').value,
+      status: document.getElementById('fai-status').value,
+      problem_desc: document.getElementById('fai-problem').value.trim(),
+      expiration_date: document.getElementById('fai-expiration').value
+    }));
+    currentBatchRows = await DB.withPath('preventive/db/fe_reports', () => DB.read(currentBatch.filename, true));
+    UI.toast('Added ✅','success');
+    UI.closeModal('add-fe-item-modal');
     filterBatchDetail();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
