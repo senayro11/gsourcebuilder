@@ -155,15 +155,18 @@
           <div style="display:flex;gap:8px">
             <button class="btn btn-ghost btn-sm" onclick="printFireExt()">🖨 Print</button>
             <button class="btn btn-ghost btn-sm" onclick="downloadFireExt()">⬇ Download</button>
-            <button class="btn btn-primary btn-sm" onclick="openAddFeItem()" data-perm="edit">+ Add</button>
+            <button class="btn btn-primary btn-sm add-btn-desktop" onclick="openAddFeItem()" data-perm="edit">+ Add</button>
           </div>
         </div>
         <div class="card">
           <div class="card-header">
             <span class="card-title" id="batch-detail-title">Batch</span>
-            <div class="search-bar" style="max-width:260px">
-              <span>🔍</span>
-              <input type="text" id="batch-detail-search" placeholder="Search serial, floor, location..." oninput="filterBatchDetail()">
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn btn-primary btn-sm add-btn-mobile" onclick="openAddFeItem()" data-perm="edit" title="Add">+</button>
+              <div class="search-bar" style="max-width:260px">
+                <span>🔍</span>
+                <input type="text" id="batch-detail-search" placeholder="Search serial, floor, location..." oninput="filterBatchDetail()">
+              </div>
             </div>
           </div>
           <div class="table-wrap">
@@ -441,7 +444,16 @@ function switchTab(tabId, el) {
   if (el && el.dataset.group) expandNavGroup(el.dataset.group);
   if (tabId==='tab-fe-dashboard') loadFeDashboard();
   if (tabId==='tab-fe-units') loadFireExt();
-  if (tabId==='tab-fe-log') { backToBatchList(); loadFeBatches(); }
+  if (tabId==='tab-fe-log') {
+    // Reopen whichever batch was open before a refresh, instead of always
+    // dropping back to the list -- loadFeBatches() must resolve first so
+    // allFeBatches is populated for viewBatch() to find it in.
+    loadFeBatches().then(() => {
+      const savedBatchId = sessionStorage.getItem('preventive_fe_batch_id');
+      if (savedBatchId && allFeBatches.some(b => b.id === savedBatchId)) viewBatch(savedBatchId);
+      else backToBatchList();
+    });
+  }
   sessionStorage.setItem('preventive_last_tab', tabId);
 }
 UI.buildNavbar(user, 'Preventive Maintenance');
@@ -815,6 +827,7 @@ async function saveGenerate() {
     });
     UI.toast(`Generated ✅ (${rows.length} unit${rows.length===1?'':'s'})`,'success');
     UI.closeModal('generate-modal');
+    sessionStorage.removeItem('preventive_fe_batch_id');
     switchTab('tab-fe-log', document.querySelector('.nav-item[data-tab="tab-fe-log"]'));
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
@@ -884,6 +897,7 @@ async function viewBatch(id) {
     filterBatchDetail();
     document.getElementById('batch-list-view').style.display = 'none';
     document.getElementById('batch-detail-view').style.display = '';
+    sessionStorage.setItem('preventive_fe_batch_id', id);
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
 }
@@ -891,6 +905,7 @@ function backToBatchList() {
   currentBatch = null; currentBatchRows = [];
   document.getElementById('batch-detail-view').style.display = 'none';
   document.getElementById('batch-list-view').style.display = '';
+  sessionStorage.removeItem('preventive_fe_batch_id');
 }
 function filterBatchDetail() {
   const q = (document.getElementById('batch-detail-search').value || '').trim().toLowerCase();
