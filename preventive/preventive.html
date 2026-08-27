@@ -119,7 +119,7 @@
          on its own even outside the app -- "View" drills into that
          file's rows for editing, right in this same tab. -->
     <div class="tab-pane" id="tab-fe-log">
-      <div class="page-header-row" style="margin-bottom:16px">
+      <div class="page-header-row" style="margin-bottom:16px" id="fe-log-title-row">
         <div class="page-header"><h1>📋 Inspection Log</h1></div>
       </div>
 
@@ -152,21 +152,18 @@
       <div id="batch-detail-view" style="display:none">
         <div class="page-header-row" style="margin-bottom:16px">
           <button class="btn btn-ghost btn-sm" onclick="backToBatchList()">← Back to Inspection Log</button>
-          <div style="display:flex;gap:8px">
+          <div style="display:flex;gap:8px" id="fe-add-slot-actions">
             <button class="btn btn-ghost btn-sm" onclick="printFireExt()">🖨 Print</button>
             <button class="btn btn-ghost btn-sm" onclick="downloadFireExt()">⬇ Download</button>
-            <button class="btn btn-primary btn-sm add-btn-desktop" onclick="openAddFeItem()" data-perm="edit">+ Add</button>
+            <button class="btn btn-primary btn-sm" id="fe-add-item-btn" onclick="openAddFeItem()" data-perm="edit" style="display:none">+ Add</button>
           </div>
         </div>
         <div class="card">
           <div class="card-header">
             <span class="card-title" id="batch-detail-title">Batch</span>
-            <div style="display:flex;gap:8px;align-items:center">
-              <button class="btn btn-primary btn-sm add-btn-mobile" onclick="openAddFeItem()" data-perm="edit" title="Add">+</button>
-              <div class="search-bar" style="max-width:260px">
-                <span>🔍</span>
-                <input type="text" id="batch-detail-search" placeholder="Search serial, floor, location..." oninput="filterBatchDetail()">
-              </div>
+            <div class="search-bar" style="max-width:260px">
+              <span>🔍</span>
+              <input type="text" id="batch-detail-search" placeholder="Search serial, floor, location..." oninput="filterBatchDetail()">
             </div>
           </div>
           <div class="table-wrap">
@@ -897,6 +894,7 @@ async function viewBatch(id) {
     filterBatchDetail();
     document.getElementById('batch-list-view').style.display = 'none';
     document.getElementById('batch-detail-view').style.display = '';
+    document.getElementById('fe-add-item-btn').style.display = '';
     sessionStorage.setItem('preventive_fe_batch_id', id);
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
@@ -905,6 +903,7 @@ function backToBatchList() {
   currentBatch = null; currentBatchRows = [];
   document.getElementById('batch-detail-view').style.display = 'none';
   document.getElementById('batch-list-view').style.display = '';
+  document.getElementById('fe-add-item-btn').style.display = 'none';
   sessionStorage.removeItem('preventive_fe_batch_id');
 }
 function filterBatchDetail() {
@@ -968,6 +967,21 @@ async function saveFireExt() {
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
 }
+
+// Moves the single "+ Add" button between its two possible homes -- next
+// to Print/Download on desktop, or up in the "Inspection Log" title row
+// on mobile -- so there's one button element, not a duplicate hidden by
+// CSS. Its own display style (set in viewBatch/backToBatchList) still
+// controls whether it's shown at all; this only decides where it lives.
+function positionAddButton() {
+  const btn = document.getElementById('fe-add-item-btn');
+  if (!btn) return;
+  const mobile = window.matchMedia('(max-width: 768px)').matches;
+  const target = document.getElementById(mobile ? 'fe-log-title-row' : 'fe-add-slot-actions');
+  if (target && btn.parentElement !== target) target.appendChild(btn);
+}
+window.addEventListener('resize', positionAddButton);
+positionAddButton();
 
 // For a unit found mid-inspection that isn't registered yet -- saving
 // both registers it in fireExtinguisherUnitsDB (so it's there for
