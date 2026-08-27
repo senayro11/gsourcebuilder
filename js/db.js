@@ -177,11 +177,22 @@ const DB = (() => {
   // Write rows back to GitHub.
   // When offline, saves locally first (optimistic) and queues it for
   // offline sync — Sync.flush() auto-syncs it once connectivity returns.
-  async function write(dbName, rows, description) {
-    const headerRow = cache[`${dbName}_header`] || Object.keys(rows[0] || {}).join('|');
-    const content = serializeTxt(rows, headerRow);
-    const encoded = btoa(unescape(encodeURIComponent(content)));
-    async function attempt() {
+  //
+  // `reconcile`, when given, is called with the freshly re-read rows on a
+  // sha conflict retry so the payload re-applies the caller's *intended
+  // change* against whatever is actually on GitHub now, instead of blindly
+  // resubmitting the `rows` array captured before the conflict -- which
+  // would silently discard whatever the other writer just committed (e.g.
+  // insert() overwriting a concurrently-added row with its own stale
+  // snapshot). insert/update/remove below pass one; a bare DB.write() call
+  // with a fully-formed array to persist as-is has no reconcile and keeps
+  // the previous last-write-wins retry behavior.
+  async function write(dbName, rows, description, reconcile) {
+    const headerRowFor = (r) => cache[`${dbName}_header`] || Object.keys(r[0] || rows[0] || {}).join('|');
+    async function attempt(rowsToWrite) {
+      const headerRow = headerRowFor(rowsToWrite);
+      const content = serializeTxt(rowsToWrite, headerRow);
+      const encoded = btoa(unescape(encodeURIComponent(content)));
       const body = {
         message: `Update ${dbName} - ${new Date().toISOString()}`,
         content: encoded,
@@ -204,31 +215,32 @@ const DB = (() => {
       hideGithubAuthBanner();
       const json = await res.json();
       shas[dbName]  = json.content.sha;
-      cache[dbName] = rows;
-      if (typeof Sync !== 'undefined') Sync.cacheSet(syncKey(dbName), rows, headerRow);
+      cache[dbName] = rowsToWrite;
+      if (typeof Sync !== 'undefined') Sync.cacheSet(syncKey(dbName), rowsToWrite, headerRow);
       return { ok: true, queued: false };
     }
     try {
       // Someone else committed a newer version of this file between our
       // last read and this write (stale sha) -- e.g. a fast double-tap on
       // Save, or another tab/device/session writing at the same time.
-      // Re-fetch the current sha and retry with the same payload
-      // (last-write-wins, the same semantics this app already documents
-      // for offline sync) instead of surfacing a raw GitHub API error to
-      // the user. 3 attempts still weren't always enough under a real
-      // burst of concurrent writers, so this allows more attempts with a
-      // longer backoff before giving up.
+      // Re-fetch the current content and retry (last-write-wins, the same
+      // semantics this app already documents for offline sync) instead of
+      // surfacing a raw GitHub API error to the user. 3 attempts still
+      // weren't always enough under a real burst of concurrent writers, so
+      // this allows more attempts with a longer backoff before giving up.
+      let currentRows = rows;
       let lastErr;
       for (let i = 0; i < 6; i++) {
         try {
-          return await attempt();
+          return await attempt(currentRows);
         } catch (e) {
           const isShaConflict = e.status === 409 || /does not match/i.test(e.message || '');
           if (!isShaConflict) throw e;
           lastErr = e;
           if (i < 5) {
             await new Promise(r => setTimeout(r, 400 * (i + 1)));
-            await read(dbName, true);
+            const freshRows = await read(dbName, true);
+            currentRows = reconcile ? reconcile(freshRows) : rows;
           }
         }
       }
@@ -236,6 +248,7 @@ const DB = (() => {
     } catch (e) {
       if (typeof Sync !== 'undefined' && Sync.isConnectivityError(e)) {
         // Offline — save locally first, queue it for auto-sync later
+        const headerRow = headerRowFor(rows);
         cache[dbName] = rows;
         const key = syncKey(dbName);
         Sync.cacheSet(key, rows, headerRow);
@@ -257,8 +270,7 @@ const DB = (() => {
   // Insert a new row
   async function insert(dbName, newRow) {
     const rows = await read(dbName, true);
-    rows.push(newRow);
-    return write(dbName, rows, 'New record');
+    return write(dbName, [...rows, newRow], 'New record', (freshRows) => [...freshRows, newRow]);
   }
 
   // Update row(s) by condition
@@ -270,7 +282,7 @@ const DB = (() => {
       return row;
     });
     if (changed === 0) return false;
-    await write(dbName, newRows, 'Record update');
+    await write(dbName, newRows, 'Record update', (freshRows) => freshRows.map(row => condition(row) ? { ...row, ...updates } : row));
     return changed;
   }
 
@@ -280,7 +292,7 @@ const DB = (() => {
     const newRows = rows.filter(row => !condition(row));
     const deleted = rows.length - newRows.length;
     if (deleted === 0) return 0;
-    await write(dbName, newRows, 'Record deletion');
+    await write(dbName, newRows, 'Record deletion', (freshRows) => freshRows.filter(row => !condition(row)));
     return deleted;
   }
 
