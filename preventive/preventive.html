@@ -954,8 +954,9 @@ function renderBatchDetail(rows) {
     <td>${feStatusSelect(r.unit_id, r.status)}</td>
     <td>${r.problem_desc||'—'}</td>
     <td>${UI.dateStr(r.expiration_date)}</td>
-    <td>
+    <td style="white-space:nowrap">
       <button class="btn btn-ghost btn-sm" onclick="editFireExt('${r.unit_id}')" data-perm="edit" title="Edit">✏️</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteFireExtRow('${r.unit_id}')" data-perm="delete" title="Delete">🗑</button>
     </td>
   </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--text3)">No units found</td></tr>';
   Auth.applyUIPermissions(user, 'preventive');
@@ -986,6 +987,21 @@ async function saveFireExt() {
     filterBatchDetail();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
+}
+function deleteFireExtRow(unitId) {
+  if (!currentBatch) return;
+  UI.confirm('Delete this unit? It will be removed from this inspection and from Registry Units, so it won\'t appear in future generated inspections either.', async () => {
+    UI.loading(true);
+    try {
+      await DB.withPath('preventive/db/fe_reports', () => DB.remove(currentBatch.filename, r=>r.unit_id===unitId));
+      await DB.remove('fireExtinguisherUnitsDB', r=>r.id===unitId);
+      currentBatchRows = await DB.withPath('preventive/db/fe_reports', () => DB.read(currentBatch.filename, true));
+      allFireExtUnits = await DB.read('fireExtinguisherUnitsDB', true);
+      UI.toast('Deleted','success');
+      filterBatchDetail();
+    } catch(e) { UI.toast('Error: '+e.message,'error'); }
+    UI.loading(false);
+  });
 }
 
 // Moves a button between two possible homes -- its normal spot on
