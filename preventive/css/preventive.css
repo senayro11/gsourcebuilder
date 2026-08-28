@@ -397,6 +397,7 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 input::placeholder { color: var(--text3); }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.unit-filter-client-select { width: 240px; }
 
 /* ---- Search bar ---- */
 .search-bar {
@@ -543,6 +544,9 @@ input::placeholder { color: var(--text3); }
   .main-content { padding: 16px; }
   .form-row, .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
+  /* Narrower so it fits beside the Generate Inspection button on one
+     row instead of pushing it onto its own line. */
+  .unit-filter-client-select { width: 150px; }
   /* Just the avatar circle in the navbar on a narrow phone -- the
      name/role text next to it was crowding the "Online" pill and
      Logout button off the visible row. */
