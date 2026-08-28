@@ -79,7 +79,7 @@
          type/capacity) so an inspection visit never needs to re-type
          them -- just pick the unit and log what was found. -->
     <div class="tab-pane" id="tab-fe-units">
-      <div class="page-header-row" style="margin-bottom:16px">
+      <div class="page-header-row" style="margin-bottom:16px" id="unit-title-row">
         <div class="page-header"><h1>🧯 Registry Units</h1></div>
       </div>
       <div class="page-header-row" style="margin-bottom:12px">
@@ -88,10 +88,10 @@
             <label>Client</label>
             <select id="unit-filter-client" style="width:240px" onchange="filterUnits()"><option value="">All Clients</option></select>
           </div>
-        </div>
-        <div style="display:flex;gap:8px">
           <button class="btn btn-ghost" style="height:37px;padding:0 20px" onclick="openGenerateModal()" data-perm="create">🔄 Generate Inspection</button>
-          <button class="btn btn-primary" style="height:37px;padding:0 20px" onclick="openAddUnit()" data-perm="create">+ Add Unit</button>
+        </div>
+        <div style="display:flex;gap:8px" id="unit-add-slot-actions">
+          <button class="btn btn-primary" style="height:37px;padding:0 20px" id="unit-add-btn" onclick="openAddUnit()" data-perm="create">+ Add Unit</button>
         </div>
       </div>
       <div class="card">
@@ -988,17 +988,21 @@ async function saveFireExt() {
   UI.loading(false);
 }
 
-// Moves the single "+ Add" button between its two possible homes -- next
-// to Print/Download on desktop, or up in the "Inspection Log" title row
-// on mobile -- so there's one button element, not a duplicate hidden by
-// CSS. Its own display style (set in viewBatch/backToBatchList) still
-// controls whether it's shown at all; this only decides where it lives.
-function positionAddButton() {
-  const btn = document.getElementById('fe-add-item-btn');
+// Moves a button between two possible homes -- its normal spot on
+// desktop, or up in the page's title row on mobile -- so there's one
+// button element, not a duplicate hidden by CSS. A button's own
+// display style (if any) still controls whether it's shown at all;
+// this only decides where it lives.
+function positionResponsiveButton(btnId, mobileParentId, desktopParentId) {
+  const btn = document.getElementById(btnId);
   if (!btn) return;
   const mobile = window.matchMedia('(max-width: 768px)').matches;
-  const target = document.getElementById(mobile ? 'fe-log-title-row' : 'fe-add-slot-actions');
+  const target = document.getElementById(mobile ? mobileParentId : desktopParentId);
   if (target && btn.parentElement !== target) target.appendChild(btn);
+}
+function positionAddButton() {
+  positionResponsiveButton('fe-add-item-btn', 'fe-log-title-row', 'fe-add-slot-actions');
+  positionResponsiveButton('unit-add-btn', 'unit-title-row', 'unit-add-slot-actions');
 }
 window.addEventListener('resize', positionAddButton);
 positionAddButton();
