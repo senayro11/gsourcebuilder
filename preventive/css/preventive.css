@@ -305,6 +305,13 @@ body {
   display: flex; align-items: center; justify-content: space-between;
   flex-wrap: wrap; gap: 12px;
 }
+/* .page-header's own margin-bottom is meant for standalone use; every
+   title in this app nests it inside .page-header-row instead (which
+   already spaces itself via its own margin-bottom), so that margin
+   just throws off align-items:center -- it pushes the h1 to the top
+   of its flex item box while a sibling button centers normally,
+   visibly misaligning the two. */
+.page-header-row .page-header { margin-bottom: 0; }
 
 /* ---- Cards ---- */
 .card {
