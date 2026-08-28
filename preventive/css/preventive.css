@@ -546,7 +546,14 @@ input::placeholder { color: var(--text3); }
   .stats-grid { grid-template-columns: 1fr 1fr; }
   /* Narrower so it fits beside the Generate Inspection button on one
      row instead of pushing it onto its own line. */
-  .unit-filter-client-select { width: 150px; }
+  .unit-filter-client-select { width: 135px; }
+  /* A card-header's title + search box don't fit on one row at mobile
+     widths -- let the search box drop to its own row and take the
+     full width there, instead of being squeezed down to a sliver next
+     to the title (the inline max-width:260px needs !important since
+     it otherwise beats this class on specificity). */
+  .card-header { flex-wrap: wrap; gap: 8px; }
+  .search-bar { width: 100%; max-width: 100% !important; }
   /* Just the avatar circle in the navbar on a narrow phone -- the
      name/role text next to it was crowding the "Online" pill and
      Logout button off the visible row. */
