@@ -162,4 +162,3 @@ UNIT162|2F-028|2F|MR AHU 6|Dry Chem|10||not check||
 UNIT163|2F-029|2F|MR AHU Hallway|HFC-236fa|10||not check||
 UNIT164|2F-030|2F|Business Center Office|HFC-236fa|10||not check||
 UNIT165|2F-031|2F|Business Center Office|HFC-236fa|10||not check||
-UNIT166|6F-001|6|Kkk|HCFC-123|30000||not check||
