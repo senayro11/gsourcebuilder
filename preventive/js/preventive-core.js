@@ -464,12 +464,14 @@ const UI = (() => {
   }
 
   // Flat sidebar nav (no accordion groups -- this page is a single
-  // tab-based view, not a multi-page app like HR): Dashboard (only
-  // shown when it actually leads somewhere else -- superadmin or a
-  // multi-system user, since a single-system user's "home" already IS
-  // this page), this system's own tabs (passed in by the page's own
-  // inline script, since the tab list/icons differ per system), the
-  // other systems this user can reach, and User Management if allowed.
+  // tab-based view, not a multi-page app like HR): this system's own
+  // tabs (passed in by the page's own inline script, since the tab
+  // list/icons differ per system), then the Systems group -- the
+  // cross-app Dashboard (only shown when it actually leads somewhere
+  // else -- superadmin or a multi-system user, since a single-system
+  // user's "home" already IS this page), the other systems this user
+  // can reach, and SuperAdmin Panel -- and finally User Management if
+  // allowed.
   function buildSidebar(user, currentSystem, tabs) {
     const nav = document.getElementById('sidebar-nav');
     if (!nav) return;
@@ -477,12 +479,6 @@ const UI = (() => {
     const systems = Auth.getAccessibleSystems(user);
 
     let html = '';
-
-    if (isSuperAdmin || systems.length > 1) {
-      html += `<div class="nav-group">
-        <a href="../dashboard.html" class="nav-item"><span class="nav-icon">🏠</span>Dashboard</a>
-      </div>`;
-    }
 
     if (tabs && tabs.length) {
       const sys = SYSTEMS[currentSystem];
@@ -508,9 +504,11 @@ const UI = (() => {
     }
 
     const otherSystems = systems.filter(s => s !== currentSystem);
-    if (otherSystems.length || isSuperAdmin) {
+    const showDashboard = isSuperAdmin || systems.length > 1;
+    if (showDashboard || otherSystems.length || isSuperAdmin) {
       html += `<div class="nav-group">
         <div class="nav-group-label">Systems</div>
+        ${showDashboard ? `<a href="../dashboard.html" class="nav-item"><span class="nav-icon">🏠</span>Dashboard</a>` : ''}
         ${otherSystems.map(s => {
           const sys = SYSTEMS[s];
           return sys ? `<a href="../${sys.file}" class="nav-item"><span class="nav-icon">${sys.icon}</span>${sys.name}</a>` : '';
