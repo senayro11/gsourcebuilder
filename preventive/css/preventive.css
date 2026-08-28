@@ -554,6 +554,10 @@ input::placeholder { color: var(--text3); }
      it otherwise beats this class on specificity). */
   .card-header { flex-wrap: wrap; gap: 8px; }
   .search-bar { width: 100%; max-width: 100% !important; }
+  /* Matches "+ Add Unit" (Registry Units) once JS parks the batch
+     detail "+ Add" button in the title row here -- .btn-sm's smaller
+     padding/font-size otherwise made it look mismatched next to it. */
+  #fe-log-title-row #fe-add-item-btn { height: 37px; padding: 0 20px; font-size: 13px; }
   /* Just the avatar circle in the navbar on a narrow phone -- the
      name/role text next to it was crowding the "Online" pill and
      Logout button off the visible row. */
