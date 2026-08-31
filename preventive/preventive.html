@@ -97,9 +97,12 @@
       <div class="card">
         <div class="card-header">
           <span class="card-title">Registered Units</span>
-          <div class="search-bar" style="max-width:260px">
-            <span>🔍</span>
-            <input type="text" id="unit-search" placeholder="Search serial, floor, location..." oninput="filterUnits()">
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="unit-filter-floor" onchange="filterUnits()" style="width:140px"><option value="">All Floors</option></select>
+            <div class="search-bar" style="max-width:260px">
+              <span>🔍</span>
+              <input type="text" id="unit-search" placeholder="Search serial, floor, location..." oninput="filterUnits()">
+            </div>
           </div>
         </div>
         <div class="table-wrap">
@@ -686,17 +689,28 @@ async function loadFireExt() {
   UI.loading(true, 'Loading registered units...');
   try {
     allFireExtUnits = await DB.read('fireExtinguisherUnitsDB', true);
+    populateFloorFilter();
     filterUnits();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
 }
 
 // ---- Units ----
+function populateFloorFilter() {
+  const sel = document.getElementById('unit-filter-floor');
+  const cur = sel.value;
+  const floors = [...new Set(allFireExtUnits.map(u => u.floor).filter(Boolean))]
+    .sort((a,b) => a.localeCompare(b, undefined, { numeric: true }));
+  sel.innerHTML = '<option value="">All Floors</option>' + floors.map(f => `<option value="${f}">${f}</option>`).join('');
+  sel.value = cur;
+}
 function filterUnits() {
   const client = document.getElementById('unit-filter-client').value;
+  const floor = document.getElementById('unit-filter-floor').value;
   const q = (document.getElementById('unit-search').value || '').trim().toLowerCase();
   let rows = allFireExtUnits;
   if (client) rows = rows.filter(u => u.client_id === client);
+  if (floor) rows = rows.filter(u => u.floor === floor);
   if (q) {
     rows = rows.filter(u =>
       (u.serial_no||'').toLowerCase().includes(q) ||
