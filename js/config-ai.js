@@ -34,9 +34,11 @@ const AI_CONFIG = {
     }
   },
 
-  // Tried in this order; falls through to the next provider on a missing
-  // key, an error, or a rate limit.
-  providerOrder: ['groq', 'gemini'],
+  // Provider the assistant tries first when the user hasn't picked one
+  // via the dropdown in the widget (that choice, once made, is remembered
+  // per-browser and wins over this). Falls through to the other configured
+  // provider on a missing key, an error, or a rate limit either way.
+  defaultProvider: 'gemini',
 
   // System prompt -- the only instructions the model gets about how to
   // behave. Which systems/rows it's even allowed to see is decided in code
