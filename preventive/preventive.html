@@ -992,7 +992,7 @@ function renderBatchDetail(rows) {
 function editFireExt(unitId) {
   const r = currentBatchRows.find(x=>x.unit_id===unitId); if (!r) return;
   editFireExtId = unitId;
-  document.getElementById('fef-date').value = r.date_checked || '';
+  document.getElementById('fef-date').value = r.date_checked || new Date().toISOString().split('T')[0];
   document.getElementById('fef-status').value = r.status || 'not check';
   document.getElementById('fef-problem').value = r.problem_desc || '';
   document.getElementById('fef-expiration').value = r.expiration_date || '';
