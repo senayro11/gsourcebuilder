@@ -659,7 +659,8 @@ async function updateFeStatus(unitId, newStatus) {
   if (!currentBatch) return;
   UI.loading(true, 'Updating status...');
   try {
-    await DB.withPath('preventive/db/fe_reports', () => DB.update(currentBatch.filename, r=>r.unit_id===unitId, { status: newStatus }));
+    const dateChecked = new Date().toISOString().split('T')[0];
+    await DB.withPath('preventive/db/fe_reports', () => DB.update(currentBatch.filename, r=>r.unit_id===unitId, { status: newStatus, date_checked: dateChecked }));
     currentBatchRows = await DB.withPath('preventive/db/fe_reports', () => DB.read(currentBatch.filename, true));
     UI.toast('Status updated ✅','success');
     filterBatchDetail();
