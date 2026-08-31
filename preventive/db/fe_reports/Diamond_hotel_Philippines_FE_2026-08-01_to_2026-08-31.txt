@@ -282,7 +282,7 @@ UNIT282|27F-009|27F|Y8 Exit|HFC-236fa|10||not check||
 UNIT283|27F-010|27F|Y2 Exit Service Area|HFC-236fa|10||not check||
 UNIT284|27F-011|27F|Y8 Hallway|HFC-236fa|10||not check||
 UNIT285|RD-001|Roof Deck|Y8 Exit|HFC-236fa|10||not check||
-UNIT286|RD-002|Roof Deck|MR 2 AHU|CO2|100|2026-08-31|defective||
+UNIT286|RD-002|Roof Deck|MR 2 AHU|CO2|100|2026-08-31|defective|hose disalignment|
 UNIT287|RD-003|Roof Deck|MR 2 AHU|AFFF|50||not check||
 UNIT288|RD-004|Roof Deck|Y8 MR 2|CO2|100||not check||
 UNIT289|RD-005|Roof Deck|Y8 Hallway|HFC-236fa|10||not check||
