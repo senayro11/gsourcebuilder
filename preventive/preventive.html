@@ -855,7 +855,15 @@ async function saveGenerate() {
       type: u.type||'', capacity_lb: u.capacity_lb||'',
       date_checked: '', status: 'not check', problem_desc: '', expiration_date: ''
     }));
-    await DB.withPath('preventive/db/fe_reports', () => DB.write(filename, rows, `Generate FE batch ${filename}`));
+    // A batch's report file is deliberately left in the repo after its
+    // index row is deleted (see deleteBatch), so generating again for
+    // the same client+date range would otherwise collide with that
+    // orphaned file -- read it first so DB.write() has its current sha
+    // and can overwrite it instead of GitHub rejecting the PUT.
+    await DB.withPath('preventive/db/fe_reports', async () => {
+      await DB.read(filename, true);
+      await DB.write(filename, rows, `Generate FE batch ${filename}`);
+    });
     await DB.insert('fireExtinguisherBatchesDB', {
       id: DB.nextId(allBatches,'id','BATCH'), client_id: clientId, date_from: dateFrom, date_to: dateTo,
       filename, created_by: user.username, created_at: new Date().toISOString().split('T')[0]
