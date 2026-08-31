@@ -164,9 +164,12 @@
         <div class="card">
           <div class="card-header">
             <span class="card-title" id="batch-detail-title">Batch</span>
-            <div class="search-bar" style="max-width:260px">
-              <span>🔍</span>
-              <input type="text" id="batch-detail-search" placeholder="Search serial, floor, location..." oninput="filterBatchDetail()">
+            <div style="display:flex;gap:8px;align-items:center">
+              <select id="batch-detail-filter-floor" onchange="filterBatchDetail()" style="width:140px"><option value="">All Floors</option></select>
+              <div class="search-bar" style="max-width:260px">
+                <span>🔍</span>
+                <input type="text" id="batch-detail-search" placeholder="Search serial, floor, location..." oninput="filterBatchDetail()">
+              </div>
             </div>
           </div>
           <div class="table-wrap">
@@ -925,6 +928,7 @@ async function viewBatch(id) {
     currentBatchRows = await DB.withPath('preventive/db/fe_reports', () => DB.read(batch.filename, true));
     document.getElementById('batch-detail-title').textContent = `${clientName(batch.client_id)} — ${UI.dateStr(batch.date_from)} to ${UI.dateStr(batch.date_to)}`;
     document.getElementById('batch-detail-search').value = '';
+    populateBatchDetailFloorFilter();
     filterBatchDetail();
     document.getElementById('batch-list-view').style.display = 'none';
     document.getElementById('batch-detail-view').style.display = '';
@@ -940,9 +944,19 @@ function backToBatchList() {
   document.getElementById('fe-add-item-btn').style.display = 'none';
   sessionStorage.removeItem('preventive_fe_batch_id');
 }
+function populateBatchDetailFloorFilter() {
+  const sel = document.getElementById('batch-detail-filter-floor');
+  const cur = sel.value;
+  const floors = [...new Set(currentBatchRows.map(r => r.floor).filter(Boolean))]
+    .sort((a,b) => a.localeCompare(b, undefined, { numeric: true }));
+  sel.innerHTML = '<option value="">All Floors</option>' + floors.map(f => `<option value="${f}">${f}</option>`).join('');
+  sel.value = cur;
+}
 function filterBatchDetail() {
+  const floor = document.getElementById('batch-detail-filter-floor').value;
   const q = (document.getElementById('batch-detail-search').value || '').trim().toLowerCase();
   let rows = currentBatchRows;
+  if (floor) rows = rows.filter(r => r.floor === floor);
   if (q) {
     rows = rows.filter(r =>
       (r.serial_no||'').toLowerCase().includes(q) ||
@@ -1012,6 +1026,7 @@ function deleteFireExtRow(unitId) {
       currentBatchRows = await DB.withPath('preventive/db/fe_reports', () => DB.read(currentBatch.filename, true));
       allFireExtUnits = await DB.read('fireExtinguisherUnitsDB', true);
       UI.toast('Deleted','success');
+      populateBatchDetailFloorFilter();
       filterBatchDetail();
     } catch(e) { UI.toast('Error: '+e.message,'error'); }
     UI.loading(false);
@@ -1082,6 +1097,7 @@ async function saveAddFeItem() {
     currentBatchRows = await DB.withPath('preventive/db/fe_reports', () => DB.read(currentBatch.filename, true));
     UI.toast('Added ✅','success');
     UI.closeModal('add-fe-item-modal');
+    populateBatchDetailFloorFilter();
     filterBatchDetail();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
