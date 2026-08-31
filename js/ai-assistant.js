@@ -202,9 +202,25 @@
     return (json.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
   }
   const CALLERS = { groq: callGroq, gemini: callGemini };
+  const PROVIDER_LABELS = { gemini: 'Gemini', groq: 'Groq' };
+  const PROVIDER_PREF_KEY = 'ai_asst_provider';
+
+  // The user's dropdown choice, remembered per-browser -- falls back to
+  // AI_CONFIG.defaultProvider (gemini) if nothing's been picked yet, or if
+  // what was picked isn't a known provider (e.g. config-ai.js changed).
+  function getSelectedProvider() {
+    let stored = null;
+    try { stored = localStorage.getItem(PROVIDER_PREF_KEY); } catch (e) {}
+    if (stored && AI_CONFIG.providers[stored]) return stored;
+    return AI_CONFIG.providers[AI_CONFIG.defaultProvider] ? AI_CONFIG.defaultProvider : Object.keys(AI_CONFIG.providers)[0];
+  }
+  function setSelectedProvider(key) {
+    try { localStorage.setItem(PROVIDER_PREF_KEY, key); } catch (e) {}
+  }
 
   async function askAI(systemPrompt, userPrompt) {
-    const order = AI_CONFIG.providerOrder || Object.keys(AI_CONFIG.providers);
+    const selected = getSelectedProvider();
+    const order = [selected, ...Object.keys(AI_CONFIG.providers).filter(k => k !== selected)];
     const configured = order.filter(k => AI_CONFIG.providers[k]?.apiKey);
     if (configured.length === 0) {
       const e = new Error('Wala pang na-configure na AI API key. Sabihin sa superadmin na lagyan ng key ang js/config-ai.js.');
@@ -241,6 +257,11 @@
       padding: 14px 16px; background: var(--surface2); border-bottom: 1px solid var(--border);
       display: flex; align-items: center; justify-content: space-between;
       font-weight: 700; color: var(--white); font-size: 14px; flex-shrink: 0;
+    }
+    .ai-asst-header-right { display: flex; align-items: center; gap: 10px; }
+    .ai-asst-provider-select {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--text2); font-size: 12px; font-weight: 600; padding: 4px 6px; cursor: pointer;
     }
     .ai-asst-close { background: none; border: none; color: var(--text2); font-size: 18px; cursor: pointer; line-height: 1; }
     .ai-asst-messages { flex: 1 1 auto; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
@@ -280,7 +301,10 @@
     panel.innerHTML = `
       <div class="ai-asst-header">
         <span>🤖 AI Assistant</span>
-        <button class="ai-asst-close" aria-label="Close">✕</button>
+        <div class="ai-asst-header-right">
+          <select class="ai-asst-provider-select" title="AI Provider"></select>
+          <button class="ai-asst-close" aria-label="Close">✕</button>
+        </div>
       </div>
       <div class="ai-asst-messages"><div class="ai-asst-empty">Magtanong tungkol sa system data — hal. "ilan ang absent ngayon?" o "kailan ang next preventive schedule?"</div></div>
       <div class="ai-asst-inputrow">
@@ -296,6 +320,16 @@
     const inputEl = panel.querySelector('input');
     const sendBtn = panel.querySelector('.ai-asst-inputrow button');
     const closeBtn = panel.querySelector('.ai-asst-close');
+    const providerSelect = panel.querySelector('.ai-asst-provider-select');
+
+    Object.keys(AI_CONFIG.providers).forEach(key => {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = PROVIDER_LABELS[key] || key;
+      providerSelect.appendChild(opt);
+    });
+    providerSelect.value = getSelectedProvider();
+    providerSelect.addEventListener('change', () => setSelectedProvider(providerSelect.value));
 
     function addMsg(text, cls) {
       const empty = messagesEl.querySelector('.ai-asst-empty');
