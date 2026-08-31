@@ -60,6 +60,12 @@
       .quick-stats .stat-card { padding: 14px; min-width: 0; }
       .quick-stats .stat-value { font-size: 22px; }
     }
+    @media (max-width: 768px) {
+      /* Greeting (avatar + text) on its own row, clock/date on the row
+         below instead of squeezed onto the same line via margin-left:auto. */
+      .welcome-banner { flex-wrap: wrap; }
+      .time-display { width: 100%; margin-left: 0; margin-top: 12px; text-align: left; }
+    }
     /* The shared .sidebar/.sidebar.open transform (css/style.css) has no
        button anywhere on this page to actually add the "open" class on
        mobile -- every per-system page has its own hamburger + backdrop,
