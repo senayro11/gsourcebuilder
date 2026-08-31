@@ -60,12 +60,29 @@
       .quick-stats .stat-card { padding: 14px; min-width: 0; }
       .quick-stats .stat-value { font-size: 22px; }
     }
+    /* The shared .sidebar/.sidebar.open transform (css/style.css) has no
+       button anywhere on this page to actually add the "open" class on
+       mobile -- every per-system page has its own hamburger + backdrop,
+       but this root dashboard never got one. */
+    .topbar-toggle {
+      display: none; width: 36px; height: 36px; border-radius: var(--radius);
+      background: var(--surface2); border: 1px solid var(--border);
+      align-items: center; justify-content: center;
+      cursor: pointer; color: var(--text2); font-size: 18px; flex-shrink: 0;
+    }
+    .topbar-toggle:hover { color: var(--white); }
+    .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 90; }
+    @media (max-width: 768px) {
+      .topbar-toggle { display: flex; }
+      .sidebar-backdrop.visible { display: block; }
+    }
   </style>
 </head>
 <body>
 <div class="app-layout">
   <!-- Navbar -->
   <nav class="navbar">
+    <button class="topbar-toggle" id="sidebar-toggle-btn">☰</button>
     <div class="navbar-brand" id="navbar-brand">🏢 Enterprise System</div>
     <div class="navbar-right">
       <div class="user-chip">
@@ -80,6 +97,7 @@
 
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar"></aside>
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
   <!-- Main -->
   <main class="main">
@@ -132,6 +150,23 @@
   // Build UI
   UI.buildNavbar(_session);
   UI.buildSidebar(_session, null);
+
+  // Mobile sidebar toggle -- opens/closes the shared .sidebar.open
+  // transform (css/style.css); tapping the backdrop closes it too.
+  (function setupSidebarToggle() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    const btn = document.getElementById('sidebar-toggle-btn');
+    if (!sidebar || !backdrop || !btn) return;
+    function close() { sidebar.classList.remove('open'); backdrop.classList.remove('visible'); }
+    function toggle() {
+      const opening = !sidebar.classList.contains('open');
+      sidebar.classList.toggle('open', opening);
+      backdrop.classList.toggle('visible', opening);
+    }
+    btn.addEventListener('click', e => { e.stopPropagation(); toggle(); });
+    backdrop.addEventListener('click', close);
+  })();
 
   // Greeting
   const hour = new Date().getHours();
