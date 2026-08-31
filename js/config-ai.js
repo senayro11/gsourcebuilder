@@ -17,14 +17,19 @@ const AI_CONFIG = {
   enabled: true,
 
   providers: {
+    // Both providers retire old model names every so often -- Groq dropped
+    // llama-3.3-70b-versatile and Gemini dropped gemini-2.0-flash sometime
+    // after this was first written, both returning a 404 pointing at their
+    // replacement. If the assistant starts erroring again, check the
+    // provider's model list for a current one and swap it in here.
     groq: {
       apiKey:   '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',
-      model:    'llama-3.3-70b-versatile',
+      model:    'openai/gpt-oss-120b',
       endpoint: 'https://api.groq.com/openai/v1/chat/completions'
     },
     gemini: {
       apiKey:   'AQ.Ab8RN6KDeGDVVZT3_FYAm0LLiQlCDftWYRhvXUDItQmOBWZr6g',
-      model:    'gemini-2.0-flash',
+      model:    'gemini-2.5-flash',
       endpoint: 'https://generativelanguage.googleapis.com/v1beta/models'
     }
   },
