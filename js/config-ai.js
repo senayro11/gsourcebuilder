@@ -18,12 +18,12 @@ const AI_CONFIG = {
 
   providers: {
     groq: {
-      apiKey:   '',
+      apiKey:   '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',
       model:    'llama-3.3-70b-versatile',
       endpoint: 'https://api.groq.com/openai/v1/chat/completions'
     },
     gemini: {
-      apiKey:   '',
+      apiKey:   'AQ.Ab8RN6KDeGDVVZT3_FYAm0LLiQlCDftWYRhvXUDItQmOBWZr6g',
       model:    'gemini-2.0-flash',
       endpoint: 'https://generativelanguage.googleapis.com/v1beta/models'
     }
