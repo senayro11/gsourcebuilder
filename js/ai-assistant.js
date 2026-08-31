@@ -78,6 +78,29 @@
     return perms.includes('reports');
   }
 
+  // Display names for the {system} placeholder in AI_CONFIG.roleRules --
+  // own copy for the same reason AI_PERMISSIONS is (hr-config.js never
+  // defines SYSTEMS at all).
+  const AI_SYSTEM_NAMES = {
+    pos: 'Point of Sale', inventory: 'Inventory', attendance: 'HR Management',
+    budget: 'Budget & Finance', pm: 'Project Management', preventive: 'Preventive Maintenance'
+  };
+
+  // Which roleRules template applies, and what {system} resolves to.
+  // Scope is driven by assigned_system, not the role name alone -- an admin
+  // CAN be assigned 'all' just like a superadmin, and that should read as
+  // full access too, not get squeezed into the single-department template.
+  function roleInstruction(user) {
+    if (!AI_CONFIG.roleRules) return '';
+    const fullAccess = user.role === 'superadmin' || user.assigned_system === 'all';
+    const tpl = fullAccess
+      ? AI_CONFIG.roleRules.fullAccess
+      : (AI_CONFIG.roleRules[user.role] || AI_CONFIG.roleRules.staff);
+    if (!tpl) return '';
+    const sysName = AI_SYSTEM_NAMES[user.assigned_system] || user.assigned_system || 'wala';
+    return tpl.replace(/\{system\}/g, sysName);
+  }
+
   // ---- which system(s) a question is about ----
   const SYSTEM_TOPICS = {
     attendance: ['absent','present','late','attendance','leave','payroll','employee','oras','pasok','sched','time in','time out'],
@@ -123,12 +146,21 @@
       const recentBatches = batches.slice(-5).map(b => `${clientName(b.client_id)}: ${b.date_from} to ${b.date_to} (generated ${b.created_at})`);
       return `[PREVENTIVE MAINTENANCE SCHEDULES]\n${lines.join('\n')}\n\n[RECENT FIRE EXTINGUISHER INSPECTION BATCHES]\n${recentBatches.join('\n') || 'wala pa'}`;
     },
-    pos: async () => {
-      const rows = await ghRead('pos/db', 'transactionsDB');
+    // Transaction-level data (who cashiered/recorded/is assigned what) has a
+    // real personal owner, so it's fair to restrict it the same way as
+    // attendance. Product stock levels and preventive schedules below don't
+    // -- they're shared operational state everyone with department access
+    // needs to see to do their job, not any one person's records -- so
+    // those two stay department-wide regardless of 'reports'.
+    pos: async (user) => {
+      const scopeAll = canSeeAllRecords(user, 'pos');
+      let rows = await ghRead('pos/db', 'transactionsDB');
+      if (!scopeAll) rows = rows.filter(r => r.cashier === user.username);
       const today = new Date().toISOString().split('T')[0];
       const todayRows = rows.filter(r => (r.date || '').startsWith(today));
       const sum = rs => rs.reduce((s, r) => s + (parseFloat(r.total) || 0), 0);
-      return `[POS SALES]\nNgayong araw (${today}): ${todayRows.length} transactions, total ₱${sum(todayRows).toFixed(2)}\nLahat ng naka-log: ${rows.length} transactions, total ₱${sum(rows).toFixed(2)}`;
+      const label = scopeAll ? 'POS SALES' : `POS SALES - sarili lang ni ${user.full_name}`;
+      return `[${label}]\nNgayong araw (${today}): ${todayRows.length} transactions, total ₱${sum(todayRows).toFixed(2)}\nLahat ng naka-log: ${rows.length} transactions, total ₱${sum(rows).toFixed(2)}`;
     },
     inventory: async () => {
       const products = await ghRead('db', 'productsDB');
@@ -136,22 +168,30 @@
       const outStock = products.filter(p => parseFloat(p.stock) <= 0);
       return `[INVENTORY]\nTotal products: ${products.length}\nLow stock (<=10): ${lowStock.map(p => `${p.name} (${p.stock} ${p.unit})`).join(', ') || 'wala'}\nOut of stock: ${outStock.map(p => p.name).join(', ') || 'wala'}`;
     },
-    budget: async () => {
-      const rows = await ghRead('budget/db', 'budgetDB');
+    budget: async (user) => {
+      const scopeAll = canSeeAllRecords(user, 'budget');
+      let rows = await ghRead('budget/db', 'budgetDB');
+      if (!scopeAll) rows = rows.filter(r => r.recorded_by === user.username);
       const month = new Date().toISOString().slice(0, 7);
       const thisMonth = rows.filter(r => (r.date || '').startsWith(month));
       const sumType = t => thisMonth.filter(r => r.type === t).reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
       const pending = rows.filter(r => r.status === 'pending').length;
-      return `[BUDGET]\nNgayong buwan (${month}): income ₱${sumType('income').toFixed(2)}, expense ₱${sumType('expense').toFixed(2)}\nPending approvals: ${pending}`;
+      const label = scopeAll ? 'BUDGET' : `BUDGET - sarili lang ni ${user.full_name}`;
+      return `[${label}]\nNgayong buwan (${month}): income ₱${sumType('income').toFixed(2)}, expense ₱${sumType('expense').toFixed(2)}\nPending approvals: ${pending}`;
     },
-    pm: async () => {
+    pm: async (user) => {
+      const scopeAll = canSeeAllRecords(user, 'pm');
       const projects = await ghRead('pm/db', 'projectsDB');
-      const tasks = await ghRead('pm/db', 'projectTasksDB');
+      let tasks = await ghRead('pm/db', 'projectTasksDB');
+      if (!scopeAll) tasks = tasks.filter(t => t.assigned_to === user.full_name);
+      const relevantIds = new Set(tasks.map(t => t.project_id));
+      const visibleProjects = scopeAll ? projects : projects.filter(p => relevantIds.has(p.id) || p.created_by === user.username);
       const projName = id => projects.find(p => p.id === id)?.name || id;
       const openTasks = tasks.filter(t => t.status !== 'completed');
-      const lines = projects.map(p => `${p.name} (${p.client || '-'}) — status: ${p.status}, progress: ${p.progress || 0}%`);
+      const lines = visibleProjects.map(p => `${p.name} (${p.client || '-'}) — status: ${p.status}, progress: ${p.progress || 0}%`);
       const taskLines = openTasks.slice(0, 15).map(t => `- ${t.task_name} (${projName(t.project_id)}) — ${t.status}, due ${t.end_date || '-'}`);
-      return `[PROJECTS]\n${lines.join('\n') || 'wala pang project'}\n\nOpen/pending tasks: ${openTasks.length}\n${taskLines.join('\n')}`;
+      const label = scopeAll ? 'PROJECTS' : `PROJECTS - sariling task lang ni ${user.full_name}`;
+      return `[${label}]\n${lines.join('\n') || 'wala pang project'}\n\nOpen/pending tasks: ${openTasks.length}\n${taskLines.join('\n')}`;
     }
   };
 
@@ -358,7 +398,9 @@
       const thinking = addMsg('Nag-iisip...', 'bot');
       try {
         const userPrompt = await buildContext(question);
-        const answer = await askAI(AI_CONFIG.rules, userPrompt);
+        const scope = roleInstruction(_session);
+        const systemPrompt = AI_CONFIG.rules + (scope ? `\n\nSCOPE PARA KAY ${_session.full_name} (${_session.role.toUpperCase()}): ${scope}` : '');
+        const answer = await askAI(systemPrompt, userPrompt);
         thinking.textContent = answer || 'Walang naibalik na sagot.';
       } catch (e) {
         thinking.remove();
