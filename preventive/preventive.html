@@ -107,7 +107,7 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Client</th><th>Serial #</th><th>Floor</th><th>Location</th><th>Type</th><th>Capacity (lb)</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Client</th><th>Serial #</th><th>Floor</th><th>Location</th><th>Type</th><th>Capacity (lb)</th><th>Problem Desc</th><th>Actions</th></tr></thead>
             <tbody id="unit-tbody"></tbody>
           </table>
         </div>
@@ -289,6 +289,7 @@
       </div>
       <div class="form-group"><label>Capacity (lb)</label><input type="number" id="uf-capacity" step="0.1"></div>
     </div>
+    <div class="form-group"><label>Problem Description</label><input type="text" id="uf-problem"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="UI.closeModal('unit-modal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveUnit()">Save</button>
@@ -736,11 +737,12 @@ function renderUnits(rows) {
     <td>${u.location||'—'}</td>
     <td>${u.type||'—'}</td>
     <td>${u.capacity_lb||'—'}</td>
+    <td>${u.problem_desc||'—'}</td>
     <td>
       <button class="btn btn-ghost btn-sm" onclick="editUnit('${u.id}')" data-perm="edit" title="Edit">✏️</button>
       <button class="btn btn-danger btn-sm" onclick="deleteUnit('${u.id}')" data-perm="delete" title="Delete">🗑</button>
     </td>
-  </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text3)">No units registered yet</td></tr>';
+  </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3)">No units registered yet</td></tr>';
   Auth.applyUIPermissions(user, 'preventive');
 }
 function openAddUnit() {
@@ -752,6 +754,7 @@ function openAddUnit() {
   document.getElementById('uf-serial').value = '';
   document.getElementById('uf-type').value = 'none';
   document.getElementById('uf-capacity').value = '';
+  document.getElementById('uf-problem').value = '';
   document.getElementById('unit-modal-title').textContent = '+ Add Unit';
   UI.openModal('unit-modal');
 }
@@ -764,6 +767,7 @@ function editUnit(id) {
   document.getElementById('uf-serial').value = u.serial_no;
   document.getElementById('uf-type').value = u.type || 'none';
   document.getElementById('uf-capacity').value = u.capacity_lb || '';
+  document.getElementById('uf-problem').value = u.problem_desc || '';
   document.getElementById('unit-modal-title').textContent = '✏️ Edit Unit';
   UI.openModal('unit-modal');
 }
@@ -776,7 +780,8 @@ async function saveUnit() {
     client_id: client, floor, serial_no: serial,
     location: document.getElementById('uf-location').value.trim(),
     type: document.getElementById('uf-type').value,
-    capacity_lb: document.getElementById('uf-capacity').value
+    capacity_lb: document.getElementById('uf-capacity').value,
+    problem_desc: document.getElementById('uf-problem').value.trim()
   };
   UI.loading(true,'Saving...');
   try {
@@ -1021,6 +1026,12 @@ async function saveFireExt() {
   try {
     await DB.withPath('preventive/db/fe_reports', () => DB.update(currentBatch.filename, r=>r.unit_id===editFireExtId, data));
     currentBatchRows = await DB.withPath('preventive/db/fe_reports', () => DB.read(currentBatch.filename, true));
+    // Registry Units keeps its own copy of problem_desc (editable there too,
+    // independent of any one inspection) -- an inspection edit is the one
+    // direction that pushes back into it, so the latest-known problem
+    // always shows up on the unit even outside this specific batch.
+    await DB.update('fireExtinguisherUnitsDB', r=>r.id===editFireExtId, { problem_desc: data.problem_desc });
+    allFireExtUnits = await DB.read('fireExtinguisherUnitsDB', true);
     UI.toast('Updated ✅','success');
     UI.closeModal('fe-modal');
     filterBatchDetail();
@@ -1094,6 +1105,7 @@ async function saveAddFeItem() {
     const newUnit = {
       id: DB.nextId(allUnits,'id','UNIT'), client_id: currentBatch.client_id,
       serial_no: serial, floor, location, type, capacity_lb,
+      problem_desc: document.getElementById('fai-problem').value.trim(),
       created_at: new Date().toISOString().split('T')[0]
     };
     await DB.insert('fireExtinguisherUnitsDB', newUnit);
