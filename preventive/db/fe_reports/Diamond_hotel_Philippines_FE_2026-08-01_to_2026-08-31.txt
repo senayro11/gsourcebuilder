@@ -291,7 +291,7 @@ UNIT291|RD-007|Roof Deck|Helipad Stair|CO2|100|2026-08-26|defective|degraded hos
 UNIT292|RD-008|Roof Deck|Helipad Hallway|AFFF|50|2026-09-03|good||
 UNIT293|RD-009|Roof Deck|Helipad Hallway|AFFF|50|2026-09-03|good||
 UNIT294|RD-010|Roof Deck|Helipad Hallway|AFFF|100|2026-09-03|good||
-UNIT295|RD-011|Roof Deck|Helipad Hallway|AFFF|100||not check||
+UNIT295|RD-011|Roof Deck|Helipad Hallway|AFFF|100|2026-09-03|good||
 UNIT296|RD-012|Roof Deck|Helipad Hallway|AFFF|100||not check||
 UNIT297|RD-013|Roof Deck|Helipad Cabinet|Dry Chem|20||not check||
 UNIT298|RD-014|Roof Deck|Helipad Cabinet|Dry Chem|10||not check||
