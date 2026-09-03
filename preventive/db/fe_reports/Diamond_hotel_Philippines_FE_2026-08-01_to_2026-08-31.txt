@@ -296,7 +296,7 @@ UNIT296|RD-012|Roof Deck|Helipad Hallway|AFFF|100||not check||
 UNIT297|RD-013|Roof Deck|Helipad Cabinet|Dry Chem|20||not check||
 UNIT298|RD-014|Roof Deck|Helipad Cabinet|Dry Chem|10||not check||
 UNIT299|RD-015|Roof Deck|Helipad Cabinet|Dry Chem|10||not check||
-UNIT300|RD-016|Roof Deck|Helipad Stair|AFFF|50||not check||
+UNIT300|RD-016|Roof Deck|Helipad Stair|AFFF|50|2026-08-28|good|handle corrosion, pressure good|
 UNIT301|RD-017|Roof Deck|Y2 MR 3|AFFF|100||not check||
 UNIT302|RD-018|Roof Deck|Y2 MR3 HW|HFC-236fa|10||not check||
 UNIT303|RD-019|Roof Deck|Y2 MR3 HW|HFC-236fa|10||not check||
