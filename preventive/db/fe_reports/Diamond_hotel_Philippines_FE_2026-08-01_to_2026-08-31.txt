@@ -1,6 +1,6 @@
 unit_id|serial_no|floor|location|type|capacity_lb|date_checked|status|problem_desc|expiration_date
 UNIT002|B2-001|B2|Y2 Service Area|HFC-236fa|10|2026-08-28|good||
-UNIT003|B2-002|B2|Y2 Chiller|CO2|100||not check||
+UNIT003|B2-002|B2|Y2 Chiller|CO2|100|2026-08-28|defective|hose disalignment|
 UNIT004|B2-003|B2|Y2 Chiller|CO2|100||not check||
 UNIT005|B1-001|B1|Parking Area|AFFF|50||not check||
 UNIT007|B2-004|B2|Y2 Chiller|AFFF|100||not check||
