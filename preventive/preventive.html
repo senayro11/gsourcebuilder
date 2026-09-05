@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Preventive Maintenance — Enterprise</title>
   <link rel="stylesheet" href="css/preventive.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.min.js"></script>
   <script>
     // Applied before first paint so a saved theme preference doesn't
     // flash the wrong theme first -- default (no saved value) is dark,
@@ -72,6 +73,52 @@
         <div class="page-header"><h1>🏠 Fire Extinguisher Dashboard</h1></div>
       </div>
       <div class="stats-grid" id="fe-dashboard-stats"></div>
+
+      <!-- Status overview -- filterable by client + inspection date range
+           so "all use/defective FE" can be checked for any period, not
+           just whatever the most recent batch happens to be. -->
+      <div class="page-header-row" style="margin-bottom:16px;margin-top:24px">
+        <div class="page-header"><h1 style="font-size:18px">📊 Status Overview</h1></div>
+      </div>
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Client</label>
+            <select id="fe-dash-filter-client" onchange="applyFeDashboardFilter()"><option value="">All Clients</option></select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Date From</label>
+            <input type="date" id="fe-dash-filter-from" onchange="applyFeDashboardFilter()">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Date To</label>
+            <input type="date" id="fe-dash-filter-to" onchange="applyFeDashboardFilter()">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="clearFeDashboardFilter()">✕ Clear</button>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:20px">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:4px">Status Breakdown</div>
+          <div id="fe-dash-chart-summary" style="font-size:12px;color:var(--text2);margin-bottom:12px"></div>
+          <canvas id="fe-dash-chart" height="220"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">Batches in Range</div>
+          <div id="fe-dash-batch-list" style="font-size:13px;color:var(--text2);line-height:1.8;max-height:260px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">⚠️ All Use / Defective Units in Range</span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Client</th><th>Serial #</th><th>Floor</th><th>Location</th><th>Type</th><th>Status</th><th>Problem Desc</th><th>Date Checked</th></tr></thead>
+            <tbody id="fe-dash-exceptions-tbody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- Fire Extinguisher: Registry Units -- the physical fire
@@ -467,7 +514,7 @@ UI.buildSidebar(user, 'preventive', TABS);
 Auth.applyUIPermissions(user, 'preventive');
 UserMgmt.init(user, 'preventive');
 
-let allClients=[], allClientPreventives=[], allFireExtUnits=[], allFeBatches=[], feFilteredRows=[];
+let allClients=[], allClientPreventives=[], allFireExtUnits=[], allFeBatches=[], feFilteredRows=[], feDashChart=null;
 let editClientId=null, managingClientId=null, editUnitId=null, editFireExtId=null;
 let currentBatch=null, currentBatchRows=[];
 
@@ -681,6 +728,8 @@ async function loadFeDashboard() {
       DB.read('fireExtinguisherBatchesDB', true)
     ]);
     renderFeDashboard();
+    populateFeDashboardClientFilter();
+    await applyFeDashboardFilter();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
 }
@@ -690,6 +739,86 @@ function renderFeDashboard() {
     <div class="stat-card blue"><div class="stat-label">Registered Units</div><div class="stat-value">${allFireExtUnits.length}</div></div>
     <div class="stat-card yellow"><div class="stat-label">Clients with Units</div><div class="stat-value">${clientsWithUnits}</div></div>
     <div class="stat-card green"><div class="stat-label">Generated Inspections</div><div class="stat-value">${allFeBatches.length}</div></div>`;
+}
+function populateFeDashboardClientFilter() {
+  const sel = document.getElementById('fe-dash-filter-client');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Clients</option>' + allClients.map(c => `<option value="${c.id}">${c.client_name}</option>`).join('');
+  sel.value = cur;
+}
+function clearFeDashboardFilter() {
+  document.getElementById('fe-dash-filter-client').value = '';
+  document.getElementById('fe-dash-filter-from').value = '';
+  document.getElementById('fe-dash-filter-to').value = '';
+  applyFeDashboardFilter();
+}
+// Aggregates every batch that overlaps the chosen client/date range into
+// one status breakdown + exceptions list -- a unit inspected in more than
+// one of those batches is counted once per batch it appears in (each
+// inspection is its own record), so a wide range legitimately shows more
+// hits than there are physical units, not a bug.
+async function applyFeDashboardFilter() {
+  const client = document.getElementById('fe-dash-filter-client').value;
+  const from = document.getElementById('fe-dash-filter-from').value;
+  const to = document.getElementById('fe-dash-filter-to').value;
+
+  let batches = allFeBatches;
+  if (client) batches = batches.filter(b => b.client_id === client);
+  if (from) batches = batches.filter(b => b.date_to >= from);
+  if (to) batches = batches.filter(b => b.date_from <= to);
+
+  document.getElementById('fe-dash-batch-list').innerHTML = batches.length
+    ? batches.map(b => `${clientName(b.client_id)}: ${UI.dateStr(b.date_from)} – ${UI.dateStr(b.date_to)}`).join('<br>')
+    : '<span style="color:var(--text3)">Walang batch na tumutugma sa filter.</span>';
+
+  let rows = [];
+  try {
+    for (const b of batches) {
+      const batchRows = await DB.withPath('preventive/db/fe_reports', () => DB.read(b.filename, true));
+      batchRows.forEach(r => rows.push({ ...r, client_id: b.client_id }));
+    }
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+
+  renderFeDashboardChart(rows);
+  renderFeDashboardExceptions(rows);
+}
+function renderFeDashboardChart(rows) {
+  const counts = { good:0, defective:0, 'low pressure':0, missing:0, pullout:0, 'not check':0 };
+  rows.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+  const problemCount = counts.defective + counts['low pressure'] + counts.missing + counts.pullout;
+  document.getElementById('fe-dash-chart-summary').textContent =
+    `${rows.length} inspection record(s) in range — ${problemCount} defective/used, ${counts.good} good`;
+
+  const ctx = document.getElementById('fe-dash-chart');
+  if (feDashChart) { feDashChart.destroy(); feDashChart = null; }
+  if (typeof Chart === 'undefined' || !rows.length) return;
+  feDashChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Good','Defective','Low Pressure','Missing','Pullout','Not Check'],
+      datasets: [{
+        data: [counts.good, counts.defective, counts['low pressure'], counts.missing, counts.pullout, counts['not check']],
+        backgroundColor: ['#10b981','#ef4444','#f59e0b','#f97316','#a855f7','#64748b']
+      }]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 12 } } }
+    }
+  });
+}
+function renderFeDashboardExceptions(rows) {
+  const exceptions = rows.filter(r => ['defective','low pressure','missing','pullout'].includes(r.status));
+  document.getElementById('fe-dash-exceptions-tbody').innerHTML = exceptions.map(r => `
+    <tr>
+      <td>${clientName(r.client_id)}</td>
+      <td class="mono">${r.serial_no}</td>
+      <td>${r.floor}</td>
+      <td>${r.location||''}</td>
+      <td>${r.type||''}</td>
+      <td>${r.status}</td>
+      <td>${r.problem_desc||'—'}</td>
+      <td>${r.date_checked||'—'}</td>
+    </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text3)">Walang defective/used units sa napiling range.</td></tr>';
 }
 
 async function loadFireExt() {
@@ -1134,6 +1263,15 @@ async function buildFireExtReportHtml(batch, rows) {
   batch = batch || currentBatch;
   rows = rows || feFilteredRows || [];
   const label = batch ? `${clientName(batch.client_id)} (${UI.dateStr(batch.date_from)} – ${UI.dateStr(batch.date_to)})` : '';
+  // Exceptions first -- the client's own inspectors already lead their PDF
+  // reports with a "Defective or Used" section before the full listing,
+  // so this mirrors what they're used to reading.
+  const exceptions = rows.filter(r => ['defective','low pressure','missing','pullout'].includes(r.status));
+  const exceptionsSection = exceptions.length ? `
+  <h2 style="font-size:14px;margin-bottom:8px">⚠️ Defective or Used Fire Extinguishers (${exceptions.length})</h2>
+  <table style="margin-bottom:20px"><thead><tr><th>Serial #</th><th>Floor</th><th>Location</th><th>Type</th><th>Status</th><th>Problem Desc</th></tr></thead>
+  <tbody>${exceptions.map(r=>`<tr><td>${r.serial_no}</td><td>${r.floor}</td><td>${r.location||''}</td><td>${r.type||''}</td><td>${r.status}</td><td>${r.problem_desc||''}</td></tr>`).join('')}</tbody>
+  </table>` : '';
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fire Extinguisher Report</title>
   <style>
     body{font-family:Arial,sans-serif;padding:24px;color:#1e293b}
@@ -1145,6 +1283,8 @@ async function buildFireExtReportHtml(batch, rows) {
   </style></head><body>
   <h1>🧯 Fire Extinguisher Preventive Maintenance Report</h1>
   <p>${label} &nbsp;|&nbsp; Generated: ${new Date().toLocaleString('en-PH')}</p>
+  ${exceptionsSection}
+  <h2 style="font-size:14px;margin-bottom:8px">All Units (${rows.length})</h2>
   <table><thead><tr><th>Serial #</th><th>Date Check</th><th>Floor</th><th>Location</th><th>Type</th><th>Capacity (lb)</th><th>Status</th><th>Problem Desc</th><th>Expiration</th></tr></thead>
   <tbody>${rows.map(r=>`<tr><td>${r.serial_no}</td><td>${r.date_checked||''}</td><td>${r.floor}</td><td>${r.location||''}</td><td>${r.type||''}</td><td>${r.capacity_lb||''}</td><td>${r.status||''}</td><td>${r.problem_desc||''}</td><td>${r.expiration_date||''}</td></tr>`).join('')}</tbody>
   </table></body></html>`;
