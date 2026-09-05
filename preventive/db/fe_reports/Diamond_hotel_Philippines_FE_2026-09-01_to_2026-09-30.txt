@@ -1,2 +1,0 @@
-unit_id|serial_no|floor|location|type|capacity_lb|date_checked|status|problem_desc|expiration_date
-UNIT001|5F-001|5|Hallway|AFFF|10||not check||
