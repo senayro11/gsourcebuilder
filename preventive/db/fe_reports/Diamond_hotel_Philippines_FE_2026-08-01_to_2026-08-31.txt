@@ -288,7 +288,7 @@ UNIT288|RD-004|Roof Deck|Y8 MR 2|CO2|100|2026-08-26|good||
 UNIT289|RD-005|Roof Deck|Y8 Hallway|HFC-236fa|10|2026-08-26|good||
 UNIT290|RD-006|Roof Deck|Y8 Elevator Machine|Dry Chem|10|2026-08-26|good||
 UNIT291|RD-007|Roof Deck|Helipad Stair|CO2|100|2026-08-26|defective|degraded hose unnecessary|
-UNIT292|RD-008|Roof Deck|Helipad Hallway|AFFF|50|2026-09-03|good||
+UNIT292|RD-008|Roof Deck|Helipad Hallway|AFFF|50|2026-08-26|good||
 UNIT293|RD-009|Roof Deck|Helipad Hallway|AFFF|50|2026-09-03|good||
 UNIT294|RD-010|Roof Deck|Helipad Hallway|AFFF|100|2026-09-03|good||
 UNIT295|RD-011|Roof Deck|Helipad Hallway|AFFF|100|2026-09-03|good||
