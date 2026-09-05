@@ -1,309 +1,309 @@
 unit_id|serial_no|floor|location|type|capacity_lb|date_checked|status|problem_desc|expiration_date
-UNIT002|B2-001|B2|Y2 Service Area|HFC-236fa|10||not check||
-UNIT003|B2-002|B2|Y2 Chiller|CO2|100||not check||
-UNIT004|B2-003|B2|Y2 Chiller|CO2|100||not check||
-UNIT005|B1-001|B1|Parking Area|AFFF|50||not check||
-UNIT007|B2-004|B2|Y2 Chiller|AFFF|100||not check||
-UNIT008|B2-005|B2|Y2 Chiller|HFC-236fa|20||not check||
-UNIT009|B2-006|B2|Y2 Chiller|HFC-236fa|10||not check||
-UNIT010|B2-007|B2|Genset hallway|HCFC-123|10||not check||
-UNIT011|B2-008|B2|Genset|HFC-236fa|10||not check||
-UNIT012|B2-009|B2|Genset hallway|Dry Chem|10||not check||
-UNIT013|B2-010|B2|Genset|Dry Chem|10||not check||
-UNIT014|B2-011|B2|Genset|CO2|100||not check||
-UNIT015|B2-012|B2|Genset|AFFF|50||not check||
-UNIT016|B2-013|B2|Genset|Dry Chem|10||not check||
-UNIT017|B2-014|B2|Genset|Dry Chem|10||not check||
-UNIT018|B2-015|B2|Genset hallway|HCFC-123|10||not check||
-UNIT019|B2-016|B2|Genset|Dry Chem|10||not check||
-UNIT020|B2-017|B2|ENGR. Hallway|HCFC-123|10||not check||
-UNIT021|B2-018|B2|CCTV Room|HFC-236fa|10||not check||
-UNIT022|B2-019|B2|ENGR. Department|HFC-236fa|10||not check||
-UNIT023|B2-020|B2|Diesel Fire Pump Area|CO2|100||not check||
-UNIT024|B2-021|B2|Y8 Exit|HFC-236fa|10||not check||
-UNIT025|B2-022|B2|Y8 Exit|HFC-236fa|10||not check||
-UNIT026|B2-023|B2|Y8 AHU 26|AFFF|100||not check||
-UNIT027|B2-024|B2|Y8 AHU Entrance|Dry Chem|10||not check||
-UNIT028|B2-025|B2|Y8 AHU Entrance|HFC-236fa|10||not check||
-UNIT029|B2-026|B2|Y8 Painting Area|HFC-236fa|10||not check||
-UNIT030|B2-027|B2|Electrical Control Room|Dry Chem|10||not check||
-UNIT031|B2-028|B2|Electrical Control Room|HFC-236fa|10||not check||
-UNIT032|B2-029|B2|Electrical Control Room|HFC-236fa|10||not check||
-UNIT033|B2-030|B2|Electrical Control Room|HFC-236fa|20||not check||
-UNIT034|B2-031|B2|Genset hallway|HCFC-123|10||not check||
-UNIT035|B2-032|B2|Electrical Control Room|Dry Chem|10||not check||
-UNIT036|B2-033|B2|Electrical Control Room|CO2|100||not check||
-UNIT037|B2-034|B2|Y2 Service Area|HFC-236fa|10||not check||
-UNIT038|B2-036|B2|Y2 Service Area|Dry Chem|10||not check||
-UNIT039|B2-037|B2|Y2 Exit|HFC-236fa|10||not check||
-UNIT040|B2-038|B2|Y2 Chiller|Dry Chem|20||not check||
-UNIT041|B2-039|B2|CCTV Room|HCFC-123|20||not check||
-UNIT042|B2-040|B2|Engineering Hallway|HFC-236fa|10||not check||
-UNIT043|B2-041|B2|Storage Tank Area|Dry Chem|10||not check||
-UNIT044|B2-042|B2|Y2 Exit|Dry Chem|10||not check||
-UNIT045|B2-043|B2|Y8 AHU 26|Dry Chem|10||not check||
-UNIT046|B2-044|B2|Engr Department|HFC-236fa|10||not check||
-UNIT047|B1-002|B1|Parking Area|AFFF|50||not check||
-UNIT048|B1-003|B1|Parking FHC|HFC-236fa|10||not check||
-UNIT049|B1-004|B1|Sleeping Quarters|HFC-236fa|10||not check||
-UNIT050|B1-005|B1|Sleeping Quarters|Dry Chem|10||not check||
-UNIT051|B1-006|B1|Security Office|HFC-236fa|10||not check||
-UNIT052|B1-007|B1|Security Office|HFC-236fa|10||not check||
-UNIT053|B1-008|B1|AHU Parking FHC|AFFF|10||not check||
-UNIT054|B1-009|B1|AHU|AFFF|100||not check||
-UNIT055|B1-010|B1|AHU|HFC-236fa|10||not check||
-UNIT056|B1-011|B1|Y2 Service Area|HCFC-123|10||not check||
-UNIT057|B1-012|B1|Y2 Service Area|HFC-236fa|10||not check||
-UNIT058|B1-013|B1|Y8 Firehose Cabinet|HFC-236fa|10||not check||
-UNIT059|B1-014|B1|Parking Area|CO2|10||not check||
-UNIT060|B1-015|B1|Y2 Hallway|HFC-236fa|10||not check||
-UNIT061|B1-016|B1|Y2 Hallway|HFC-236fa|10||not check||
-UNIT062|B1-017|B1|Linen Room|HFC-236fa|10||not check||
-UNIT063|B1-018|B1|Men's Locker|Dry Chem|20||not check||
-UNIT064|B1-019|B1|Cafeteria|Class K|10||not check||
-UNIT065|B1-020|B1|Cafeteria|Dry Chem|10||not check||
-UNIT066|B1-021|B1|Butchery|Class K|10||not check||
-UNIT067|B1-022|B1|Butchery|HFC-236fa|10||not check||
-UNIT068|B1-023|B1|AHU23|HCFC-123|10||not check||
-UNIT069|B1-024|B1|Central Kitchen|HFC-236fa|10||not check||
-UNIT070|B1-025|B1|Central Kitchen|HFC-236fa|10||not check||
-UNIT071|B1-026|B1|Pastry|Class K|10||not check||
-UNIT072|B1-027|B1|Y8 Hallway|HFC-236fa|10||not check||
-UNIT073|B1-028|B1|Y8 Hallway|HFC-236fa|10||not check||
-UNIT074|B1-029|B1|Receiving Room|HFC-236fa|10||not check||
-UNIT075|B1-030|B1|Loading Dock Area|HFC-236fa|10||not check||
-UNIT076|B1-031|B1|Steward|HFC-236fa|10||not check||
-UNIT077|B1-032|B1|Steward|HCFC-123|10||not check||
-UNIT078|B1-033|B1|Chef Office|HFC-236fa|10||not check||
-UNIT079|B1-034|B1|PABX Office|HFC-236fa|10||not check||
-UNIT080|B1-035|B1|PABX Office|Dry Chem|10||not check||
-UNIT081|B1-036|B1|Pastry|HCFC-123|10||not check||
-UNIT082|B1-037|B1|Pastry|Class K|10||not check||
-UNIT083|B1-038|B1|Y2 Hallway Fire Rack|HFC-236fa|10||not check||
-UNIT084|B1-039|B1|Loading Dock Area|HFC-236fa|10||not check||
-UNIT085|GF-001|GF|Y2 Exit Service Area|Dry Chem|10||not check||
-UNIT086|GF-006|GF|Yurakuen Hallway|HFC-236fa|10||not check||
-UNIT087|GF-007|GF|Yurakuen|HFC-236fa|10||not check||
-UNIT088|GF-008|GF|Yurakuen Hallway|HFC-236fa|10||not check||
-UNIT089|GF-009|GF|Yurakuen|Dry Chem|10||not check||
-UNIT090|GF-010|GF|Yurakuen|HFC-236fa|10||not check||
-UNIT091|GF-011|GF|Corniche Kitchen|HCFC-123|10||not check||
-UNIT092|GF-013|GF|Corniche Kitchen|Class K|10||not check||
-UNIT093|GF-015|GF|Corniche Kitchen|HCFC-123|10||not check||
-UNIT094|GF-016|GF|Corniche Buffet|HFC-236fa|20||not check||
-UNIT095|GF-017|GF|Corniche Kitchen|HCFC-123|10||not check||
-UNIT096|GF-018|GF|Yakiniko|HFC-236fa|10||not check||
-UNIT097|GF-019|GF|Tepan|HFC-236fa|10||not check||
-UNIT098|GF-020|GF|Tepan|HFC-236fa|10||not check||
-UNIT099|GF-021|GF|Tepan|HFC-236fa|10||not check||
-UNIT100|GF-022|GF|Lobby Entrance|Dry Chem|10||not check||
-UNIT101|GF-023|GF|Lobby Entrance|Dry Chem|10||not check||
-UNIT102|GF-024|GF|Lobby Entrance|HCFC-123|10||not check||
-UNIT103|GF-025|GF|Concierge Room|HFC-236fa|10||not check||
-UNIT104|GF-026|GF|Concierge Room|HFC-236fa|10||not check||
-UNIT105|GF-027|GF|Lobby Hallway|HCFC-123|10||not check||
-UNIT106|GF-028|GF|Ballroom Hallway|HFC-236fa|10||not check||
-UNIT107|GF-029|GF|Ballroom Hallway|HFC-236fa|10||not check||
-UNIT108|GF-030|GF|Back Alley Hallway|AFFF|10||not check||
-UNIT109|GF-031|GF|Back Alley Hallway|Dry Chem|10||not check||
-UNIT110|GF-032|GF|Back Alley Hallway|HFC-236fa|10||not check||
-UNIT111|GF-033|GF|Back Alley Hallway|HFC-236fa|10||not check||
-UNIT112|GF-034|GF|Back Alley Hallway|HFC-236fa|10||not check||
-UNIT113|GF-035|GF|Back Alley Hallway|HFC-236fa|10||not check||
-UNIT114|GF-036|GF|Back Alley Hallway|HFC-236fa|10||not check||
-UNIT115|GF-037|GF|Back Alley Hallway|HFC-236fa|10||not check||
-UNIT116|GF-038|GF|Back Alley Hallway|HFC-236fa|10||not check||
-UNIT117|GF-039|GF|Back Alley Hallway|HFC-236fa|10||not check||
-UNIT118|GF-040|GF|Back Alley Hallway|HFC-236fa|10||not check||
-UNIT119|GF-041|GF|Back Alley Hallway|HFC-236fa|10||not check||
-UNIT120|GF-042|GF|Back Alley Hallway|HFC-236fa|10||not check||
-UNIT121|GF-043|GF|Back Alley Hallway|Dry Chem|10||not check||
-UNIT122|GF-044|GF|Back Alley Hallway|HFC-236fa|10||not check||
-UNIT123|GF-045|GF|Employee Entrance|HFC-236fa|10||not check||
-UNIT124|GF-046|GF|Tepan Hallway|HFC-236fa|10||not check||
-UNIT125|GF-047|GF|Pool Bar|HCFC-123|10||not check||
-UNIT126|GF-048|GF|Pool Bar|HFC-236fa|10||not check||
-UNIT127|GF-049|GF|Pool Bar|HFC-236fa|10||not check||
-UNIT128|GF-050|GF|Pool CR Hallway|HFC-236fa|10||not check||
-UNIT129|GF-051|GF|Pool CR Hallway|HFC-236fa|10||not check||
-UNIT130|GF-052|GF|Lobby To Park G. Exit|HCFC-123|10||not check||
-UNIT131|GF-053|GF|Back Alley Hallway|HFC-236fa|50||not check||
-UNIT132|GF-054|GF|Lobby Front Desk|HFC-236fa|10||not check||
-UNIT133|GF-055|GF|GF Kitchen|Class K|10||not check||
-UNIT134|GF-056|GF|Telex To Lobby|HFC-236fa|10||not check||
-UNIT135|GF-057|GF|Y8 Electrical Room|Dry Chem|10||not check||
-UNIT136|GF-058|GF|Telex Back Office|HFC-236fa|10||not check||
-UNIT137|GF-059|GF|Pool CR Female|HFC-236fa|10||not check||
-UNIT138|GF-060|GF|Pool CR Male|HFC-236fa|10||not check||
-UNIT139|GF-061|GF|Lobby Safe Deposit|HFC-236fa|10||not check||
-UNIT140|2F-001|2F|Y8 Exit|HFC-236fa|10||not check||
-UNIT141|2F-002|2F|ATM Hallway|HFC-236fa|10||not check||
-UNIT142|2F-003|2F|Health Club Male HW|HFC-236fa|10||not check||
-UNIT143|2F-004|2F|Health Club Female HW|HFC-236fa|10||not check||
-UNIT144|2F-005|2F|HC Female Jacuzzi|HFC-236fa|10||not check||
-UNIT145|2F-006|2F|HC Gym|HFC-236fa|10||not check||
-UNIT146|2F-008|2F|HC Male Jacuzzi|HFC-236fa|10||not check||
-UNIT147|2F-009|2F|Business Center HW FHC|HFC-236fa|10||not check||
-UNIT148|2F-010|2F|AVR Hallway|HFC-236fa|10||not check||
-UNIT149|2F-011|2F|AVR|HFC-236fa|10||not check||
-UNIT150|2F-012|2F|Banquet Entrance Store Room|Dry Chem|10||not check||
-UNIT151|2F-013|2F|Banquet Hallway|HFC-236fa|10||not check||
-UNIT152|2F-014|2F|Banquet Hallway|HFC-236fa|10||not check||
-UNIT153|2F-017|2F|Ruby Hallway|HFC-236fa|10||not check||
-UNIT154|2F-018|2F|Electrical Dimmer Room|HFC-236fa|10||not check||
-UNIT155|2F-020|2F|Amethyst FHC|HFC-236fa|10||not check||
-UNIT156|2F-021|2F|Amethyst Hallway|HFC-236fa|10||not check||
-UNIT157|2F-022|2F|Y2 Service Area|HFC-236fa|10||not check||
-UNIT158|2F-023|2F|Y2 Exit|HFC-236fa|10||not check||
-UNIT159|2F-024|2F|MR AHU 6|HFC-236fa|10||not check||
-UNIT160|2F-025|2F|MR AHU 6|HFC-236fa|10||not check||
-UNIT161|2F-027|2F|MR AHU 6|HFC-236fa|10||not check||
-UNIT162|2F-028|2F|MR AHU 6|Dry Chem|10||not check||
-UNIT163|2F-029|2F|MR AHU Hallway|HFC-236fa|10||not check||
-UNIT164|2F-030|2F|Business Center Office|HFC-236fa|10||not check||
-UNIT165|2F-031|2F|Business Center Office|HFC-236fa|10||not check||
-UNIT166|5F-001|5F|Y8 Exit|HFC-236fa|10||not check||
-UNIT167|5F-002|5F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT168|5F-003|5F|Food & Beverage Office|HFC-236fa|10||not check||
-UNIT169|5F-004|5F|Clinic Room|HFC-236fa|10||not check||
-UNIT170|5F-005|5F|Public Relations Office|HFC-236fa|10||not check||
-UNIT171|5F-006|5F|Sales & Marketing|HFC-236fa|10||not check||
-UNIT172|5F-007|5F|HR Office|HFC-236fa|10||not check||
-UNIT173|5F-008|5F|Purchasing Credit & Collection|HFC-236fa|10||not check||
-UNIT174|5F-009|5F|Accounting|HFC-236fa|10||not check||
-UNIT175|5F-010|5F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT176|5F-011|5F|Tiger Infrastructure|HFC-236fa|10||not check||
-UNIT177|5F-012|5F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT178|5F-013|5F|Project Office|HCFC-123|10||not check||
-UNIT179|5F-014|5F|MR 1|AFFF|100||not check||
-UNIT180|5F-015|5F|MR 1|CO2|100||not check||
-UNIT181|5F-016|5F|MR 1|Dry Chem|10||not check||
-UNIT182|5F-017|5F|MR 1|Dry Chem|10||not check||
-UNIT183|5F-018|5F|MR 1|HFC-236fa|10||not check||
-UNIT184|5F-019|5F|MR 1|HFC-236fa|10||not check||
-UNIT185|5F-020|5F|MR AHU 13|HFC-236fa|20||not check||
-UNIT186|5F-021|5F|MR 1 Outside|HFC-236fa|10||not check||
-UNIT187|5F-022|5F|MR AHU 11|HFC-236fa|10||not check||
-UNIT188|5F-023|5F|General Manager Office|HFC-236fa|10||not check||
-UNIT189|5F-024|5F|Events Office|HFC-236fa|10||not check||
-UNIT190|5F-025|5F|MR 1|HFC-236fa|10||not check||
-UNIT191|5F-026|5F|President Room|HFC-236fa|10||not check||
-UNIT192|5F-027|5F|President Room|Dry Chem|10||not check||
-UNIT193|6F-001|6F|Y2 Service Area|HFC-236fa|10||not check||
-UNIT194|6F-002|6F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT195|6F-004|6F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT196|6F-005|6F|Y8 Exit|HCFC-123|10||not check||
-UNIT197|7F-001|7F|Y8 Exit|HFC-236fa|10||not check||
-UNIT198|7F-003|7F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT199|7F-005|7F|Y2 Service Area|HCFC-123|10||not check||
-UNIT200|7F-006|7F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT201|8F-001|8F|Y2 Service Area|HFC-236fa|10||not check||
-UNIT202|8F-004|8F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT203|8F-005|8F|Y8 Exit|HCFC-123|10||not check||
-UNIT204|8F-006|8F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT205|9F-001|9F|Y8 Exit|HFC-236fa|10||not check||
-UNIT206|9F-004|9F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT207|9F-005|9F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT208|9F-006|9F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT209|10F-001|10F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT210|10F-004|10F|Y8 Exit|HFC-236fa|10||not check||
-UNIT211|10F-005|10F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT212|10F-006|10F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT213|11F-001|11F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT214|11F-004|11F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT215|11F-005|11F|Y8 Exit|HFC-236fa|10||not check||
-UNIT216|11F-006|11F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT217|12F-001|12F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT218|12F-004|12F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT219|12F-005|12F|Y8 Exit|HFC-236fa|10||not check||
-UNIT220|12F-006|12F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT221|14F-001|14F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT222|14F-004|14F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT223|14F-005|14F|Y8 Exit|HFC-236fa|10||not check||
-UNIT224|14F-006|14F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT225|15F-001|15F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT226|15F-004|15F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT227|15F-005|15F|Y8 Exit|HFC-236fa|10||not check||
-UNIT228|15F-006|15F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT229|16F-001|16F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT230|16F-004|16F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT231|16F-005|16F|Y8 Exit|HFC-236fa|10||not check||
-UNIT232|16F-006|16F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT233|17F-001|17F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT234|17F-004|17F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT235|17F-005|17F|Y8 Exit|HFC-236fa|10||not check||
-UNIT236|17F-006|17F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT237|18F-001|18F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT238|18F-004|18F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT239|18F-005|18F|Y8 Exit|HFC-236fa|10||not check||
-UNIT240|18F-006|18F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT241|19F-001|19F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT242|19F-004|19F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT243|19F-005|19F|Y8 Exit|HFC-236fa|10||not check||
-UNIT244|19F-006|19F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT245|20F-001|20F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT246|20F-003|20F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT247|20F-005|20F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT248|20F-006|20F|Y8 Exit|HFC-236fa|10||not check||
-UNIT249|21F-001|21F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT250|21F-004|21F|Y8 Hallway|HCFC-123|10||not check||
-UNIT251|21F-005|21F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT252|21F-006|21F|Y8 Exit|HFC-236fa|10||not check||
-UNIT253|22F-001|22F|Y8 Exit|HFC-236fa|10||not check||
-UNIT254|22F-002|22F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT255|22F-003|22F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT256|22F-004|22F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT257|23F-001|23F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT258|23F-003|23F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT259|23F-004|23F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT260|23F-005|23F|Y8 Exit|HFC-236fa|10||not check||
-UNIT261|24F-001|24F|Y8 Exit|HFC-236fa|10||not check||
-UNIT262|24F-002|24F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT263|24F-003|24F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT264|24F-005|24F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT265|25F-001|25F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT266|25F-002|25F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT267|25F-004|25F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT268|25F-005|25F|Y8 Diamond Club|Class K|10||not check||
-UNIT269|25F-006|25F|Y8 Diamond Club|HCFC-123|10||not check||
-UNIT270|25F-007|25F|Y8 Exit|HFC-236fa|10||not check||
-UNIT271|26F-001|26F|Y8 Exit|HFC-236fa|10||not check||
-UNIT272|26F-002|26F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT273|26F-004|26F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT274|26F-006|26F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT275|27F-001|27F|Y2 Fire Rack HW|HFC-236fa|10||not check||
-UNIT276|27F-002|27F|Y2 Kitchen|HFC-236fa|10||not check||
-UNIT277|27F-004|27F|Y2 Kitchen|HFC-236fa|10||not check||
-UNIT278|27F-005|27F|Y2 Kitchen|Class K|10||not check||
-UNIT279|27F-006|27F|Y2 Hallway FHC|HFC-236fa|10||not check||
-UNIT280|27F-007|27F|Y2 Hallway|HFC-236fa|10||not check||
-UNIT281|27F-008|27F|Y8 Hallway FHC|HFC-236fa|10||not check||
-UNIT282|27F-009|27F|Y8 Exit|HFC-236fa|10||not check||
-UNIT283|27F-010|27F|Y2 Exit Service Area|HFC-236fa|10||not check||
-UNIT284|27F-011|27F|Y8 Hallway|HFC-236fa|10||not check||
-UNIT285|RD-001|Roof Deck|Y8 Exit|HFC-236fa|10||not check||
-UNIT286|RD-002|Roof Deck|MR 2 AHU|CO2|100||not check||
-UNIT287|RD-003|Roof Deck|MR 2 AHU|AFFF|50||not check||
-UNIT288|RD-004|Roof Deck|Y8 MR 2|CO2|100||not check||
-UNIT289|RD-005|Roof Deck|Y8 Hallway|HFC-236fa|10||not check||
-UNIT290|RD-006|Roof Deck|Y8 Elevator Machine|Dry Chem|10||not check||
-UNIT291|RD-007|Roof Deck|Helipad Stair|CO2|100||not check||
-UNIT292|RD-008|Roof Deck|Helipad Hallway|AFFF|50||not check||
-UNIT293|RD-009|Roof Deck|Helipad Hallway|AFFF|50||not check||
-UNIT294|RD-010|Roof Deck|Helipad Hallway|AFFF|100||not check||
-UNIT295|RD-011|Roof Deck|Helipad Hallway|AFFF|100||not check||
-UNIT296|RD-012|Roof Deck|Helipad Hallway|AFFF|100||not check||
-UNIT297|RD-013|Roof Deck|Helipad Cabinet|Dry Chem|20||not check||
-UNIT298|RD-014|Roof Deck|Helipad Cabinet|Dry Chem|10||not check||
-UNIT299|RD-015|Roof Deck|Helipad Cabinet|Dry Chem|10||not check||
-UNIT300|RD-016|Roof Deck|Helipad Stair|AFFF|50||not check||
-UNIT301|RD-017|Roof Deck|Y2 MR 3|AFFF|100||not check||
-UNIT302|RD-018|Roof Deck|Y2 MR3 HW|HFC-236fa|10||not check||
-UNIT303|RD-019|Roof Deck|Y2 MR3 HW|HFC-236fa|10||not check||
-UNIT304|RD-020|Roof Deck|Y2 MR3 HW|HFC-236fa|10||not check||
-UNIT305|RD-021|Roof Deck|Y2 AHU|AFFF|100||not check||
-UNIT306|RD-022|Roof Deck|Y2 AHU|HFC-236fa|10||not check||
-UNIT307|RD-023|Roof Deck|Y2 Stair Exit|HFC-236fa|10||not check||
-UNIT308|RD-024|Roof Deck|Y2 Stair|HFC-236fa|10||not check||
-UNIT309|RD-025|Roof Deck|Y8 Elevator Machine|HFC-236fa|10||not check||
-UNIT310|RD-026|Roof Deck|Y8 Hallway|HFC-236fa|10||not check||
+UNIT002|B2-001|B2|Y2 Service Area|HFC-236fa|10||good||
+UNIT003|B2-002|B2|Y2 Chiller|CO2|100||good||
+UNIT004|B2-003|B2|Y2 Chiller|CO2|100||defective|degraded hose insulation problem|
+UNIT005|B1-001|B1|Parking Area|AFFF|50||good||
+UNIT007|B2-004|B2|Y2 Chiller|AFFF|100||good||
+UNIT008|B2-005|B2|Y2 Chiller|HFC-236fa|20||good||
+UNIT009|B2-006|B2|Y2 Chiller|HFC-236fa|10||defective|rusty tank|
+UNIT010|B2-007|B2|Genset hallway|HCFC-123|10||good||
+UNIT011|B2-008|B2|Genset|HFC-236fa|10||good||
+UNIT012|B2-009|B2|Genset hallway|Dry Chem|10||good||
+UNIT013|B2-010|B2|Genset|Dry Chem|10||good||
+UNIT014|B2-011|B2|Genset|CO2|100||good||
+UNIT015|B2-012|B2|Genset|AFFF|50||good||
+UNIT016|B2-013|B2|Genset|Dry Chem|10||low pressure|pull out 11-27-2025|
+UNIT017|B2-014|B2|Genset|Dry Chem|10||good||
+UNIT018|B2-015|B2|Genset hallway|HCFC-123|10||good||
+UNIT019|B2-016|B2|Genset|Dry Chem|10||good||
+UNIT020|B2-017|B2|ENGR. Hallway|HCFC-123|10||good||
+UNIT021|B2-018|B2|CCTV Room|HFC-236fa|10||good||
+UNIT022|B2-019|B2|ENGR. Department|HFC-236fa|10||good||
+UNIT023|B2-020|B2|Diesel Fire Pump Area|CO2|100||good||
+UNIT024|B2-021|B2|Y8 Exit|HFC-236fa|10||good|soon to be refilled|
+UNIT025|B2-022|B2|Y8 Exit|HFC-236fa|10||good||
+UNIT026|B2-023|B2|Y8 AHU 26|AFFF|100||good||
+UNIT027|B2-024|B2|Y8 AHU Entrance|Dry Chem|10||good||
+UNIT028|B2-025|B2|Y8 AHU Entrance|HFC-236fa|10||good||
+UNIT029|B2-026|B2|Y8 Painting Area|HFC-236fa|10||good||
+UNIT030|B2-027|B2|Electrical Control Room|Dry Chem|10||good||
+UNIT031|B2-028|B2|Electrical Control Room|HFC-236fa|10||good||
+UNIT032|B2-029|B2|Electrical Control Room|HFC-236fa|10||good||
+UNIT033|B2-030|B2|Electrical Control Room|HFC-236fa|20||good||
+UNIT034|B2-031|B2|Genset hallway|HCFC-123|10||missing||
+UNIT035|B2-032|B2|Electrical Control Room|Dry Chem|10||good||
+UNIT036|B2-033|B2|Electrical Control Room|CO2|100||defective|degraded hose problem|
+UNIT037|B2-034|B2|Y2 Service Area|HFC-236fa|10||good||
+UNIT038|B2-036|B2|Y2 Service Area|Dry Chem|10||low pressure|pull out 11-27-2025|
+UNIT039|B2-037|B2|Y2 Exit|HFC-236fa|10||good||
+UNIT040|B2-038|B2|Y2 Chiller|Dry Chem|20||good||
+UNIT041|B2-039|B2|CCTV Room|HCFC-123|20||good||
+UNIT042|B2-040|B2|Engineering Hallway|HFC-236fa|10||low pressure||
+UNIT043|B2-041|B2|Storage Tank Area|Dry Chem|10||good||
+UNIT044|B2-042|B2|Y2 Exit|Dry Chem|10||good||
+UNIT045|B2-043|B2|Y8 AHU 26|Dry Chem|10||low pressure|pull out 11-27-2025|
+UNIT046|B2-044|B2|Engr Department|HFC-236fa|10||good||
+UNIT047|B1-002|B1|Parking Area|AFFF|50||good||
+UNIT048|B1-003|B1|Parking FHC|HFC-236fa|10||good||
+UNIT049|B1-004|B1|Sleeping Quarters|HFC-236fa|10||good||
+UNIT050|B1-005|B1|Sleeping Quarters|Dry Chem|10||good||
+UNIT051|B1-006|B1|Security Office|HFC-236fa|10||good||
+UNIT052|B1-007|B1|Security Office|HFC-236fa|10||good||
+UNIT053|B1-008|B1|AHU Parking FHC|AFFF|10||good||
+UNIT054|B1-009|B1|AHU|AFFF|100||good||
+UNIT055|B1-010|B1|AHU|HFC-236fa|10||good||
+UNIT056|B1-011|B1|Y2 Service Area|HCFC-123|10||missing||
+UNIT057|B1-012|B1|Y2 Service Area|HFC-236fa|10||good||
+UNIT058|B1-013|B1|Y8 Firehose Cabinet|HFC-236fa|10||good||
+UNIT059|B1-014|B1|Parking Area|CO2|10||good||
+UNIT060|B1-015|B1|Y2 Hallway|HFC-236fa|10||good||
+UNIT061|B1-016|B1|Y2 Hallway|HFC-236fa|10||good||
+UNIT062|B1-017|B1|Linen Room|HFC-236fa|10||good||
+UNIT063|B1-018|B1|Men's Locker|Dry Chem|20||low pressure||
+UNIT064|B1-019|B1|Cafeteria|Class K|10||good||
+UNIT065|B1-020|B1|Cafeteria|Dry Chem|10||good||
+UNIT066|B1-021|B1|Butchery|Class K|10||good||
+UNIT067|B1-022|B1|Butchery|HFC-236fa|10||good||
+UNIT068|B1-023|B1|AHU23|HCFC-123|10||good||
+UNIT069|B1-024|B1|Central Kitchen|HFC-236fa|10||good||
+UNIT070|B1-025|B1|Central Kitchen|HFC-236fa|10||good||
+UNIT071|B1-026|B1|Pastry|Class K|10||good||
+UNIT072|B1-027|B1|Y8 Hallway|HFC-236fa|10||good||
+UNIT073|B1-028|B1|Y8 Hallway|HFC-236fa|10||good||
+UNIT074|B1-029|B1|Receiving Room|HFC-236fa|10||good||
+UNIT075|B1-030|B1|Loading Dock Area|HFC-236fa|10||good||
+UNIT076|B1-031|B1|Steward|HFC-236fa|10||missing||
+UNIT077|B1-032|B1|Steward|HCFC-123|10||low pressure|pullout to engr 12-10-2025|
+UNIT078|B1-033|B1|Chef Office|HFC-236fa|10||good||
+UNIT079|B1-034|B1|PABX Office|HFC-236fa|10||good||
+UNIT080|B1-035|B1|PABX Office|Dry Chem|10||good||
+UNIT081|B1-036|B1|Pastry|HCFC-123|10||good||
+UNIT082|B1-037|B1|Pastry|Class K|10||good||
+UNIT083|B1-038|B1|Y2 Hallway Fire Rack|HFC-236fa|10||good||
+UNIT084|B1-039|B1|Loading Dock Area|HFC-236fa|10||good||
+UNIT085|GF-001|GF|Y2 Exit Service Area|Dry Chem|10||good||
+UNIT086|GF-006|GF|Yurakuen Hallway|HFC-236fa|10||good||
+UNIT087|GF-007|GF|Yurakuen|HFC-236fa|10||good||
+UNIT088|GF-008|GF|Yurakuen Hallway|HFC-236fa|10||defective|rusty tank|
+UNIT089|GF-009|GF|Yurakuen|Dry Chem|10||good||
+UNIT090|GF-010|GF|Yurakuen|HFC-236fa|10||good||
+UNIT091|GF-011|GF|Corniche Kitchen|HCFC-123|10||good||
+UNIT092|GF-013|GF|Corniche Kitchen|Class K|10||good||
+UNIT093|GF-015|GF|Corniche Kitchen|HCFC-123|10||good||
+UNIT094|GF-016|GF|Corniche Buffet|HFC-236fa|20||good||
+UNIT095|GF-017|GF|Corniche Kitchen|HCFC-123|10||good||
+UNIT096|GF-018|GF|Yakiniko|HFC-236fa|10||good||
+UNIT097|GF-019|GF|Tepan|HFC-236fa|10||good||
+UNIT098|GF-020|GF|Tepan|HFC-236fa|10||good||
+UNIT099|GF-021|GF|Tepan|HFC-236fa|10||good||
+UNIT100|GF-022|GF|Lobby Entrance|Dry Chem|10||good||
+UNIT101|GF-023|GF|Lobby Entrance|Dry Chem|10||low pressure|pull out to engr. 12-10-2025|
+UNIT102|GF-024|GF|Lobby Entrance|HCFC-123|10||good||
+UNIT103|GF-025|GF|Concierge Room|HFC-236fa|10||good||
+UNIT104|GF-026|GF|Concierge Room|HFC-236fa|10||good||
+UNIT105|GF-027|GF|Lobby Hallway|HCFC-123|10||good||
+UNIT106|GF-028|GF|Ballroom Hallway|HFC-236fa|10||good||
+UNIT107|GF-029|GF|Ballroom Hallway|HFC-236fa|10||good||
+UNIT108|GF-030|GF|Back Alley Hallway|AFFF|10||good||
+UNIT109|GF-031|GF|Back Alley Hallway|Dry Chem|10||good||
+UNIT110|GF-032|GF|Back Alley Hallway|HFC-236fa|10||good||
+UNIT111|GF-033|GF|Back Alley Hallway|HFC-236fa|10||good|soon to be refill|
+UNIT112|GF-034|GF|Back Alley Hallway|HFC-236fa|10||good||
+UNIT113|GF-035|GF|Back Alley Hallway|HFC-236fa|10||good||
+UNIT114|GF-036|GF|Back Alley Hallway|HFC-236fa|10||good||
+UNIT115|GF-037|GF|Back Alley Hallway|HFC-236fa|10||good||
+UNIT116|GF-038|GF|Back Alley Hallway|HFC-236fa|10||good||
+UNIT117|GF-039|GF|Back Alley Hallway|HFC-236fa|10||good||
+UNIT118|GF-040|GF|Back Alley Hallway|HFC-236fa|10||good||
+UNIT119|GF-041|GF|Back Alley Hallway|HFC-236fa|10||good||
+UNIT120|GF-042|GF|Back Alley Hallway|HFC-236fa|10||good||
+UNIT121|GF-043|GF|Back Alley Hallway|Dry Chem|10||good||
+UNIT122|GF-044|GF|Back Alley Hallway|HFC-236fa|10||good||
+UNIT123|GF-045|GF|Employee Entrance|HFC-236fa|10||good||
+UNIT124|GF-046|GF|Tepan Hallway|HFC-236fa|10||good||
+UNIT125|GF-047|GF|Pool Bar|HCFC-123|10||good||
+UNIT126|GF-048|GF|Pool Bar|HFC-236fa|10||good||
+UNIT127|GF-049|GF|Pool Bar|HFC-236fa|10||good||
+UNIT128|GF-050|GF|Pool CR Hallway|HFC-236fa|10||good||
+UNIT129|GF-051|GF|Pool CR Hallway|HFC-236fa|10||good||
+UNIT130|GF-052|GF|Lobby To Park G. Exit|HCFC-123|10||good||
+UNIT131|GF-053|GF|Back Alley Hallway|HFC-236fa|50||good|soon to be refill|
+UNIT132|GF-054|GF|Lobby Front Desk|HFC-236fa|10||good||
+UNIT133|GF-055|GF|GF Kitchen|Class K|10||good||
+UNIT134|GF-056|GF|Telex To Lobby|HFC-236fa|10||good||
+UNIT135|GF-057|GF|Y8 Electrical Room|Dry Chem|10||low pressure|pull out 11-27-2025|
+UNIT136|GF-058|GF|Telex Back Office|HFC-236fa|10||good||
+UNIT137|GF-059|GF|Pool CR Female|HFC-236fa|10||good||
+UNIT138|GF-060|GF|Pool CR Male|HFC-236fa|10||good|soon to be refill|
+UNIT139|GF-061|GF|Lobby Safe Deposit|HFC-236fa|10||good||
+UNIT140|2F-001|2F|Y8 Exit|HFC-236fa|10||good||
+UNIT141|2F-002|2F|ATM Hallway|HFC-236fa|10||good||
+UNIT142|2F-003|2F|Health Club Male HW|HFC-236fa|10||good||
+UNIT143|2F-004|2F|Health Club Female HW|HFC-236fa|10||good||
+UNIT144|2F-005|2F|HC Female Jacuzzi|HFC-236fa|10||defective||
+UNIT145|2F-006|2F|HC Gym|HFC-236fa|10||good||
+UNIT146|2F-008|2F|HC Male Jacuzzi|HFC-236fa|10||good||
+UNIT147|2F-009|2F|Business Center HW FHC|HFC-236fa|10||good||
+UNIT148|2F-010|2F|AVR Hallway|HFC-236fa|10||good||
+UNIT149|2F-011|2F|AVR|HFC-236fa|10||good||
+UNIT150|2F-012|2F|Banquet Entrance Store Room|Dry Chem|10||good||
+UNIT151|2F-013|2F|Banquet Hallway|HFC-236fa|10||good||
+UNIT152|2F-014|2F|Banquet Hallway|HFC-236fa|10||good||
+UNIT153|2F-017|2F|Ruby Hallway|HFC-236fa|10||good||
+UNIT154|2F-018|2F|Electrical Dimmer Room|HFC-236fa|10||good|suggest dry chem|
+UNIT155|2F-020|2F|Amethyst FHC|HFC-236fa|10||good||
+UNIT156|2F-021|2F|Amethyst Hallway|HFC-236fa|10||good||
+UNIT157|2F-022|2F|Y2 Service Area|HFC-236fa|10||good||
+UNIT158|2F-023|2F|Y2 Exit|HFC-236fa|10||good||
+UNIT159|2F-024|2F|MR AHU 6|HFC-236fa|10||defective|rusty tank|
+UNIT160|2F-025|2F|MR AHU 6|HFC-236fa|10||defective|rusty tank|
+UNIT161|2F-027|2F|MR AHU 6|HFC-236fa|10||good||
+UNIT162|2F-028|2F|MR AHU 6|Dry Chem|10||good||
+UNIT163|2F-029|2F|MR AHU Hallway|HFC-236fa|10||defective|rusty tank|
+UNIT164|2F-030|2F|Business Center Office|HFC-236fa|10||good||
+UNIT165|2F-031|2F|Business Center Office|HFC-236fa|10||good||
+UNIT166|5F-001|5F|Y8 Exit|HFC-236fa|10||good||
+UNIT167|5F-002|5F|Y8 Hallway|HFC-236fa|10||good||
+UNIT168|5F-003|5F|Food & Beverage Office|HFC-236fa|10||good||
+UNIT169|5F-004|5F|Clinic Room|HFC-236fa|10||good||
+UNIT170|5F-005|5F|Public Relations Office|HFC-236fa|10||good||
+UNIT171|5F-006|5F|Sales & Marketing|HFC-236fa|10||good||
+UNIT172|5F-007|5F|HR Office|HFC-236fa|10||good||
+UNIT173|5F-008|5F|Purchasing Credit & Collection|HFC-236fa|10||good||
+UNIT174|5F-009|5F|Accounting|HFC-236fa|10||good|gauge moist readable|
+UNIT175|5F-010|5F|Y2 Hallway|HFC-236fa|10||good||
+UNIT176|5F-011|5F|Tiger Infrastructure|HFC-236fa|10||good||
+UNIT177|5F-012|5F|Y2 Exit Service Area|HFC-236fa|10||good||
+UNIT178|5F-013|5F|Project Office|HCFC-123|10||good||
+UNIT179|5F-014|5F|MR 1|AFFF|100||good||
+UNIT180|5F-015|5F|MR 1|CO2|100||good||
+UNIT181|5F-016|5F|MR 1|Dry Chem|10||good||
+UNIT182|5F-017|5F|MR 1|Dry Chem|10||good||
+UNIT183|5F-018|5F|MR 1|HFC-236fa|10||low pressure|pull out 11-27-2025|
+UNIT184|5F-019|5F|MR 1|HFC-236fa|10||good||
+UNIT185|5F-020|5F|MR AHU 13|HFC-236fa|20||defective|rusty tank|
+UNIT186|5F-021|5F|MR 1 Outside|HFC-236fa|10||good||
+UNIT187|5F-022|5F|MR AHU 11|HFC-236fa|10||good||
+UNIT188|5F-023|5F|General Manager Office|HFC-236fa|10||good|room closed|
+UNIT189|5F-024|5F|Events Office|HFC-236fa|10||good||
+UNIT190|5F-025|5F|MR 1|HFC-236fa|10||good||
+UNIT191|5F-026|5F|President Room|HFC-236fa|10||good|room closed|
+UNIT192|5F-027|5F|President Room|Dry Chem|10||good|room closed|
+UNIT193|6F-001|6F|Y2 Service Area|HFC-236fa|10||good||
+UNIT194|6F-002|6F|Y2 Hallway|HFC-236fa|10||good||
+UNIT195|6F-004|6F|Y8 Hallway|HFC-236fa|10||good||
+UNIT196|6F-005|6F|Y8 Exit|HCFC-123|10||good||
+UNIT197|7F-001|7F|Y8 Exit|HFC-236fa|10||good||
+UNIT198|7F-003|7F|Y2 Hallway|HFC-236fa|10||good||
+UNIT199|7F-005|7F|Y2 Service Area|HCFC-123|10||good||
+UNIT200|7F-006|7F|Y8 Hallway|HFC-236fa|10||good||
+UNIT201|8F-001|8F|Y2 Service Area|HFC-236fa|10||good||
+UNIT202|8F-004|8F|Y8 Hallway|HFC-236fa|10||defective|gauge moist unreadable|
+UNIT203|8F-005|8F|Y8 Exit|HCFC-123|10||good||
+UNIT204|8F-006|8F|Y2 Hallway|HFC-236fa|10||good||
+UNIT205|9F-001|9F|Y8 Exit|HFC-236fa|10||good||
+UNIT206|9F-004|9F|Y2 Exit Service Area|HFC-236fa|10||good||
+UNIT207|9F-005|9F|Y8 Hallway|HFC-236fa|10||good||
+UNIT208|9F-006|9F|Y2 Hallway|HFC-236fa|10||good||
+UNIT209|10F-001|10F|Y2 Exit Service Area|HFC-236fa|10||defective|gauge moist unreadable|
+UNIT210|10F-004|10F|Y8 Exit|HFC-236fa|10||good|gauge moist readable|
+UNIT211|10F-005|10F|Y8 Hallway|HFC-236fa|10||good||
+UNIT212|10F-006|10F|Y2 Hallway|HFC-236fa|10||good||
+UNIT213|11F-001|11F|Y8 Hallway|HFC-236fa|10||good||
+UNIT214|11F-004|11F|Y2 Exit Service Area|HFC-236fa|10||good||
+UNIT215|11F-005|11F|Y8 Exit|HFC-236fa|10||good||
+UNIT216|11F-006|11F|Y2 Hallway|HFC-236fa|10||good||
+UNIT217|12F-001|12F|Y2 Exit Service Area|HFC-236fa|10||good||
+UNIT218|12F-004|12F|Y8 Hallway|HFC-236fa|10||good||
+UNIT219|12F-005|12F|Y8 Exit|HFC-236fa|10||good||
+UNIT220|12F-006|12F|Y2 Hallway|HFC-236fa|10||good||
+UNIT221|14F-001|14F|Y8 Hallway|HFC-236fa|10||good|gauge moist, readable|
+UNIT222|14F-004|14F|Y2 Exit Service Area|HFC-236fa|10||good||
+UNIT223|14F-005|14F|Y8 Exit|HFC-236fa|10||defective|gauge moist unreadable|
+UNIT224|14F-006|14F|Y2 Hallway|HFC-236fa|10||good||
+UNIT225|15F-001|15F|Y2 Exit Service Area|HFC-236fa|10||good||
+UNIT226|15F-004|15F|Y8 Hallway|HFC-236fa|10||good||
+UNIT227|15F-005|15F|Y8 Exit|HFC-236fa|10||good||
+UNIT228|15F-006|15F|Y2 Hallway|HFC-236fa|10||good|gauge moist readable|
+UNIT229|16F-001|16F|Y8 Hallway|HFC-236fa|10||good||
+UNIT230|16F-004|16F|Y2 Exit Service Area|HFC-236fa|10||good||
+UNIT231|16F-005|16F|Y8 Exit|HFC-236fa|10||good||
+UNIT232|16F-006|16F|Y2 Hallway|HFC-236fa|10||good||
+UNIT233|17F-001|17F|Y2 Exit Service Area|HFC-236fa|10||good||
+UNIT234|17F-004|17F|Y8 Hallway|HFC-236fa|10||good||
+UNIT235|17F-005|17F|Y8 Exit|HFC-236fa|10||defective|gauge moist unreadable|
+UNIT236|17F-006|17F|Y2 Hallway|HFC-236fa|10||good||
+UNIT237|18F-001|18F|Y8 Hallway|HFC-236fa|10||good||
+UNIT238|18F-004|18F|Y2 Exit Service Area|HFC-236fa|10||defective|gauge moist unreadable|
+UNIT239|18F-005|18F|Y8 Exit|HFC-236fa|10||good||
+UNIT240|18F-006|18F|Y2 Hallway|HFC-236fa|10||good||
+UNIT241|19F-001|19F|Y2 Exit Service Area|HFC-236fa|10||good||
+UNIT242|19F-004|19F|Y8 Hallway|HFC-236fa|10||good||
+UNIT243|19F-005|19F|Y8 Exit|HFC-236fa|10||good||
+UNIT244|19F-006|19F|Y2 Hallway|HFC-236fa|10||good||
+UNIT245|20F-001|20F|Y8 Hallway|HFC-236fa|10||good||
+UNIT246|20F-003|20F|Y2 Hallway|HFC-236fa|10||good||
+UNIT247|20F-005|20F|Y2 Exit Service Area|HFC-236fa|10||low pressure||
+UNIT248|20F-006|20F|Y8 Exit|HFC-236fa|10||good||
+UNIT249|21F-001|21F|Y2 Exit Service Area|HFC-236fa|10||good||
+UNIT250|21F-004|21F|Y8 Hallway|HCFC-123|10||good||
+UNIT251|21F-005|21F|Y2 Hallway|HFC-236fa|10||good||
+UNIT252|21F-006|21F|Y8 Exit|HFC-236fa|10||good||
+UNIT253|22F-001|22F|Y8 Exit|HFC-236fa|10||good||
+UNIT254|22F-002|22F|Y8 Hallway|HFC-236fa|10||good||
+UNIT255|22F-003|22F|Y2 Hallway|HFC-236fa|10||good||
+UNIT256|22F-004|22F|Y2 Exit Service Area|HFC-236fa|10||good||
+UNIT257|23F-001|23F|Y2 Exit Service Area|HFC-236fa|10||good||
+UNIT258|23F-003|23F|Y2 Hallway|HFC-236fa|10||good||
+UNIT259|23F-004|23F|Y8 Hallway|HFC-236fa|10||good||
+UNIT260|23F-005|23F|Y8 Exit|HFC-236fa|10||good||
+UNIT261|24F-001|24F|Y8 Exit|HFC-236fa|10||good||
+UNIT262|24F-002|24F|Y8 Hallway|HFC-236fa|10||good||
+UNIT263|24F-003|24F|Y2 Hallway|HFC-236fa|10||good||
+UNIT264|24F-005|24F|Y2 Exit Service Area|HFC-236fa|10||good||
+UNIT265|25F-001|25F|Y2 Exit Service Area|HFC-236fa|10||good||
+UNIT266|25F-002|25F|Y2 Hallway|HFC-236fa|10||good||
+UNIT267|25F-004|25F|Y8 Hallway|HFC-236fa|10||good||
+UNIT268|25F-005|25F|Y8 Diamond Club|Class K|10||good||
+UNIT269|25F-006|25F|Y8 Diamond Club|HCFC-123|10||good||
+UNIT270|25F-007|25F|Y8 Exit|HFC-236fa|10||good||
+UNIT271|26F-001|26F|Y8 Exit|HFC-236fa|10||good||
+UNIT272|26F-002|26F|Y8 Hallway|HFC-236fa|10||good||
+UNIT273|26F-004|26F|Y2 Hallway|HFC-236fa|10||good||
+UNIT274|26F-006|26F|Y2 Exit Service Area|HFC-236fa|10||good||
+UNIT275|27F-001|27F|Y2 Fire Rack HW|HFC-236fa|10||good||
+UNIT276|27F-002|27F|Y2 Kitchen|HFC-236fa|10||good||
+UNIT277|27F-004|27F|Y2 Kitchen|HFC-236fa|10||good||
+UNIT278|27F-005|27F|Y2 Kitchen|Class K|10||good||
+UNIT279|27F-006|27F|Y2 Hallway FHC|HFC-236fa|10||good||
+UNIT280|27F-007|27F|Y2 Hallway|HFC-236fa|10||good||
+UNIT281|27F-008|27F|Y8 Hallway FHC|HFC-236fa|10||good||
+UNIT282|27F-009|27F|Y8 Exit|HFC-236fa|10||missing||
+UNIT283|27F-010|27F|Y2 Exit Service Area|HFC-236fa|10||good||
+UNIT284|27F-011|27F|Y8 Hallway|HFC-236fa|10||missing||
+UNIT285|RD-001|Roof Deck|Y8 Exit|HFC-236fa|10||good||
+UNIT286|RD-002|Roof Deck|MR 2 AHU|CO2|100||defective|hose disalignment|
+UNIT287|RD-003|Roof Deck|MR 2 AHU|AFFF|50||good||
+UNIT288|RD-004|Roof Deck|Y8 MR 2|CO2|100||good||
+UNIT289|RD-005|Roof Deck|Y8 Hallway|HFC-236fa|10||good||
+UNIT290|RD-006|Roof Deck|Y8 Elevator Machine|Dry Chem|10||good||
+UNIT291|RD-007|Roof Deck|Helipad Stair|CO2|100||defective|degraded hose unnecessary|
+UNIT292|RD-008|Roof Deck|Helipad Hallway|AFFF|50||good||
+UNIT293|RD-009|Roof Deck|Helipad Hallway|AFFF|50||good||
+UNIT294|RD-010|Roof Deck|Helipad Hallway|AFFF|100||good||
+UNIT295|RD-011|Roof Deck|Helipad Hallway|AFFF|100||good||
+UNIT296|RD-012|Roof Deck|Helipad Hallway|AFFF|100||good||
+UNIT297|RD-013|Roof Deck|Helipad Cabinet|Dry Chem|20||good||
+UNIT298|RD-014|Roof Deck|Helipad Cabinet|Dry Chem|10||good||
+UNIT299|RD-015|Roof Deck|Helipad Cabinet|Dry Chem|10||good||
+UNIT300|RD-016|Roof Deck|Helipad Stair|AFFF|50||good|handle corrosion, pressure good|
+UNIT301|RD-017|Roof Deck|Y2 MR 3|AFFF|100||good||
+UNIT302|RD-018|Roof Deck|Y2 MR3 HW|HFC-236fa|10||defective|tank corrosion, pressure good|
+UNIT303|RD-019|Roof Deck|Y2 MR3 HW|HFC-236fa|10||good||
+UNIT304|RD-020|Roof Deck|Y2 MR3 HW|HFC-236fa|10||good||
+UNIT305|RD-021|Roof Deck|Y2 AHU|AFFF|100||good||
+UNIT306|RD-022|Roof Deck|Y2 AHU|HFC-236fa|10||good||
+UNIT307|RD-023|Roof Deck|Y2 Stair Exit|HFC-236fa|10||good||
+UNIT308|RD-024|Roof Deck|Y2 Stair|HFC-236fa|10||good||
+UNIT309|RD-025|Roof Deck|Y8 Elevator Machine|HFC-236fa|10||good||
+UNIT310|RD-026|Roof Deck|Y8 Hallway|HFC-236fa|10||good||
