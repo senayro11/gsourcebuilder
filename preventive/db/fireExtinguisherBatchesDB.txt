@@ -3,3 +3,4 @@ BATCH002|CLI001|2026-08-01|2026-08-31|Diamond_hotel_Philippines_FE_2026-08-01_to
 BATCH003|CLI001|2026-07-01|2026-07-31|Diamond_hotel_Philippines_FE_2026-07-01_to_2026-07-31|superadmin|2026-09-05
 BATCH004|CLI001|2026-06-01|2026-06-30|Diamond_hotel_Philippines_FE_2026-06-01_to_2026-06-30|superadmin|2026-09-05
 BATCH005|CLI001|2026-05-01|2026-05-31|Diamond_hotel_Philippines_FE_2026-05-01_to_2026-05-31|superadmin|2026-09-05
+BATCH006|CLI001|2026-04-01|2026-04-30|Diamond_hotel_Philippines_FE_2026-04-01_to_2026-04-30|superadmin|2026-09-05
