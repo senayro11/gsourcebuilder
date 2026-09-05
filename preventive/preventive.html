@@ -88,7 +88,7 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
           <div class="form-group" style="margin-bottom:0">
             <label>Client</label>
-            <select id="fe-dash-filter-client" onchange="applyFeDashboardFilter()"><option value="">All Clients</option></select>
+            <select id="fe-dash-filter-client" onchange="onFeDashboardClientChange()"><option value="">All Clients</option></select>
           </div>
           <div class="form-group" style="margin-bottom:0">
             <label>Date From</label>
@@ -109,7 +109,7 @@
           <canvas id="fe-dash-chart" height="220"></canvas>
         </div>
         <div class="card">
-          <div class="card-title" style="margin-bottom:12px">Batches in Range</div>
+          <div class="card-title" style="margin-bottom:12px">Selected Batch</div>
           <div id="fe-dash-batch-list" style="font-size:13px;color:var(--text2);line-height:1.8;max-height:260px;overflow-y:auto"></div>
         </div>
       </div>
@@ -733,9 +733,15 @@ async function loadFeDashboard() {
     ]);
     renderFeDashboard();
     populateFeDashboardClientFilter();
-    await applyFeDashboardFilter();
+    await presetFeDashboardDates();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
+}
+// Picks the most recent batch out of a candidate list -- used both for the
+// initial/default view and whenever a filter still matches more than one
+// batch, so there's always exactly one selected, never a tie.
+function latestBatchOf(candidates) {
+  return candidates.length ? [...candidates].sort((a,b) => (b.date_to||'').localeCompare(a.date_to||''))[0] : null;
 }
 function renderFeDashboard() {
   const clientsWithUnits = new Set(allFireExtUnits.map(u=>u.client_id)).size;
@@ -750,46 +756,63 @@ function populateFeDashboardClientFilter() {
   sel.innerHTML = '<option value="">All Clients</option>' + allClients.map(c => `<option value="${c.id}">${c.client_name}</option>`).join('');
   sel.value = cur;
 }
+// Fills in the date fields with the latest matching batch's own range and
+// applies -- used for the initial load, Clear, and switching clients, i.e.
+// whenever the goal is "give me a sensible starting point". Deliberately
+// NOT used on every keystroke in the date fields themselves: applyFilter()
+// below reacts to those without touching the fields back, since snapping
+// both fields to the resolved batch's range after editing just one of them
+// would erase that edit before the user gets to the other field.
+async function presetFeDashboardDates() {
+  const client = document.getElementById('fe-dash-filter-client').value;
+  const candidates = client ? allFeBatches.filter(b => b.client_id === client) : allFeBatches;
+  const batch = latestBatchOf(candidates);
+  document.getElementById('fe-dash-filter-from').value = batch ? batch.date_from : '';
+  document.getElementById('fe-dash-filter-to').value = batch ? batch.date_to : '';
+  await applyFeDashboardFilter();
+}
 function clearFeDashboardFilter() {
   document.getElementById('fe-dash-filter-client').value = '';
-  document.getElementById('fe-dash-filter-from').value = '';
-  document.getElementById('fe-dash-filter-to').value = '';
-  applyFeDashboardFilter();
+  presetFeDashboardDates();
 }
-// Aggregates every batch that overlaps the chosen client/date range into
-// one status breakdown + exceptions list -- a unit inspected in more than
-// one of those batches is counted once per batch it appears in (each
-// inspection is its own record), so a deliberately wide range legitimately
-// shows more hits than there are physical units, not a bug. With nothing
-// picked yet, though, that same logic would silently sum EVERY batch ever
-// generated (8 months x ~300 units each looks like "2000+" on first load),
-// so that specific case defaults to just the most recent batch instead.
+// Switching clients makes the old date range meaningless (it was whichever
+// batch the previous client happened to have) -- reset to the new client's
+// own latest batch instead of possibly matching nothing or the wrong period.
+function onFeDashboardClientChange() {
+  presetFeDashboardDates();
+}
+// The status breakdown always reflects exactly ONE inspection batch --
+// never a sum across several -- since "how many are defective" only means
+// something for a single inspection round, not an arbitrary mix of
+// different months' results. The date range narrows down which batches are
+// eligible; if more than one still qualifies, the most recent of those wins
+// (never combined). The chosen batch's own range is shown as text next to
+// the filter, not written back into the date inputs -- see
+// presetFeDashboardDates() for why.
 async function applyFeDashboardFilter() {
   const client = document.getElementById('fe-dash-filter-client').value;
   const from = document.getElementById('fe-dash-filter-from').value;
   const to = document.getElementById('fe-dash-filter-to').value;
-  const noFilterSet = !client && !from && !to;
 
-  let batches = allFeBatches;
-  if (client) batches = batches.filter(b => b.client_id === client);
-  if (from) batches = batches.filter(b => b.date_to >= from);
-  if (to) batches = batches.filter(b => b.date_from <= to);
-  if (noFilterSet && batches.length) {
-    batches = [[...batches].sort((a,b) => (b.date_to||'').localeCompare(a.date_to||''))[0]];
-  }
+  let candidates = allFeBatches;
+  if (client) candidates = candidates.filter(b => b.client_id === client);
+  if (from) candidates = candidates.filter(b => b.date_to >= from);
+  if (to) candidates = candidates.filter(b => b.date_from <= to);
 
-  document.getElementById('fe-dash-batch-list').innerHTML = batches.length
-    ? (noFilterSet ? '<div style="color:var(--text3);margin-bottom:6px">Ipinapakita: pinaka-huling batch. Mamili ng client/date range para sa ibang saklaw.</div>' : '') +
-      batches.map(b => `${clientName(b.client_id)}: ${UI.dateStr(b.date_from)} – ${UI.dateStr(b.date_to)}`).join('<br>')
-    : '<span style="color:var(--text3)">Walang batch na tumutugma sa filter.</span>';
+  const batch = latestBatchOf(candidates);
+
+  document.getElementById('fe-dash-batch-list').innerHTML = batch
+    ? `${clientName(batch.client_id)}: ${UI.dateStr(batch.date_from)} – ${UI.dateStr(batch.date_to)}` +
+      (candidates.length > 1 ? `<div style="color:var(--text3);margin-top:6px">${candidates.length} batch ang tumutugma sa range -- ipinapakita ang pinaka-huling isa.</div>` : '')
+    : '<span style="color:var(--text3)">Walang batch na tumutugma.</span>';
 
   let rows = [];
-  try {
-    for (const b of batches) {
-      const batchRows = await DB.withPath('preventive/db/fe_reports', () => DB.read(b.filename, true));
-      batchRows.forEach(r => rows.push({ ...r, client_id: b.client_id }));
-    }
-  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  if (batch) {
+    try {
+      rows = (await DB.withPath('preventive/db/fe_reports', () => DB.read(batch.filename, true)))
+        .map(r => ({ ...r, client_id: batch.client_id }));
+    } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  }
 
   renderFeDashboardChart(rows);
   renderFeDashboardExceptions(rows);
