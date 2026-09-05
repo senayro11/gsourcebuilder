@@ -109,8 +109,18 @@
           <canvas id="fe-dash-chart" height="220"></canvas>
         </div>
         <div class="card">
-          <div class="card-title" style="margin-bottom:12px">Selected Batch</div>
-          <div id="fe-dash-batch-list" style="font-size:13px;color:var(--text2);line-height:1.8;max-height:260px;overflow-y:auto"></div>
+          <div class="card-title" style="margin-bottom:12px">Fire Extinguishers Per Floor</div>
+          <canvas id="fe-dash-floor-chart" height="220"></canvas>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-bottom:20px">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">Status Per Floor</div>
+          <canvas id="fe-dash-state-chart" height="220"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">Count of Type</div>
+          <canvas id="fe-dash-type-chart" height="220"></canvas>
         </div>
       </div>
 
@@ -518,7 +528,8 @@ UI.buildSidebar(user, 'preventive', TABS);
 Auth.applyUIPermissions(user, 'preventive');
 UserMgmt.init(user, 'preventive');
 
-let allClients=[], allClientPreventives=[], allFireExtUnits=[], allFeBatches=[], feFilteredRows=[], feDashChart=null;
+let allClients=[], allClientPreventives=[], allFireExtUnits=[], allFeBatches=[], feFilteredRows=[];
+let feDashChart=null, feDashFloorChart=null, feDashStateChart=null, feDashTypeChart=null;
 let editClientId=null, managingClientId=null, editUnitId=null, editFireExtId=null;
 let currentBatch=null, currentBatchRows=[];
 
@@ -801,11 +812,6 @@ async function applyFeDashboardFilter() {
 
   const batch = latestBatchOf(candidates);
 
-  document.getElementById('fe-dash-batch-list').innerHTML = batch
-    ? `${clientName(batch.client_id)}: ${UI.dateStr(batch.date_from)} – ${UI.dateStr(batch.date_to)}` +
-      (candidates.length > 1 ? `<div style="color:var(--text3);margin-top:6px">${candidates.length} batch ang tumutugma sa range -- ipinapakita ang pinaka-huling isa.</div>` : '')
-    : '<span style="color:var(--text3)">Walang batch na tumutugma.</span>';
-
   let rows = [];
   if (batch) {
     try {
@@ -814,18 +820,32 @@ async function applyFeDashboardFilter() {
     } catch(e) { UI.toast('Error: '+e.message,'error'); }
   }
 
-  renderFeDashboardChart(rows);
+  renderFeDashboardChart(rows, batch, candidates.length);
+  renderFeDashboardFloorChart(rows);
+  renderFeDashboardStateChart(rows);
+  renderFeDashboardTypeChart(rows);
   renderFeDashboardExceptions(rows);
 }
-function renderFeDashboardChart(rows) {
+const FE_STATUS_LABELS = ['Good','Defective','Low Pressure','Missing','Pullout','Not Check'];
+const FE_STATUS_KEYS   = ['good','defective','low pressure','missing','pullout','not check'];
+const FE_STATUS_COLORS = ['#10b981','#ef4444','#f59e0b','#f97316','#a855f7','#64748b'];
+function feDashFloorsOf(rows) {
+  return [...new Set(rows.map(r => r.floor).filter(Boolean))].sort((a,b) => a.localeCompare(b, undefined, { numeric: true }));
+}
+function destroyFeDashChart(name) {
+  if (window[name]) { window[name].destroy(); window[name] = null; }
+}
+function renderFeDashboardChart(rows, batch, matchCount) {
   const counts = { good:0, defective:0, 'low pressure':0, missing:0, pullout:0, 'not check':0 };
   rows.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
   const problemCount = counts.defective + counts['low pressure'] + counts.missing + counts.pullout;
+  const batchLabel = batch ? `${clientName(batch.client_id)}: ${UI.dateStr(batch.date_from)} – ${UI.dateStr(batch.date_to)}` : 'Walang batch na tumutugma';
+  const matchNote = matchCount > 1 ? ` (${matchCount} batch ang tumutugma, pinaka-huling isa ipinapakita)` : '';
   document.getElementById('fe-dash-chart-summary').textContent =
-    `${rows.length} inspection record(s) in range — ${problemCount} defective/used, ${counts.good} good`;
+    `${batchLabel}${matchNote} — ${rows.length} record(s), ${problemCount} defective/used, ${counts.good} good`;
 
   const ctx = document.getElementById('fe-dash-chart');
-  if (feDashChart) { feDashChart.destroy(); feDashChart = null; }
+  destroyFeDashChart('feDashChart');
   if (typeof Chart === 'undefined') {
     // Chart.js failed to load (e.g. CDN blocked/offline) -- surface it
     // instead of leaving a silently blank canvas with no explanation.
@@ -837,20 +857,66 @@ function renderFeDashboardChart(rows) {
     feDashChart = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: ['Good','Defective','Low Pressure','Missing','Pullout','Not Check'],
-        datasets: [{
-          data: [counts.good, counts.defective, counts['low pressure'], counts.missing, counts.pullout, counts['not check']],
-          backgroundColor: ['#10b981','#ef4444','#f59e0b','#f97316','#a855f7','#64748b']
-        }]
+        labels: FE_STATUS_LABELS,
+        datasets: [{ data: FE_STATUS_KEYS.map(k => counts[k]), backgroundColor: FE_STATUS_COLORS }]
       },
-      options: {
-        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 12 } } }
-      }
+      options: { plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 12 } } } }
     });
   } catch (e) {
     console.error('Chart render failed:', e);
     UI.toast('Hindi na-render ang chart: ' + e.message, 'error');
   }
+}
+function renderFeDashboardFloorChart(rows) {
+  destroyFeDashChart('feDashFloorChart');
+  if (typeof Chart === 'undefined' || !rows.length) return;
+  const floors = feDashFloorsOf(rows);
+  const counts = floors.map(f => rows.filter(r => r.floor === f).length);
+  const colors = floors.map((_, i) => `hsl(${Math.round(i * 360 / floors.length)}, 65%, 55%)`);
+  try {
+    feDashFloorChart = new Chart(document.getElementById('fe-dash-floor-chart'), {
+      type: 'pie',
+      data: { labels: floors, datasets: [{ data: counts, backgroundColor: colors }] },
+      options: { plugins: { legend: { position: 'right', labels: { color: '#94a3b8', boxWidth: 10, font: { size: 10 } } } } }
+    });
+  } catch (e) { console.error('Floor chart render failed:', e); }
+}
+function renderFeDashboardStateChart(rows) {
+  destroyFeDashChart('feDashStateChart');
+  if (typeof Chart === 'undefined' || !rows.length) return;
+  const floors = feDashFloorsOf(rows);
+  const datasets = FE_STATUS_KEYS.map((key, i) => ({
+    label: FE_STATUS_LABELS[i],
+    data: floors.map(f => rows.filter(r => r.floor === f && r.status === key).length),
+    backgroundColor: FE_STATUS_COLORS[i]
+  }));
+  try {
+    feDashStateChart = new Chart(document.getElementById('fe-dash-state-chart'), {
+      type: 'bar',
+      data: { labels: floors, datasets },
+      options: {
+        scales: {
+          x: { stacked: true, ticks: { color: '#94a3b8', font: { size: 9 } } },
+          y: { stacked: true, ticks: { color: '#94a3b8' } }
+        },
+        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 12 } } }
+      }
+    });
+  } catch (e) { console.error('State-per-floor chart render failed:', e); }
+}
+function renderFeDashboardTypeChart(rows) {
+  destroyFeDashChart('feDashTypeChart');
+  if (typeof Chart === 'undefined' || !rows.length) return;
+  const types = [...new Set(rows.map(r => r.type || 'None'))].sort();
+  const counts = types.map(t => rows.filter(r => (r.type || 'None') === t).length);
+  const palette = ['#6366f1','#f59e0b','#ef4444','#10b981','#0ea5e9','#a855f7','#64748b','#ec4899'];
+  try {
+    feDashTypeChart = new Chart(document.getElementById('fe-dash-type-chart'), {
+      type: 'doughnut',
+      data: { labels: types, datasets: [{ data: counts, backgroundColor: types.map((_, i) => palette[i % palette.length]) }] },
+      options: { plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 12, font: { size: 10 } } } } }
+    });
+  } catch (e) { console.error('Type chart render failed:', e); }
 }
 function renderFeDashboardExceptions(rows) {
   const exceptions = rows.filter(r => ['defective','low pressure','missing','pullout'].includes(r.status));
