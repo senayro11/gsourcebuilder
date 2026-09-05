@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Preventive Maintenance — Enterprise</title>
   <link rel="stylesheet" href="css/preventive.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.min.js"></script>
+  <!-- The plain "chart.min.js" build on cdnjs is now an ES module (ends in
+       an `export{...}` statement), which a non-module script tag can't run
+       at all (silent "Unexpected token 'export'") -- this has to be the
+       .umd. build instead, which assigns window.Chart the old-fashioned way. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
   <script>
     // Applied before first paint so a saved theme preference doesn't
     // flash the wrong theme first -- default (no saved value) is dark,
@@ -755,20 +759,28 @@ function clearFeDashboardFilter() {
 // Aggregates every batch that overlaps the chosen client/date range into
 // one status breakdown + exceptions list -- a unit inspected in more than
 // one of those batches is counted once per batch it appears in (each
-// inspection is its own record), so a wide range legitimately shows more
-// hits than there are physical units, not a bug.
+// inspection is its own record), so a deliberately wide range legitimately
+// shows more hits than there are physical units, not a bug. With nothing
+// picked yet, though, that same logic would silently sum EVERY batch ever
+// generated (8 months x ~300 units each looks like "2000+" on first load),
+// so that specific case defaults to just the most recent batch instead.
 async function applyFeDashboardFilter() {
   const client = document.getElementById('fe-dash-filter-client').value;
   const from = document.getElementById('fe-dash-filter-from').value;
   const to = document.getElementById('fe-dash-filter-to').value;
+  const noFilterSet = !client && !from && !to;
 
   let batches = allFeBatches;
   if (client) batches = batches.filter(b => b.client_id === client);
   if (from) batches = batches.filter(b => b.date_to >= from);
   if (to) batches = batches.filter(b => b.date_from <= to);
+  if (noFilterSet && batches.length) {
+    batches = [[...batches].sort((a,b) => (b.date_to||'').localeCompare(a.date_to||''))[0]];
+  }
 
   document.getElementById('fe-dash-batch-list').innerHTML = batches.length
-    ? batches.map(b => `${clientName(b.client_id)}: ${UI.dateStr(b.date_from)} – ${UI.dateStr(b.date_to)}`).join('<br>')
+    ? (noFilterSet ? '<div style="color:var(--text3);margin-bottom:6px">Ipinapakita: pinaka-huling batch. Mamili ng client/date range para sa ibang saklaw.</div>' : '') +
+      batches.map(b => `${clientName(b.client_id)}: ${UI.dateStr(b.date_from)} – ${UI.dateStr(b.date_to)}`).join('<br>')
     : '<span style="color:var(--text3)">Walang batch na tumutugma sa filter.</span>';
 
   let rows = [];
@@ -791,20 +803,31 @@ function renderFeDashboardChart(rows) {
 
   const ctx = document.getElementById('fe-dash-chart');
   if (feDashChart) { feDashChart.destroy(); feDashChart = null; }
-  if (typeof Chart === 'undefined' || !rows.length) return;
-  feDashChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: ['Good','Defective','Low Pressure','Missing','Pullout','Not Check'],
-      datasets: [{
-        data: [counts.good, counts.defective, counts['low pressure'], counts.missing, counts.pullout, counts['not check']],
-        backgroundColor: ['#10b981','#ef4444','#f59e0b','#f97316','#a855f7','#64748b']
-      }]
-    },
-    options: {
-      plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 12 } } }
-    }
-  });
+  if (typeof Chart === 'undefined') {
+    // Chart.js failed to load (e.g. CDN blocked/offline) -- surface it
+    // instead of leaving a silently blank canvas with no explanation.
+    document.getElementById('fe-dash-chart-summary').textContent += ' (chart library unavailable)';
+    return;
+  }
+  if (!rows.length) return;
+  try {
+    feDashChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Good','Defective','Low Pressure','Missing','Pullout','Not Check'],
+        datasets: [{
+          data: [counts.good, counts.defective, counts['low pressure'], counts.missing, counts.pullout, counts['not check']],
+          backgroundColor: ['#10b981','#ef4444','#f59e0b','#f97316','#a855f7','#64748b']
+        }]
+      },
+      options: {
+        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 12 } } }
+      }
+    });
+  } catch (e) {
+    console.error('Chart render failed:', e);
+    UI.toast('Hindi na-render ang chart: ' + e.message, 'error');
+  }
 }
 function renderFeDashboardExceptions(rows) {
   const exceptions = rows.filter(r => ['defective','low pressure','missing','pullout'].includes(r.status));
