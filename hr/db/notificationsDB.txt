@@ -5,3 +5,4 @@ NOTIF003|admin||attendance|Late Arrival|Ana Garcia arrived late today|ATT004|tru
 NOTIF004|all||announcement|Announcement Posted|Company Picnic announcement has been posted|ANN001|true|2025-06-10
 NOTIF005|admin||attendance|Late Arrival|Red Matienzo arrived late today|ATT026|true|2026-07-31
 NOTIF006|admin||attendance|Late Arrival|Red Matienzo arrived late today|ATT027|false|2026-10-01
+NOTIF007|admin||attendance|Late Arrival|Red Matienzo arrived late today|ATT027|false|2026-10-01
