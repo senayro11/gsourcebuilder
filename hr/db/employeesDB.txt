@@ -1,5 +1,5 @@
 id|employee_id|name|email|phone|position|department|daily_rate|monthly_rate|sss|philhealth|pagibig|tin|hire_date|status|photo|employment_type|leave_types
-EMP001|GS-0001|Red Matienzo|juan@company.com|09171234567|Electrician|Human Resources|650.00|14300.00|||||2023-06-01|active|photos/GS-0001.jpg?v=aad03e10|Probationary|Vacation Leave,Sick Leave,Unpaid leave
+EMP001|GS-0001|Red Matienzo|juan@company.com|09171234567|Electrician|Human Resources|600.00|13200.00|||||2023-06-01|active|photos/GS-0001.jpg?v=aad03e10|Probationary|Vacation Leave,Sick Leave,Unpaid leave
 EMP002|GS-0002|Hobert Depana|hober@gmail.com|09187654321|All around|Manpower|700|15400.00|||||2024-01-10|active||Regular|Vacation Leave,Sick Leave,Unpaid leave
 EMP003|GS-0003|Florante Nas|florante@gmail.com|09194561234|Foreman|Manpower|800|17600.00|||||2022-03-15|inactive||Regular|Vacation Leave,Sick Leave,Unpaid leave
 EMP004|GS-0004|Alvin Fernandez|alvin@gmail.com|09201234568|Aircon tech|Manpower|700|15400.00|||||2021-07-20|active||Casual|Vacation Leave,Sick Leave,Unpaid leave
