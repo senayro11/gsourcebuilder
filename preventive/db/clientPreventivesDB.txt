@@ -4,3 +4,4 @@ CP002|CLI001|seismic|monthly|27, 15, B2|||
 CP003|CLI001|fire_pump|semi_annual|B2|||
 CP005|CLI001|transfer_pump|quarterly||||
 CP004|CLI001|fire_hose_cabinet|quarterly|B2-27|||
+CP006|CLI002|fire_pump|quarterly|B1 - pump room||2026-10-13|2026-12-24
