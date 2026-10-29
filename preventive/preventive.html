@@ -225,7 +225,17 @@
         <div class="card">
           <div class="card-header">
             <span class="card-title" id="batch-detail-title">Batch</span>
-            <div style="display:flex;gap:8px;align-items:center">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <select id="batch-detail-filter-status" onchange="filterBatchDetail()" style="width:170px">
+                <option value="">All Statuses</option>
+                <option value="exceptions">⚠️ Use/Defective (not Good)</option>
+                <option value="good">Good</option>
+                <option value="low pressure">Low Pressure</option>
+                <option value="not check">Not Check</option>
+                <option value="pullout">Pullout</option>
+                <option value="missing">Missing</option>
+                <option value="defective">Defective</option>
+              </select>
               <select id="batch-detail-filter-floor" onchange="filterBatchDetail()" style="width:140px"><option value="">All Floors</option></select>
               <div class="search-bar" style="max-width:260px">
                 <span>🔍</span>
@@ -1210,9 +1220,12 @@ function populateBatchDetailFloorFilter() {
   sel.value = cur;
 }
 function filterBatchDetail() {
+  const status = document.getElementById('batch-detail-filter-status').value;
   const floor = document.getElementById('batch-detail-filter-floor').value;
   const q = (document.getElementById('batch-detail-search').value || '').trim().toLowerCase();
   let rows = currentBatchRows;
+  if (status === 'exceptions') rows = rows.filter(r => ['defective','low pressure','missing','pullout'].includes(r.status));
+  else if (status) rows = rows.filter(r => r.status === status);
   if (floor) rows = rows.filter(r => r.floor === floor);
   if (q) {
     rows = rows.filter(r =>
@@ -1379,7 +1392,10 @@ async function buildFireExtReportHtml(batch, rows) {
   // reports with a "Defective or Used" section before the full listing,
   // so this mirrors what they're used to reading.
   const exceptions = rows.filter(r => ['defective','low pressure','missing','pullout'].includes(r.status));
-  const exceptionsSection = exceptions.length ? `
+  // Skip this section when every visible row is already an exception
+  // (e.g. the batch detail view's Status filter was narrowed to
+  // "Use/Defective") -- the "All Units" table below would just repeat it.
+  const exceptionsSection = (exceptions.length && exceptions.length < rows.length) ? `
   <h2 style="font-size:14px;margin-bottom:8px">⚠️ Defective or Used Fire Extinguishers (${exceptions.length})</h2>
   <table style="margin-bottom:20px"><thead><tr><th>Serial #</th><th>Floor</th><th>Location</th><th>Type</th><th>Status</th><th>Problem Desc</th></tr></thead>
   <tbody>${exceptions.map(r=>`<tr><td>${r.serial_no}</td><td>${r.floor}</td><td>${r.location||''}</td><td>${r.type||''}</td><td>${r.status}</td><td>${r.problem_desc||''}</td></tr>`).join('')}</tbody>
@@ -1396,7 +1412,7 @@ async function buildFireExtReportHtml(batch, rows) {
   <h1>🧯 Fire Extinguisher Preventive Maintenance Report</h1>
   <p>${label} &nbsp;|&nbsp; Generated: ${new Date().toLocaleString('en-PH')}</p>
   ${exceptionsSection}
-  <h2 style="font-size:14px;margin-bottom:8px">All Units (${rows.length})</h2>
+  <h2 style="font-size:14px;margin-bottom:8px">Units (${rows.length})</h2>
   <table><thead><tr><th>Serial #</th><th>Date Check</th><th>Floor</th><th>Location</th><th>Type</th><th>Capacity (lb)</th><th>Status</th><th>Problem Desc</th><th>Expiration</th></tr></thead>
   <tbody>${rows.map(r=>`<tr><td>${r.serial_no}</td><td>${r.date_checked||''}</td><td>${r.floor}</td><td>${r.location||''}</td><td>${r.type||''}</td><td>${r.capacity_lb||''}</td><td>${r.status||''}</td><td>${r.problem_desc||''}</td><td>${r.expiration_date||''}</td></tr>`).join('')}</tbody>
   </table></body></html>`;
