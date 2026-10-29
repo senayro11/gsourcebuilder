@@ -561,6 +561,10 @@ input::placeholder { color: var(--text3); }
      it otherwise beats this class on specificity). */
   .card-header { flex-wrap: wrap; gap: 8px; }
   .search-bar { width: 100%; max-width: 100% !important; }
+  /* Status + Floor filters (Inspection Log batch detail) always share
+     one row, split evenly, instead of each wrapping onto its own line
+     like the search bar next to them does. */
+  .fe-status-floor-row { width: 100%; }
   /* Matches "+ Add Unit" (Registry Units) once JS parks the batch
      detail "+ Add" button in the title row here -- .btn-sm's smaller
      padding/font-size otherwise made it look mismatched next to it. */

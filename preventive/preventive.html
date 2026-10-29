@@ -226,17 +226,19 @@
           <div class="card-header">
             <span class="card-title" id="batch-detail-title">Batch</span>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <select id="batch-detail-filter-status" onchange="filterBatchDetail()" style="width:170px">
-                <option value="">All Statuses</option>
-                <option value="exceptions">⚠️ Use/Defective (not Good)</option>
-                <option value="good">Good</option>
-                <option value="low pressure">Low Pressure</option>
-                <option value="not check">Not Check</option>
-                <option value="pullout">Pullout</option>
-                <option value="missing">Missing</option>
-                <option value="defective">Defective</option>
-              </select>
-              <select id="batch-detail-filter-floor" onchange="filterBatchDetail()" style="width:140px"><option value="">All Floors</option></select>
+              <div class="fe-status-floor-row" style="display:flex;gap:8px">
+                <select id="batch-detail-filter-status" onchange="filterBatchDetail()" style="flex:1;min-width:0">
+                  <option value="">All Statuses</option>
+                  <option value="exceptions">⚠️ Use/Defective (not Good)</option>
+                  <option value="good">Good</option>
+                  <option value="low pressure">Low Pressure</option>
+                  <option value="not check">Not Check</option>
+                  <option value="pullout">Pullout</option>
+                  <option value="missing">Missing</option>
+                  <option value="defective">Defective</option>
+                </select>
+                <select id="batch-detail-filter-floor" onchange="filterBatchDetail()" style="flex:1;min-width:0"><option value="">All Floors</option></select>
+              </div>
               <div class="search-bar" style="max-width:260px">
                 <span>🔍</span>
                 <input type="text" id="batch-detail-search" placeholder="Search serial, floor, location..." oninput="filterBatchDetail()">
