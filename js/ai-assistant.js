@@ -210,38 +210,20 @@
     return prompt;
   }
 
-  // ---- provider calls ----
-  async function callGroq(p, systemPrompt, userPrompt) {
-    const res = await fetch(p.endpoint, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${p.apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: p.model,
-        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
-        temperature: 0.3,
-        max_tokens: 800
-      })
-    });
-    if (!res.ok) throw new Error(`Groq error ${res.status}`);
-    const json = await res.json();
-    return (json.choices?.[0]?.message?.content || '').trim();
-  }
-  async function callGemini(p, systemPrompt, userPrompt) {
-    const url = `${p.endpoint}/${p.model}:generateContent?key=${encodeURIComponent(p.apiKey)}`;
-    const res = await fetch(url, {
+  // ---- provider call, via the Cloudflare Worker proxy ----
+  // The real Groq/Gemini keys live server-side as Worker secrets now, never
+  // shipped to this file -- this just posts the question + which
+  // provider/model to use, and the Worker does the actual upstream call.
+  async function callViaProxy(provider, model, systemPrompt, userPrompt) {
+    const res = await fetch(AI_CONFIG.proxyUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 800 }
-      })
+      body: JSON.stringify({ provider, model, systemPrompt, userPrompt })
     });
-    if (!res.ok) throw new Error(`Gemini error ${res.status}`);
-    const json = await res.json();
-    return (json.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || `Proxy error ${res.status}`);
+    return (json.text || '').trim();
   }
-  const CALLERS = { groq: callGroq, gemini: callGemini };
   const PROVIDER_LABELS = { gemini: 'Gemini', groq: 'Groq' };
   const PROVIDER_PREF_KEY = 'ai_asst_provider';
 
@@ -259,20 +241,21 @@
   }
 
   async function askAI(systemPrompt, userPrompt) {
-    const selected = getSelectedProvider();
-    const order = [selected, ...Object.keys(AI_CONFIG.providers).filter(k => k !== selected)];
-    const configured = order.filter(k => AI_CONFIG.providers[k]?.apiKey);
-    if (configured.length === 0) {
-      const e = new Error('Wala pang na-configure na AI API key. Sabihin sa superadmin na lagyan ng key ang js/config-ai.js.');
+    if (!AI_CONFIG.proxyUrl) {
+      const e = new Error('Wala pang na-configure na AI proxy URL. Sabihin sa superadmin na lagyan ng proxyUrl ang js/config-ai.js.');
       e.noKey = true;
       throw e;
     }
+    const selected = getSelectedProvider();
+    const order = [selected, ...Object.keys(AI_CONFIG.providers).filter(k => k !== selected)];
     let lastErr;
-    for (const key of configured) {
-      try { return await CALLERS[key](AI_CONFIG.providers[key], systemPrompt, userPrompt); }
+    for (const key of order) {
+      const p = AI_CONFIG.providers[key];
+      if (!p || !p.model) continue;
+      try { return await callViaProxy(key, p.model, systemPrompt, userPrompt); }
       catch (e) { lastErr = e; }
     }
-    throw lastErr;
+    throw lastErr || new Error('Walang configured na provider.');
   }
 
   // ---- widget UI ----
