@@ -1,20 +1,27 @@
 // ============================================================
-//  CONFIG-AI.JS — AI Assistant provider keys & rules
+//  CONFIG-AI.JS — AI Assistant provider settings & rules
 // ============================================================
 //
-// Paste your free Groq / Google Gemini API keys below. They live here in
-// plain text because this is a static site with no backend -- the browser
-// has to hold the key to call the provider directly from ai-assistant.js,
-// so anyone who opens DevTools while using the AI assistant can see it no
-// matter where it's stored. Both providers below have a free tier, so a
-// leaked key only risks that quota, not a bill.
+// The actual Groq/Gemini API keys do NOT live here anymore -- they're
+// stored as encrypted secrets (GROQ_API_KEY / GEMINI_API_KEY) on a small
+// Cloudflare Worker (see cloudflare-worker/ai-proxy.js in this repo),
+// which this file's proxyUrl points at. ai-assistant.js sends it the
+// question + which provider/model to use; the Worker holds the real keys
+// and makes the actual Groq/Gemini call server-side. Earlier versions of
+// this file hardcoded the keys directly here, which kept getting them
+// auto-revoked by the providers' leaked-credential scanners since this is
+// a public repo -- moving them server-side fixes that for good, since
+// they're never shipped to the browser at all.
 //
-// Get a key:
-//   Groq:   https://console.groq.com/keys
-//   Gemini: https://aistudio.google.com/apikey
+// To change providers/models, edit AI_CONFIG.providers below -- no keys
+// needed here, just model names. To rotate a key, update the Worker's
+// secret (Cloudflare dashboard -> Workers & Pages -> the Worker -> Settings
+// -> Variables and Secrets), not this file.
 
 const AI_CONFIG = {
   enabled: true,
+
+  proxyUrl: 'https://eis-ai-proxy.v-ryane59.workers.dev',
 
   providers: {
     // Both providers retire old model names every so often -- Groq dropped
@@ -22,16 +29,8 @@ const AI_CONFIG = {
     // after this was first written, both returning a 404 pointing at their
     // replacement. If the assistant starts erroring again, check the
     // provider's model list for a current one and swap it in here.
-    groq: {
-      apiKey:   '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',
-      model:    'openai/gpt-oss-120b',
-      endpoint: 'https://api.groq.com/openai/v1/chat/completions'
-    },
-    gemini: {
-      apiKey:   'AQ.Ab8RN6KDeGDVVZT3_FYAm0LLiQlCDftWYRhvXUDItQmOBWZr6g',
-      model:    'gemini-2.5-flash',
-      endpoint: 'https://generativelanguage.googleapis.com/v1beta/models'
-    }
+    groq:   { model: 'openai/gpt-oss-120b' },
+    gemini: { model: 'gemini-2.5-flash' }
   },
 
   // Provider the assistant tries first when the user hasn't picked one
