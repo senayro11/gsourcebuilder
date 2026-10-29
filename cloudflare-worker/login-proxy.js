@@ -2,8 +2,9 @@
 //  EIS LOGIN PROXY — Cloudflare Worker
 //  Holds the real GitHub token as a secret. The browser never sees
 //  it until the username/password are verified here, server-side.
-//  Set up a Cloudflare Rate Limiting Rule on this Worker's route
-//  (e.g. 5 requests / 15 min per IP) to block password guessing.
+//  Rate-limits failed login attempts per IP using a KV namespace
+//  bound as RATE_LIMIT_KV (no custom domain/WAF needed) — the
+//  counter clears immediately on a successful login.
 // ============================================================
 
 const ALLOWED_ORIGIN = 'https://senayro11.github.io';
@@ -11,6 +12,24 @@ const OWNER    = 'senayro11';
 const REPO     = 'gsourcebuilder';
 const BRANCH   = 'main';
 const DB_PATH  = 'db';
+
+const RATE_LIMIT_MAX     = 5;   // max failed attempts
+const RATE_LIMIT_WINDOW  = 900; // seconds (15 min) since the last failed attempt
+
+function rateLimitKey(ip) { return `attempts:${ip}`; }
+
+async function getFailedAttempts(env, ip) {
+  const raw = await env.RATE_LIMIT_KV.get(rateLimitKey(ip));
+  return raw ? parseInt(raw, 10) : 0;
+}
+
+async function recordFailedAttempt(env, ip, current) {
+  await env.RATE_LIMIT_KV.put(rateLimitKey(ip), String(current + 1), { expirationTtl: RATE_LIMIT_WINDOW });
+}
+
+async function clearFailedAttempts(env, ip) {
+  await env.RATE_LIMIT_KV.delete(rateLimitKey(ip));
+}
 
 function corsHeaders() {
   return {
@@ -60,6 +79,12 @@ export default {
     const password = body.password || '';
     if (!username || !password) return json({ error: 'Missing username or password' }, 400);
 
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const attempts = await getFailedAttempts(env, ip);
+    if (attempts >= RATE_LIMIT_MAX) {
+      return json({ error: 'Too many login attempts. Please wait a few minutes and try again.' }, 429);
+    }
+
     try {
       const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${DB_PATH}/accountsDB.txt?ref=${BRANCH}`;
       const res = await fetch(url, {
@@ -81,7 +106,12 @@ export default {
         r.status === 'active'
       );
 
-      if (!user) return json({ success: false, message: 'Wrong username or password.' });
+      if (!user) {
+        await recordFailedAttempt(env, ip, attempts);
+        return json({ success: false, message: 'Wrong username or password.' });
+      }
+
+      await clearFailedAttempts(env, ip);
 
       return json({
         success: true,
