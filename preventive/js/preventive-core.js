@@ -507,13 +507,17 @@ const UI = (() => {
     const showDashboard = isSuperAdmin || systems.length > 1;
     if (showDashboard || otherSystems.length || isSuperAdmin) {
       html += `<div class="nav-group">
-        <div class="nav-group-label">Systems</div>
-        ${showDashboard ? `<a href="../dashboard.html" class="nav-item"><span class="nav-icon">🏠</span>Dashboard</a>` : ''}
-        ${otherSystems.map(s => {
-          const sys = SYSTEMS[s];
-          return sys ? `<a href="../${sys.file}" class="nav-item"><span class="nav-icon">${sys.icon}</span>${sys.name}</a>` : '';
-        }).join('')}
-        ${isSuperAdmin ? `<a href="../superadmin.html" class="nav-item"><span class="nav-icon">⚙️</span>SuperAdmin Panel</a>` : ''}
+        <div class="nav-item nav-item-parent" data-group="switch-system" onclick="toggleNavGroup('switch-system')">
+          <span class="nav-icon">🔀</span>Other Systems<span class="nav-caret">▸</span>
+        </div>
+        <div class="nav-children" id="navgroup-switch-system">
+          ${showDashboard ? `<a href="../dashboard.html" class="nav-item"><span class="nav-icon">🏠</span>Dashboard</a>` : ''}
+          ${otherSystems.map(s => {
+            const sys = SYSTEMS[s];
+            return sys ? `<a href="../${sys.file}" class="nav-item"><span class="nav-icon">${sys.icon}</span>${sys.name}</a>` : '';
+          }).join('')}
+          ${isSuperAdmin ? `<a href="../superadmin.html" class="nav-item"><span class="nav-icon">⚙️</span>SuperAdmin Panel</a>` : ''}
+        </div>
       </div>`;
     }
 

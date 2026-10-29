@@ -70,12 +70,16 @@ const UI = (() => {
   }
 
   // Build sidebar — shows only systems the user can access
-  // For non-superadmin: shows their system's nav items, not all systems
+  // For a single-system user: just their one system link, flat, same as
+  // always. For superadmin (or an admin assigned "all"): Dashboard + every
+  // system + SuperAdmin Panel, collapsed under "Other Systems" so the
+  // sidebar isn't a wall of links by default.
   function buildSidebar(user, currentSystem) {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
     const isSuperAdmin = user.role === 'superadmin';
     const systems = Auth.getAccessibleSystems(user);
+    const showSwitcher = isSuperAdmin || systems.length > 1;
 
     let sysItems = systems.map(s => {
       const sys = SYSTEMS[s];
@@ -97,18 +101,37 @@ const UI = (() => {
         <a href="#" class="sidebar-item" onclick="openUserMgmt&&openUserMgmt();return false"><span class="icon">👥</span>User Management</a>`;
     }
 
-    // Dashboard link — only for superadmin (non-superadmin shouldn't see other systems)
-    const dashLink = isSuperAdmin
-      ? `<a href="${_ROOT}dashboard.html" class="sidebar-item ${!currentSystem?'active':''}"><span class="icon">🏠</span>Dashboard</a><hr class="sidebar-divider"><div class="sidebar-section"><span class="sidebar-label">Systems</span></div>`
+    const dashLink = showSwitcher
+      ? `<a href="${_ROOT}dashboard.html" class="sidebar-item ${!currentSystem?'active':''}"><span class="icon">🏠</span>Dashboard</a>`
       : '';
+
+    // Collapsible once there's more than one place to jump to; a
+    // single-system user just gets their one flat link, unchanged.
+    const navBlock = showSwitcher
+      ? `<div class="sidebar-item sidebar-item-parent" data-group="switch-system" onclick="UI.toggleSidebarGroup('switch-system')">
+           <span class="icon">🔀</span>Other Systems<span class="sidebar-caret">▸</span>
+         </div>
+         <div class="sidebar-children" id="sidebargroup-switch-system">
+           ${dashLink}
+           ${sysItems}
+         </div>`
+      : sysItems;
 
     sidebar.innerHTML = `
       <div class="sidebar-section"><span class="sidebar-label">Navigation</span></div>
-      ${dashLink}
-      ${sysItems}
+      ${navBlock}
       ${userMgmtLink}
       <hr class="sidebar-divider">
       <a href="#" class="sidebar-item" onclick="Auth.logout()"><span class="icon">🚪</span>Logout</a>`;
+  }
+
+  // Expand/collapse the sidebar's "Other Systems" group.
+  function toggleSidebarGroup(groupId) {
+    const children = document.getElementById('sidebargroup-'+groupId);
+    const parent = document.querySelector(`.sidebar-item-parent[data-group="${groupId}"]`);
+    if (!children || !parent) return;
+    const isOpen = children.classList.toggle('expanded');
+    parent.classList.toggle('expanded', isOpen);
   }
 
   function buildNavbar(user, systemName) {
@@ -234,5 +257,6 @@ const UI = (() => {
 
   return { toast, loading, openModal, closeModal, initTabs, confirm,
            peso, dateStr, dateTimeStr, roleBadge, statusBadge,
-           buildSidebar, buildNavbar, paginate, renderPagination, toggleTheme };
+           buildSidebar, buildNavbar, paginate, renderPagination, toggleTheme,
+           toggleSidebarGroup };
 })();

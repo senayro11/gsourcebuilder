@@ -184,6 +184,12 @@ body {
 .sidebar-item.active { background: rgba(99,102,241,0.15); color: var(--accent2); }
 .sidebar-item .icon { width: 20px; text-align: center; font-size: 16px; }
 .sidebar-divider { border: none; border-top: 1px solid var(--border); margin: 8px 16px; }
+.sidebar-item-parent { justify-content: space-between; }
+.sidebar-caret { font-size: 10px; color: var(--text3); transition: transform 0.15s; }
+.sidebar-item-parent.expanded .sidebar-caret { transform: rotate(90deg); }
+.sidebar-children { display: none; }
+.sidebar-children.expanded { display: block; }
+.sidebar-children .sidebar-item { padding-left: 40px; }
 
 /* ---- Main content ---- */
 .main {

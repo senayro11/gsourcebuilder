@@ -495,12 +495,16 @@ const UI = (() => {
     const otherSystems = systems.filter(s => s !== currentSystem);
     if (otherSystems.length || isSuperAdmin) {
       html += `<div class="nav-group">
-        <div class="nav-group-label">Systems</div>
-        ${otherSystems.map(s => {
-          const sys = SYSTEMS[s];
-          return sys ? `<a href="../${sys.file}" class="nav-item"><span class="nav-icon">${sys.icon}</span>${sys.name}</a>` : '';
-        }).join('')}
-        ${isSuperAdmin ? `<a href="../superadmin.html" class="nav-item"><span class="nav-icon">⚙️</span>SuperAdmin Panel</a>` : ''}
+        <div class="nav-item nav-item-parent" data-group="switch-system" onclick="toggleNavGroup('switch-system')">
+          <span class="nav-icon">🔀</span>Other Systems<span class="nav-caret">▸</span>
+        </div>
+        <div class="nav-children" id="navgroup-switch-system">
+          ${otherSystems.map(s => {
+            const sys = SYSTEMS[s];
+            return sys ? `<a href="../${sys.file}" class="nav-item"><span class="nav-icon">${sys.icon}</span>${sys.name}</a>` : '';
+          }).join('')}
+          ${isSuperAdmin ? `<a href="../superadmin.html" class="nav-item"><span class="nav-icon">⚙️</span>SuperAdmin Panel</a>` : ''}
+        </div>
       </div>`;
     }
 
@@ -640,3 +644,14 @@ const UI = (() => {
            buildSidebar, buildNavbar, paginate, renderPagination, toggleTheme,
            toggleProfileMenu };
 })();
+
+// Expand/collapse a sidebar nav group rendered by buildSidebar() (e.g.
+// the "Other Systems" switcher) -- plain global since it's invoked from
+// an inline onclick attribute built into that HTML.
+function toggleNavGroup(groupId) {
+  const children = document.getElementById('navgroup-'+groupId);
+  const parent = document.querySelector(`.nav-item-parent[data-group="${groupId}"]`);
+  if (!children || !parent) return;
+  const isOpen = children.classList.toggle('expanded');
+  parent.classList.toggle('expanded', isOpen);
+}
