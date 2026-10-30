@@ -674,10 +674,19 @@ function editClient(id) {
 // committed to GitHub) -- previewed locally first so Cancel/closing the
 // modal without touching the photo field preserves whatever photo the
 // client already has.
+// GitHub Pages serves a raw file's Content-Type from its extension, not
+// from the actual bytes -- forcing every upload to ".jpg" regardless of
+// the real format (a PNG screenshot, say) made the browser try to
+// decode PNG bytes as JPEG, which is exactly what rendered as a
+// scrambled/corrupted image. Keep whichever extension matches the
+// picked file's real type.
+const CLIENT_PHOTO_EXT_BY_MIME = { 'image/jpeg':'jpg', 'image/jpg':'jpg', 'image/png':'png', 'image/webp':'webp', 'image/gif':'gif' };
+let pendingClientPhotoExt = 'jpg';
 function handleClientPhotoSelect(e) {
   const file = e.target.files[0];
   e.target.value = '';
   if (!file) return;
+  pendingClientPhotoExt = CLIENT_PHOTO_EXT_BY_MIME[file.type] || 'jpg';
   const reader = new FileReader();
   reader.onload = () => {
     pendingClientPhotoDataUri = reader.result;
@@ -691,9 +700,9 @@ function handleClientPhotoSelect(e) {
 // base64 photo per row would make that pipe-delimited file balloon and
 // slow down every read, and the app already re-reads the whole file on
 // every edit.
-async function uploadClientPhoto(clientId, dataUri) {
+async function uploadClientPhoto(clientId, dataUri, ext) {
   const { owner, repo, branch, token } = GITHUB_CONFIG;
-  const fileName = clientId.replace(/[^a-zA-Z0-9_-]/g, '_') + '.jpg';
+  const fileName = clientId.replace(/[^a-zA-Z0-9_-]/g, '_') + '.' + (ext || 'jpg');
   const path = `preventive/photos/${fileName}`;
   const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
   const headers = {
@@ -728,7 +737,7 @@ async function saveClient() {
     let photo = editClientId ? (all.find(c=>c.id===editClientId)?.photo || '') : '';
     if (pendingClientPhotoDataUri) {
       UI.loading(true, 'Uploading photo...');
-      photo = await uploadClientPhoto(id, pendingClientPhotoDataUri);
+      photo = await uploadClientPhoto(id, pendingClientPhotoDataUri, pendingClientPhotoExt);
     }
     const data = {
       client_name: name,
