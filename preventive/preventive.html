@@ -1462,14 +1462,19 @@ async function buildFireExtReportHtml(batch, rows) {
   ${dateRangeHtml}
   <div style="background:#6b1e1e;color:#fff;font-weight:700;text-align:center;padding:8px;margin-bottom:12px;letter-spacing:.5px">Defective or Used Fire Extinguishers</div>
   ${feReportTableRows(exceptions, 'Remarks')}` : '';
+  // A literal page-break marker, not a styled wrapper div -- this is the
+  // exact form Word's own "Save As Web Page" output uses for a manual
+  // page break, and the only form its HTML import reliably honors as a
+  // single clean break (a page-break-before style on a wrapping block
+  // element was fragmenting into several near-blank pages instead).
+  const pageBreakHtml = '<br clear="all" style="mso-special-character:line-break;page-break-before:always">';
   const goodSection = good.length ? `
-  <div style="${exceptions.length ? 'page-break-before:always;' : ''}">
+  ${exceptions.length ? pageBreakHtml : ''}
   ${dateRangeHtml}
   <div style="background:#d32f2f;color:#fff;font-weight:700;text-align:center;padding:8px;margin-bottom:10px;letter-spacing:.5px">ALL GOOD FIRE EXTINGUISHER RECORD SHEET</div>
   <p style="text-align:center;font-weight:700;margin-bottom:2px">Preventive Maintenance of ${MONTH_NAMES[monthNum]||''} ${year}</p>
   <p style="text-align:center;font-weight:700;color:#b8860b;margin-bottom:12px">${client}</p>
-  ${feReportTableRows(good, 'Problem Description')}
-  </div>` : '';
+  ${feReportTableRows(good, 'Problem Description')}` : '';
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fire Extinguisher Report</title>
   <style>
     @page Section1{size:8.5in 11in;margin:1.0in 0.5in 1.0in 0.8in;mso-header-margin:.5in;mso-footer-margin:.5in;mso-paper-source:0}
