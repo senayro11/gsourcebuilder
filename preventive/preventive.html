@@ -1558,6 +1558,27 @@ function globalConfigValue(rows, key) { return rows.find(r => r.key === key)?.va
 function siteUrl(relativePath) {
   return `https://${GITHUB_CONFIG.owner}.github.io/${GITHUB_CONFIG.repo}/${relativePath}`;
 }
+// Word's HTML import ignores max-width/max-height on <img> and falls
+// back to the file's native pixel size -- the giant original logo
+// pushing everything else onto a second page is exactly that. Explicit
+// width/height *attributes* (not just CSS) are what Word actually
+// honors, so each image's real dimensions are fetched first and
+// scaled down to fit a fixed box, same math as max-width/max-height
+// would do, just applied as attributes instead.
+function loadImageNaturalSize(url) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload  = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+async function imgSizeAttrs(url, maxW, maxH) {
+  const size = await loadImageNaturalSize(url);
+  if (!size || !size.w || !size.h) return '';
+  const scale = Math.min(maxW / size.w, maxH / size.h, 1);
+  return `width="${Math.round(size.w * scale)}" height="${Math.round(size.h * scale)}"`;
+}
 async function buildFireExtCoverPageHtml(batch) {
   if (!batch) return '';
   const client = allClients.find(c => c.id === batch.client_id);
@@ -1570,9 +1591,15 @@ async function buildFireExtCoverPageHtml(batch) {
   const year = (batch.date_from || '').slice(0, 4);
   const cp = allClientPreventives.find(cp => cp.client_id === batch.client_id && cp.preventive_type === 'fire_extinguisher');
   const frequency = cp?.frequency ? cp.frequency.toUpperCase() : '';
+  const logoUrl = companyLogo ? siteUrl(companyLogo) : '';
+  const photoUrl = client?.photo ? siteUrl('preventive/' + client.photo) : '';
+  const [logoAttrs, photoAttrs] = await Promise.all([
+    logoUrl ? imgSizeAttrs(logoUrl, 180, 80) : '',
+    photoUrl ? imgSizeAttrs(photoUrl, 220, 280) : ''
+  ]);
   return `
   <div class="fe-cover" style="text-align:center;padding-top:30px">
-    ${companyLogo ? `<img src="${siteUrl(companyLogo)}" style="max-width:220px;max-height:90px;object-fit:contain;margin-bottom:8px"><br>` : ''}
+    ${logoUrl ? `<img src="${logoUrl}" ${logoAttrs} style="object-fit:contain;margin-bottom:8px"><br>` : ''}
     ${companyName ? `<div style="font-weight:700;font-size:13px">${companyName}</div>` : ''}
     ${companyAddr ? `<div style="font-size:11px;margin-top:2px">${companyAddr}</div>` : ''}
     ${companyPhones ? `<div style="font-size:11px">Tel no: ${companyPhones}</div>` : ''}
@@ -1580,7 +1607,7 @@ async function buildFireExtCoverPageHtml(batch) {
     <div style="font-size:14px;margin-bottom:28px">Inspection Report of fire extinguisher</div>
     ${frequency ? `<div style="font-weight:700;font-size:14px">${frequency}</div>` : ''}
     <div style="font-size:13px;margin-bottom:28px">${MONTH_NAMES[monthNum] || ''} ${year}</div>
-    ${client?.photo ? `<img src="${siteUrl('preventive/' + client.photo)}" style="max-width:320px;max-height:260px;object-fit:cover;border-radius:6px;margin-bottom:16px"><br>` : ''}
+    ${photoUrl ? `<img src="${photoUrl}" ${photoAttrs} style="object-fit:cover;border-radius:6px;margin-bottom:16px"><br>` : ''}
     <div style="font-weight:700;font-size:16px;text-transform:uppercase">${client ? client.client_name : ''}</div>
     ${client?.address ? `<div style="font-size:12px;color:#555;margin-top:4px">${client.address}</div>` : ''}
   </div>
