@@ -1,3 +1,2 @@
 id|batch_id|client_id|year|month|filename|created_by|created_at
 RPT001|BATCH004|CLI001|2026|06|2026-06-diamond-hotel-philippines-fire-ext-report|superadmin|2026-10-30
-RPT002|BATCH011|CLI002|2026|10|2026-10-manhattan-fire-ext-report|superadmin|2026-10-30
