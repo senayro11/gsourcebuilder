@@ -529,6 +529,15 @@ const UI = (() => {
       </div>`;
     }
 
+    // Company-wide Settings (logo/mission/vision) -- superadmin only,
+    // reachable from every page's sidenav, not just SuperAdmin Panel's
+    // own page.
+    if (isSuperAdmin) {
+      html += `<div class="nav-group">
+        <a href="../superadmin.html#settings" class="nav-item"><span class="nav-icon">⚙️</span>Settings</a>
+      </div>`;
+    }
+
     nav.innerHTML = html;
 
     const avEl   = document.getElementById('sidebar-avatar');

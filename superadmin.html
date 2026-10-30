@@ -212,22 +212,13 @@ UI.buildNavbar(user, 'SuperAdmin Panel');
 UI.buildSidebar(user, 'superadmin');
 UI.initTabs();
 
-// Settings isn't a SYSTEMS entry, so buildSidebar() doesn't know about
-// it -- slot a link in right before the final divider+Logout (after
-// whatever buildSidebar already put there: User Management, Other
-// Systems) instead of teaching the shared sidebar about a page-specific
-// tab.
-(function addSettingsSidebarLink() {
-  const dividers = document.querySelectorAll('#sidebar hr.sidebar-divider');
-  const lastDivider = dividers[dividers.length - 1];
-  if (lastDivider) {
-    lastDivider.insertAdjacentHTML('beforebegin',
-      `<a href="#" class="sidebar-item" onclick="openSettingsTab();return false"><span class="icon">⚙️</span>Settings</a>`);
-  }
-})();
+// The Settings link itself is now built into buildSidebar() (shown to
+// superadmin on every page's sidenav, not just this one) and points
+// here with a #settings hash -- open that tab on arrival.
 function openSettingsTab() {
   document.querySelector('.tabs .tab[data-tab="sa-settings"]')?.click();
 }
+if (location.hash === '#settings') openSettingsTab();
 
 // ---- Company Settings (global -- used by Payslip, printable reports,
 // the login page, etc. across every system) ----

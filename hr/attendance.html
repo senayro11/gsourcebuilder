@@ -129,6 +129,11 @@
           <a class="nav-sub-item" href="../preventive/preventive.html">🧯 Preventive Maintenance</a>
           <a class="nav-sub-item" href="../superadmin.html">⚙️ SuperAdmin Panel</a>
         </div>
+        <!-- Company-wide Settings (logo/mission/vision) -- superadmin
+             only, reachable from every page's sidenav. -->
+        <a class="nav-item" id="nav-settings" href="../superadmin.html#settings" style="display:none">
+          <span class="nav-icon">⚙️</span>Settings
+        </a>
       </div>
     </nav>
 
@@ -1672,6 +1677,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (session.role === 'superadmin') {
     document.getElementById('nav-switch-system').style.display = '';
     document.getElementById('nav-switch-system-sub').style.display = '';
+    document.getElementById('nav-settings').style.display = '';
   }
   // Stay on whatever page the user was on before a refresh, instead of
   // always resetting to Dashboard. Only restore if that page still
