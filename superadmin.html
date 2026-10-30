@@ -47,6 +47,7 @@
       <div class="tab" data-tab="sa-pm">📁 Project Mgmt</div>
       <div class="tab" data-tab="sa-preventive">🧯 Preventive</div>
       <div class="tab" data-tab="sa-sync">🔄 Sync Center</div>
+      <div class="tab" data-tab="sa-settings">⚙️ Settings</div>
     </div>
 
     <!-- All users -->
@@ -120,6 +121,27 @@
         </div>
       </div>
     </div>
+
+    <!-- Settings: company info used system-wide (Payslip, printable
+         reports, etc.) -- one global source instead of each system
+         managing its own copy. -->
+    <div class="tab-pane" id="sa-settings">
+      <div class="card" style="max-width:560px">
+        <div class="card-header"><span class="card-title">🏢 Company Settings</span></div>
+        <div class="form-group" style="display:flex;gap:16px;align-items:center">
+          <div id="set-logo-preview" style="width:72px;height:72px;border-radius:10px;background:var(--surface2);flex-shrink:0;overflow:hidden"></div>
+          <div>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('set-logo-input').click()">📷 Change Logo</button>
+            <input type="file" id="set-logo-input" accept="image/*" style="display:none" onchange="handleCompanyLogoSelect(event)">
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Used on Payslips, printable reports, and the login page.</div>
+          </div>
+        </div>
+        <div class="form-group"><label>Company Name</label><input type="text" id="set-company-name"></div>
+        <div class="form-group"><label>Mission</label><textarea id="set-mission" rows="3"></textarea></div>
+        <div class="form-group"><label>Vision</label><textarea id="set-vision" rows="3"></textarea></div>
+        <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -189,6 +211,103 @@ if (!user) throw 0;
 UI.buildNavbar(user, 'SuperAdmin Panel');
 UI.buildSidebar(user, 'superadmin');
 UI.initTabs();
+
+// Settings isn't a SYSTEMS entry, so buildSidebar() doesn't know about
+// it -- slot a link in right before the final divider+Logout (after
+// whatever buildSidebar already put there: User Management, Other
+// Systems) instead of teaching the shared sidebar about a page-specific
+// tab.
+(function addSettingsSidebarLink() {
+  const dividers = document.querySelectorAll('#sidebar hr.sidebar-divider');
+  const lastDivider = dividers[dividers.length - 1];
+  if (lastDivider) {
+    lastDivider.insertAdjacentHTML('beforebegin',
+      `<a href="#" class="sidebar-item" onclick="openSettingsTab();return false"><span class="icon">⚙️</span>Settings</a>`);
+  }
+})();
+function openSettingsTab() {
+  document.querySelector('.tabs .tab[data-tab="sa-settings"]')?.click();
+}
+
+// ---- Company Settings (global -- used by Payslip, printable reports,
+// the login page, etc. across every system) ----
+function getConfigValue(rows, key) { return rows.find(r => r.key === key)?.value || ''; }
+let pendingLogoDataUri = '';
+const LOGO_EXT_BY_MIME = { 'image/jpeg':'jpg', 'image/jpg':'jpg', 'image/png':'png', 'image/webp':'webp', 'image/gif':'gif' };
+let pendingLogoExt = 'png';
+async function loadSettingsTab() {
+  try {
+    const rows = await DB.read('appconfig', true);
+    document.getElementById('set-company-name').value = getConfigValue(rows, 'company_name');
+    document.getElementById('set-mission').value = getConfigValue(rows, 'mission');
+    document.getElementById('set-vision').value = getConfigValue(rows, 'vision');
+    const logo = getConfigValue(rows, 'logo');
+    document.getElementById('set-logo-preview').innerHTML = logo
+      ? `<img src="${ROOT}${logo}" style="width:100%;height:100%;object-fit:contain">`
+      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:22px">🏢</div>`;
+  } catch (e) { UI.toast('Error loading settings: ' + e.message, 'error'); }
+}
+function handleCompanyLogoSelect(e) {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  pendingLogoExt = LOGO_EXT_BY_MIME[file.type] || 'png';
+  const reader = new FileReader();
+  reader.onload = () => {
+    pendingLogoDataUri = reader.result;
+    document.getElementById('set-logo-preview').innerHTML = `<img src="${pendingLogoDataUri}" style="width:100%;height:100%;object-fit:contain">`;
+  };
+  reader.readAsDataURL(file);
+}
+// Stored as its own file under photos/ (root-level, so every system --
+// HR, Preventive, etc, each one folder deep -- can reach it the same
+// way they already reach other root resources), not as base64 inside
+// appconfig.txt.
+async function uploadCompanyLogo(dataUri, ext) {
+  const { owner, repo, branch, token } = GITHUB_CONFIG;
+  const fileName = `company-logo.${ext}`;
+  const path = `photos/${fileName}`;
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  const headers = { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
+  const base64 = dataUri.split(',')[1];
+  let sha;
+  const existing = await fetch(`${url}?ref=${branch}`, { headers });
+  if (existing.ok) { sha = (await existing.json()).sha; }
+  const body = { message: 'Update company logo', content: base64, branch };
+  if (sha) body.sha = sha;
+  const res = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
+  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || `Logo upload error ${res.status}`); }
+  const json = await res.json();
+  return `photos/${fileName}?v=${json.content.sha.substring(0, 8)}`;
+}
+async function saveSettings() {
+  UI.loading(true, 'Saving...');
+  try {
+    const rows = await DB.read('appconfig', true);
+    let logo = getConfigValue(rows, 'logo');
+    if (pendingLogoDataUri) {
+      UI.loading(true, 'Uploading logo...');
+      logo = await uploadCompanyLogo(pendingLogoDataUri, pendingLogoExt);
+    }
+    const updates = {
+      company_name: document.getElementById('set-company-name').value.trim(),
+      mission: document.getElementById('set-mission').value.trim(),
+      vision: document.getElementById('set-vision').value.trim(),
+      logo
+    };
+    Object.keys(updates).forEach(k => {
+      const existing = rows.find(r => r.key === k);
+      if (existing) existing.value = updates[k];
+      else rows.push({ key: k, value: updates[k] });
+    });
+    await DB.write('appconfig', rows, 'Update company settings');
+    pendingLogoDataUri = '';
+    UI.toast('Settings saved ✅', 'success');
+    loadSettingsTab();
+  } catch (e) { UI.toast('Error: ' + e.message, 'error'); }
+  UI.loading(false);
+}
+loadSettingsTab();
 
 // ---- Sync Center ----
 function renderSyncCenter() {
