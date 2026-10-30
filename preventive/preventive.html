@@ -216,9 +216,10 @@
       <div id="batch-detail-view" style="display:none">
         <div class="page-header-row" style="margin-bottom:16px">
           <button class="btn btn-ghost btn-sm" onclick="backToBatchList()">← Back to Inspection Log</button>
-          <div style="display:flex;gap:8px" id="fe-add-slot-actions">
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="fe-add-slot-actions">
             <button class="btn btn-ghost btn-sm" onclick="printFireExt()">🖨 Print</button>
             <button class="btn btn-ghost btn-sm" onclick="downloadFireExt()">⬇ Download</button>
+            <button class="btn btn-success btn-sm" onclick="generateAccomplishmentReport()" data-perm="edit">📄 Generate Report</button>
             <button class="btn btn-primary btn-sm" id="fe-add-item-btn" onclick="openAddFeItem()" data-perm="edit" style="display:none">+ Add</button>
           </div>
         </div>
@@ -251,6 +252,35 @@
               <tbody id="fe-tbody"></tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accomplishment Reports: one row per "Generate Report" click in
+         Inspection Log -- the batch data itself stays the source of
+         truth, so Print/Download here just re-render it on demand
+         instead of storing a copy of the .doc content. -->
+    <div class="tab-pane" id="tab-fe-report">
+      <div class="page-header-row" style="margin-bottom:16px">
+        <div class="page-header"><h1>📄 Accomplishment Reports</h1></div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Client</label>
+          <select id="report-filter-client" style="width:240px" onchange="filterReportList()"><option value="">All Clients</option></select>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Generated Reports</span>
+          <div class="search-bar" style="max-width:260px">
+            <span>🔍</span>
+            <input type="text" id="report-list-search" placeholder="Search client, filename..." oninput="filterReportList()">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Client</th><th>Period</th><th>Filename</th><th>Generated</th><th>Actions</th></tr></thead>
+            <tbody id="report-tbody"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -507,7 +537,8 @@ const TABS = [
   { id:'tab-fire-ext',      icon:'🧯', label:'Fire Extinguisher', children: [
       { id:'tab-fe-dashboard', icon:'🏠', label:'Dashboard' },
       { id:'tab-fe-units',     icon:'📋', label:'Registry Units' },
-      { id:'tab-fe-log',       icon:'📝', label:'Inspection Log' }
+      { id:'tab-fe-log',       icon:'📝', label:'Inspection Log' },
+      { id:'tab-fe-report',    icon:'📄', label:'Report' }
   ]},
   { id:'tab-seismic',       icon:'📐', label:'Seismic' },
   { id:'tab-firepump',      icon:'🚒', label:'Fire Pump' },
@@ -533,6 +564,7 @@ function switchTab(tabId, el) {
       else backToBatchList();
     });
   }
+  if (tabId==='tab-fe-report') loadFeAccomplishmentReports();
   sessionStorage.setItem('preventive_last_tab', tabId);
 }
 UI.buildNavbar(user, 'Preventive Maintenance');
@@ -1419,20 +1451,21 @@ async function buildFireExtReportHtml(batch, rows) {
   <tbody>${rows.map(r=>`<tr><td>${r.serial_no}</td><td>${r.date_checked||''}</td><td>${r.floor}</td><td>${r.location||''}</td><td>${r.type||''}</td><td>${r.capacity_lb||''}</td><td>${r.status||''}</td><td>${r.problem_desc||''}</td><td>${r.expiration_date||''}</td></tr>`).join('')}</tbody>
   </table></body></html>`;
 }
-async function printFireExt() {
-  if (!feFilteredRows.length) { UI.toast('No records to print','warning'); return; }
+async function printReportHtml(batch, rows) {
+  if (!rows.length) { UI.toast('No records to print','warning'); return; }
   const win = window.open('', '_blank');
-  win.document.write(await buildFireExtReportHtml());
+  win.document.write(await buildFireExtReportHtml(batch, rows));
   win.document.close();
   setTimeout(() => { win.focus(); win.print(); }, 300);
 }
-async function downloadReport(batch, rows) {
+async function printFireExt() { await printReportHtml(currentBatch, feFilteredRows); }
+async function downloadReport(batch, rows, filenameOverride) {
   if (!rows.length) { UI.toast('No records to download','warning'); return; }
   const blob = new Blob(['﻿', await buildFireExtReportHtml(batch, rows)], { type: 'application/msword' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${batch ? batch.filename : 'Fire_Extinguisher_Report_' + new Date().toISOString().split('T')[0]}.doc`;
+  a.download = `${filenameOverride || (batch ? batch.filename : 'Fire_Extinguisher_Report_' + new Date().toISOString().split('T')[0])}.doc`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -1447,6 +1480,116 @@ async function downloadBatch(id) {
     await downloadReport(batch, rows);
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
   UI.loading(false);
+}
+
+// ---- Accomplishment Reports (saved record of a "Generate Report" click
+// in Inspection Log -- only the reference + filename is stored; Print/
+// Download re-fetch the batch's live rows and rebuild the same report
+// buildFireExtReportHtml() already produces, so there's no separate .doc
+// blob to keep in sync with later edits). ----
+function slugify(text) {
+  return (text || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+const MONTH_NAMES = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+let allFeAccomplishmentReports = [];
+
+async function generateAccomplishmentReport() {
+  if (!currentBatch) return;
+  if (!currentBatchRows.length) { UI.toast('No records in this batch to generate a report from','warning'); return; }
+  UI.loading(true, 'Generating report...');
+  try {
+    const all = await DB.read('fireExtinguisherAccomplishmentReportsDB', true);
+    const existing = all.find(r => r.batch_id === currentBatch.id);
+    if (existing) { UI.toast(`Already generated (${existing.filename}.doc) — see the Report tab`,'info', 5000); UI.loading(false); return; }
+    const year  = currentBatch.date_from.slice(0,4);
+    const month = currentBatch.date_from.slice(5,7);
+    const newReport = {
+      id: DB.nextId(all, 'id', 'RPT'),
+      batch_id: currentBatch.id, client_id: currentBatch.client_id,
+      year, month,
+      filename: `${year}-${month}-${slugify(clientName(currentBatch.client_id))}-fire-ext-report`,
+      created_by: user.username,
+      created_at: new Date().toISOString().split('T')[0]
+    };
+    await DB.insert('fireExtinguisherAccomplishmentReportsDB', newReport);
+    allFeAccomplishmentReports = [...all, newReport];
+    UI.toast('Report generated ✅ — see the Report tab','success');
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+
+async function loadFeAccomplishmentReports() {
+  UI.loading(true, 'Loading reports...');
+  try {
+    allFeAccomplishmentReports = await DB.read('fireExtinguisherAccomplishmentReportsDB', true);
+    const sel = document.getElementById('report-filter-client');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">All Clients</option>' + allClients.map(c => `<option value="${c.id}">${c.client_name}</option>`).join('');
+    sel.value = cur;
+    filterReportList();
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+function filterReportList() {
+  const client = document.getElementById('report-filter-client').value;
+  const q = (document.getElementById('report-list-search').value || '').trim().toLowerCase();
+  let rows = allFeAccomplishmentReports;
+  if (client) rows = rows.filter(r => r.client_id === client);
+  if (q) {
+    rows = rows.filter(r =>
+      clientName(r.client_id).toLowerCase().includes(q) ||
+      (r.filename||'').toLowerCase().includes(q)
+    );
+  }
+  rows = rows.slice().sort((a,b) => `${b.year}${b.month}`.localeCompare(`${a.year}${a.month}`) || (b.created_at||'').localeCompare(a.created_at||''));
+  renderReportList(rows);
+}
+function renderReportList(rows) {
+  document.getElementById('report-tbody').innerHTML = rows.map(r => `<tr>
+    <td>${clientName(r.client_id)}</td>
+    <td>${MONTH_NAMES[parseInt(r.month,10)] || r.month} ${r.year}</td>
+    <td class="mono">${r.filename}.doc</td>
+    <td>${UI.dateStr(r.created_at)}</td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-ghost btn-sm" onclick="printAccomplishmentReport('${r.id}')" title="Print">🖨</button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadAccomplishmentReport('${r.id}')" title="Download">⬇</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteAccomplishmentReport('${r.id}')" data-perm="delete" title="Delete">🗑</button>
+    </td>
+  </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text3)">No generated reports yet — use "Generate Report" in Inspection Log</td></tr>';
+  Auth.applyUIPermissions(user, 'preventive');
+}
+async function getBatchAndRowsForReport(reportId) {
+  const report = allFeAccomplishmentReports.find(r => r.id === reportId);
+  if (!report) { UI.toast('Report not found','error'); return null; }
+  if (!allFeBatches.length) allFeBatches = await DB.read('fireExtinguisherBatchesDB', true);
+  const batch = allFeBatches.find(b => b.id === report.batch_id);
+  if (!batch) { UI.toast('The underlying inspection batch for this report no longer exists','error'); return null; }
+  const rows = await DB.withPath('preventive/db/fe_reports', () => DB.read(batch.filename, true));
+  return { batch, rows, report };
+}
+async function printAccomplishmentReport(reportId) {
+  UI.loading(true, 'Preparing report...');
+  try {
+    const data = await getBatchAndRowsForReport(reportId);
+    if (data) await printReportHtml(data.batch, data.rows);
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+async function downloadAccomplishmentReport(reportId) {
+  UI.loading(true, 'Preparing download...');
+  try {
+    const data = await getBatchAndRowsForReport(reportId);
+    if (data) await downloadReport(data.batch, data.rows, data.report.filename);
+  } catch(e) { UI.toast('Error: '+e.message,'error'); }
+  UI.loading(false);
+}
+function deleteAccomplishmentReport(id) {
+  UI.confirm('Delete this generated report record? The underlying inspection batch data is not affected.', async () => {
+    UI.loading(true);
+    try { await DB.remove('fireExtinguisherAccomplishmentReportsDB', r=>r.id===id); UI.toast('Deleted','success'); await loadFeAccomplishmentReports(); }
+    catch(e) { UI.toast('Error: '+e.message,'error'); }
+    UI.loading(false);
+  });
 }
 
 loadAll();
