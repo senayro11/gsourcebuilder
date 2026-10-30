@@ -1,3 +1,3 @@
 id|client_name|address|contact_person|contact_number|photo|created_at
-CLI001|Diamond hotel Philippines|Manila|Engineering|09927373722||2026-08-08
+CLI001|Diamond hotel Philippines|Manila|Engineering|09927373722|photos/CLI001.jpg?v=f878e766|2026-08-08
 CLI002|Manhattan|Quezon city|Ryzor|09274848382||2026-08-08
