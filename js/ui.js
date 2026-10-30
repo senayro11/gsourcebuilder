@@ -116,11 +116,18 @@ const UI = (() => {
            ${sysItems}
          </div>`
       : '';
-    const systemSection = (userMgmtLink || switcherBlock) ? `
+    // Company-wide Settings (logo/mission/vision) -- superadmin only,
+    // reachable from every page's sidenav, not just SuperAdmin Panel's
+    // own page.
+    const settingsLink = isSuperAdmin
+      ? `<a href="${_ROOT}superadmin.html#settings" class="sidebar-item ${currentSystem==='superadmin'?'active':''}"><span class="icon">⚙️</span>Settings</a>`
+      : '';
+    const systemSection = (userMgmtLink || switcherBlock || settingsLink) ? `
       <hr class="sidebar-divider">
       <div class="sidebar-section"><span class="sidebar-label">System</span></div>
       ${userMgmtLink}
-      ${switcherBlock}` : '';
+      ${switcherBlock}
+      ${settingsLink}` : '';
 
     sidebar.innerHTML = `
       <div class="sidebar-section"><span class="sidebar-label">Navigation</span></div>
