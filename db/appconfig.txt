@@ -2,3 +2,7 @@ key|value
 token|
 setup_done|true
 app_name|Enterprise System
+company_name|
+mission|
+vision|
+logo|photos/company-logo.png?v=319243b6
