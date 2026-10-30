@@ -1,0 +1,2 @@
+unit_id|serial_no|floor|location|type|capacity_lb|date_checked|status|problem_desc|expiration_date
+UNIT311|Roof Deck-001|Roof Deck|Hallway|Dry Chem|10||not check||
