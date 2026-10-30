@@ -1472,7 +1472,8 @@ async function buildFireExtReportHtml(batch, rows) {
   </div>` : '';
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fire Extinguisher Report</title>
   <style>
-    @page{size:8.5in 11in;margin:1in 0.5in}
+    @page Section1{size:8.5in 11in;margin:1.0in 0.5in 1.0in 0.8in;mso-header-margin:.5in;mso-footer-margin:.5in;mso-paper-source:0}
+    div.Section1{page:Section1}
     body{font-family:Arial,sans-serif;padding:0;color:#1e293b;margin:0}
     p{margin:0;mso-margin-top-alt:0;mso-margin-bottom-alt:0}
     table{width:100%;border-collapse:collapse;font-size:11px}
@@ -1480,9 +1481,11 @@ async function buildFireExtReportHtml(batch, rows) {
     .fe-report-head td{background:#6b1e1e;color:#fff;font-weight:700;text-align:center}
     tbody tr:nth-child(even){background:#f5f5f5}
   </style></head><body>
+  <div class="Section1">
   ${exceptionsSection}
   ${goodSection}
   <p style="font-size:10px;color:#94a3b8;margin-top:16px">Generated: ${new Date().toLocaleString('en-PH')}</p>
+  </div>
   </body></html>`;
 }
 async function printReportHtml(batch, rows) {
