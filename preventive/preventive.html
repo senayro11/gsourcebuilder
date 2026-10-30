@@ -63,7 +63,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>ID</th><th>Client Name</th><th>Address</th><th>Contact</th><th>Preventive Types</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Photo</th><th>ID</th><th>Client Name</th><th>Address</th><th>Contact</th><th>Preventive Types</th><th>Actions</th></tr></thead>
             <tbody id="client-tbody"></tbody>
           </table>
         </div>
@@ -328,6 +328,13 @@
       <span class="modal-title" id="client-modal-title">+ Add Client</span>
       <button class="modal-close" onclick="UI.closeModal('client-modal')">✕</button>
     </div>
+    <div class="form-group" style="display:flex;gap:12px;align-items:center">
+      <div id="cf-photo-preview" style="width:56px;height:56px;border-radius:50%;flex-shrink:0;overflow:hidden"></div>
+      <div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('cf-photo-input').click()">📷 Change Photo</button>
+        <input type="file" id="cf-photo-input" accept="image/*" style="display:none" onchange="handleClientPhotoSelect(event)">
+      </div>
+    </div>
     <div class="form-group"><label>Client Name *</label><input type="text" id="cf-name"></div>
     <div class="form-group"><label>Address</label><input type="text" id="cf-address"></div>
     <div class="form-row">
@@ -575,6 +582,7 @@ UserMgmt.init(user, 'preventive');
 let allClients=[], allClientPreventives=[], allFireExtUnits=[], allFeBatches=[], feFilteredRows=[];
 let feDashChart=null, feDashFloorChart=null, feDashStateChart=null, feDashTypeChart=null;
 let editClientId=null, managingClientId=null, editUnitId=null, editFireExtId=null;
+let pendingClientPhotoDataUri = '';
 let currentBatch=null, currentBatchRows=[];
 
 function clientName(id) { return allClients.find(c=>c.id===id)?.client_name || id; }
@@ -609,6 +617,13 @@ function filterClients() {
   renderClients(allClients.filter(c => (c.client_name||'').toLowerCase().includes(q)));
 }
 
+function clientAvatarHtml(name, size, photoUrl) {
+  if (photoUrl) {
+    return `<div style="width:${size}px;height:${size}px;border-radius:50%;flex-shrink:0;overflow:hidden"><img src="${photoUrl}" style="width:100%;height:100%;object-fit:cover"></div>`;
+  }
+  const initials = (name || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:linear-gradient(135deg,#4f8ef7,#a855f7);display:inline-flex;align-items:center;justify-content:center;font-size:${Math.round(size/2.5)}px;font-weight:700;color:white;flex-shrink:0">${initials}</div>`;
+}
 function renderClients(rows) {
   rows = rows || allClients;
   document.getElementById('client-tbody').innerHTML = rows.map(c => {
@@ -619,6 +634,7 @@ function renderClients(rows) {
       return `<span class="badge badge-info" style="margin:2px 2px 2px 0">${def?def.icon:''} ${def?def.label:t.preventive_type}${due}</span>`;
     }).join('') || '<span style="color:var(--text3);font-size:12px">None assigned</span>';
     return `<tr>
+      <td>${clientAvatarHtml(c.client_name, '36', c.photo)}</td>
       <td class="mono">${c.id}</td>
       <td><strong>${c.client_name}</strong></td>
       <td>${c.address||'—'}</td>
@@ -630,45 +646,105 @@ function renderClients(rows) {
         <button class="btn btn-danger btn-sm" onclick="deleteClient('${c.id}')" data-perm="delete" title="Delete">🗑</button>
       </td>
     </tr>`;
-  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text3)">No clients yet</td></tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text3)">No clients yet</td></tr>';
   Auth.applyUIPermissions(user, 'preventive');
 }
 
 function openAddClient() {
   editClientId = null;
+  pendingClientPhotoDataUri = '';
   ['cf-name','cf-address','cf-contact','cf-phone'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('cf-photo-preview').innerHTML = clientAvatarHtml('', '56', '');
   document.getElementById('client-modal-title').textContent = '+ Add Client';
   UI.openModal('client-modal');
 }
 function editClient(id) {
   const c = allClients.find(x=>x.id===id); if (!c) return;
   editClientId = id;
+  pendingClientPhotoDataUri = '';
   document.getElementById('cf-name').value = c.client_name;
   document.getElementById('cf-address').value = c.address || '';
   document.getElementById('cf-contact').value = c.contact_person || '';
   document.getElementById('cf-phone').value = c.contact_number || '';
+  document.getElementById('cf-photo-preview').innerHTML = clientAvatarHtml(c.client_name, '56', c.photo);
   document.getElementById('client-modal-title').textContent = '✏️ Edit Client';
   UI.openModal('client-modal');
+}
+// A freshly-picked photo waiting to be uploaded on Save (not yet
+// committed to GitHub) -- previewed locally first so Cancel/closing the
+// modal without touching the photo field preserves whatever photo the
+// client already has.
+function handleClientPhotoSelect(e) {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    pendingClientPhotoDataUri = reader.result;
+    document.getElementById('cf-photo-preview').innerHTML =
+      `<img src="${pendingClientPhotoDataUri}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  };
+  reader.readAsDataURL(file);
+}
+// Client photos are stored as their own small file under preventive/
+// photos/ (named by client id), not as base64 in clientsDB.txt -- a
+// base64 photo per row would make that pipe-delimited file balloon and
+// slow down every read, and the app already re-reads the whole file on
+// every edit.
+async function uploadClientPhoto(clientId, dataUri) {
+  const { owner, repo, branch, token } = GITHUB_CONFIG;
+  const fileName = clientId.replace(/[^a-zA-Z0-9_-]/g, '_') + '.jpg';
+  const path = `preventive/photos/${fileName}`;
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  const headers = {
+    'Authorization': `token ${token}`,
+    'Accept': 'application/vnd.github.v3+json',
+    'Content-Type': 'application/json'
+  };
+  const base64 = dataUri.split(',')[1];
+  let sha;
+  const existing = await fetch(`${url}?ref=${branch}`, { headers });
+  if (existing.ok) { sha = (await existing.json()).sha; }
+  const body = { message: `Update photo for ${clientId}`, content: base64, branch };
+  if (sha) body.sha = sha;
+  const res = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Photo upload error ${res.status}`);
+  }
+  const json = await res.json();
+  // Same filename every time a photo is replaced -- append the new
+  // blob's sha as a cache-buster so the browser (and GitHub Pages' CDN)
+  // fetch the fresh image instead of serving what they already cached.
+  return `photos/${fileName}?v=${json.content.sha.substring(0, 8)}`;
 }
 async function saveClient() {
   const name = document.getElementById('cf-name').value.trim();
   if (!name) { UI.toast('Fill in the client name','warning'); return; }
-  const data = {
-    client_name: name,
-    address: document.getElementById('cf-address').value.trim(),
-    contact_person: document.getElementById('cf-contact').value.trim(),
-    contact_number: document.getElementById('cf-phone').value.trim()
-  };
   UI.loading(true,'Saving...');
   try {
+    const all = await DB.read('clientsDB', true);
+    const id = editClientId || DB.nextId(all,'id','CLI');
+    let photo = editClientId ? (all.find(c=>c.id===editClientId)?.photo || '') : '';
+    if (pendingClientPhotoDataUri) {
+      UI.loading(true, 'Uploading photo...');
+      photo = await uploadClientPhoto(id, pendingClientPhotoDataUri);
+    }
+    const data = {
+      client_name: name,
+      address: document.getElementById('cf-address').value.trim(),
+      contact_person: document.getElementById('cf-contact').value.trim(),
+      contact_number: document.getElementById('cf-phone').value.trim(),
+      photo
+    };
     if (editClientId) {
       await DB.update('clientsDB', r=>r.id===editClientId, data);
       UI.toast('Updated ✅','success');
     } else {
-      const all = await DB.read('clientsDB', true);
-      await DB.insert('clientsDB', { id: DB.nextId(all,'id','CLI'), ...data, created_at: new Date().toISOString().split('T')[0] });
+      await DB.insert('clientsDB', { id, ...data, created_at: new Date().toISOString().split('T')[0] });
       UI.toast('Added ✅','success');
     }
+    pendingClientPhotoDataUri = '';
     UI.closeModal('client-modal');
     await loadAll();
   } catch(e) { UI.toast('Error: '+e.message,'error'); }
