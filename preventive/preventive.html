@@ -1431,10 +1431,17 @@ function feStatusBadgeHtml(status) {
   const label = (FE_STATUS_OPTIONS.find(([v]) => v === status) || [,status])[1];
   return `<span style="display:inline-block;padding:2px 10px;border-radius:4px;background:${bg};color:#fff;font-weight:600;font-size:10px">${label}</span>`;
 }
+// No <thead> -- Word's HTML import treats a <thead> row as a
+// "repeat header row on every printed page" table property, which is
+// what was splitting this into many broken mini-tables once the real
+// data ran past one page. A plain first <tbody> row shows the same
+// styled header once, at the top of the table only.
 function feReportTableRows(rows, remarksLabel) {
   return `<table style="margin-bottom:24px">
-  <thead><tr><th>Serial #</th><th>Floor</th><th>Location</th><th>F.E. Type</th><th>Capacity</th><th>Status</th><th>${remarksLabel}</th></tr></thead>
-  <tbody>${rows.map(r=>`<tr><td>${r.serial_no}</td><td>${r.floor}</td><td>${r.location||''}</td><td>${r.type||''}</td><td>${r.capacity_lb?r.capacity_lb+' LBS':''}</td><td style="text-align:center">${feStatusBadgeHtml(r.status)}</td><td>${r.problem_desc||''}</td></tr>`).join('')}</tbody>
+  <tbody>
+  <tr class="fe-report-head"><td>Serial #</td><td>Floor</td><td>Location</td><td>F.E. Type</td><td>Capacity</td><td>Status</td><td>${remarksLabel}</td></tr>
+  ${rows.map(r=>`<tr><td>${r.serial_no}</td><td>${r.floor}</td><td>${r.location||''}</td><td>${r.type||''}</td><td>${r.capacity_lb?r.capacity_lb+' LBS':''}</td><td style="text-align:center">${feStatusBadgeHtml(r.status)}</td><td>${r.problem_desc||''}</td></tr>`).join('')}
+  </tbody>
   </table>`;
 }
 async function buildFireExtReportHtml(batch, rows) {
@@ -1467,8 +1474,8 @@ async function buildFireExtReportHtml(batch, rows) {
   <style>
     body{font-family:Arial,sans-serif;padding:24px;color:#1e293b}
     table{width:100%;border-collapse:collapse;font-size:11px}
-    th,td{border:1px solid #cbd5e1;padding:6px 8px;text-align:left}
-    th{background:#6b1e1e;color:#fff;font-weight:700}
+    td{border:1px solid #cbd5e1;padding:6px 8px;text-align:left}
+    .fe-report-head td{background:#6b1e1e;color:#fff;font-weight:700}
     tbody tr:nth-child(even){background:#f5f5f5}
   </style></head><body>
   ${exceptionsSection}
