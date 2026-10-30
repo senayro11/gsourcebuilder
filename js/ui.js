@@ -96,9 +96,7 @@ const UI = (() => {
     // Per-system User Management for admins
     let userMgmtLink = '';
     if (currentSystem && Auth.hasPermission(user, currentSystem, 'manage_users')) {
-      userMgmtLink = `<hr class="sidebar-divider">
-        <div class="sidebar-section"><span class="sidebar-label">Management</span></div>
-        <a href="#" class="sidebar-item" onclick="openUserMgmt&&openUserMgmt();return false"><span class="icon">👥</span>User Management</a>`;
+      userMgmtLink = `<a href="#" class="sidebar-item" onclick="openUserMgmt&&openUserMgmt();return false"><span class="icon">👥</span>User Management</a>`;
     }
 
     const dashLink = showSwitcher
@@ -106,8 +104,10 @@ const UI = (() => {
       : '';
 
     // Collapsible once there's more than one place to jump to; a
-    // single-system user just gets their one flat link, unchanged.
-    const navBlock = showSwitcher
+    // single-system user just gets their one flat link under Navigation,
+    // unchanged -- only the multi-system/superadmin case gets a "System"
+    // group, with User Management listed before Other Systems.
+    const switcherBlock = showSwitcher
       ? `<div class="sidebar-item sidebar-item-parent" data-group="switch-system" onclick="UI.toggleSidebarGroup('switch-system')">
            <span class="icon">🔀</span>Other Systems<span class="sidebar-caret">▸</span>
          </div>
@@ -115,12 +115,17 @@ const UI = (() => {
            ${dashLink}
            ${sysItems}
          </div>`
-      : sysItems;
+      : '';
+    const systemSection = (userMgmtLink || switcherBlock) ? `
+      <hr class="sidebar-divider">
+      <div class="sidebar-section"><span class="sidebar-label">System</span></div>
+      ${userMgmtLink}
+      ${switcherBlock}` : '';
 
     sidebar.innerHTML = `
       <div class="sidebar-section"><span class="sidebar-label">Navigation</span></div>
-      ${navBlock}
-      ${userMgmtLink}
+      ${showSwitcher ? '' : sysItems}
+      ${systemSection}
       <hr class="sidebar-divider">
       <a href="#" class="sidebar-item" onclick="Auth.logout()"><span class="icon">🚪</span>Logout</a>`;
   }

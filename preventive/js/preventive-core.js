@@ -505,6 +505,14 @@ const UI = (() => {
 
     const otherSystems = systems.filter(s => s !== currentSystem);
     const showDashboard = isSuperAdmin || systems.length > 1;
+
+    if (currentSystem && Auth.hasPermission(user, currentSystem, 'manage_users')) {
+      html += `<div class="nav-group">
+        <div class="nav-group-label">System</div>
+        <div class="nav-item" onclick="openUserMgmt&&openUserMgmt()"><span class="nav-icon">👥</span>User Management</div>
+      </div>`;
+    }
+
     if (showDashboard || otherSystems.length || isSuperAdmin) {
       html += `<div class="nav-group">
         <div class="nav-item nav-item-parent" data-group="switch-system" onclick="toggleNavGroup('switch-system')">
@@ -518,13 +526,6 @@ const UI = (() => {
           }).join('')}
           ${isSuperAdmin ? `<a href="../superadmin.html" class="nav-item"><span class="nav-icon">⚙️</span>SuperAdmin Panel</a>` : ''}
         </div>
-      </div>`;
-    }
-
-    if (currentSystem && Auth.hasPermission(user, currentSystem, 'manage_users')) {
-      html += `<div class="nav-group">
-        <div class="nav-group-label">System</div>
-        <div class="nav-item" onclick="openUserMgmt&&openUserMgmt()"><span class="nav-icon">👥</span>User Management</div>
       </div>`;
     }
 
