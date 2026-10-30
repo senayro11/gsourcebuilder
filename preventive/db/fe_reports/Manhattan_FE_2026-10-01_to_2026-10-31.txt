@@ -1,0 +1,3 @@
+unit_id|serial_no|floor|location|type|capacity_lb|date_checked|status|problem_desc|expiration_date
+UNIT311|Roof Deck-001|Roof Deck|Hallway|Dry Chem|10|2026-10-30|good||
+UNIT312|2F-001|2nd|Room1|CO2|20|2026-10-30|defective||
