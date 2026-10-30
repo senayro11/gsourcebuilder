@@ -1418,38 +1418,56 @@ async function saveAddFeItem() {
 // detail view (Print/Download there), but can also be passed in
 // explicitly so a batch can be downloaded straight from the list
 // row without first clicking View.
+// Status -> background color for the printed report's Status badge,
+// reusing the same severity buckets as the in-app inline editor
+// (feStatusSelect's colorMap): good=green, low pressure/pullout=amber
+// (both "needs servicing"), not check=gray, missing/defective=red.
+const FE_PRINT_STATUS_COLOR = {
+  good: '#2e7d32', 'low pressure': '#e8a33d', pullout: '#e8a33d',
+  'not check': '#9e9e9e', missing: '#c62828', defective: '#c62828'
+};
+function feStatusBadgeHtml(status) {
+  const bg = FE_PRINT_STATUS_COLOR[status] || '#9e9e9e';
+  const label = (FE_STATUS_OPTIONS.find(([v]) => v === status) || [,status])[1];
+  return `<span style="display:inline-block;padding:2px 10px;border-radius:4px;background:${bg};color:#fff;font-weight:600;font-size:10px">${label}</span>`;
+}
+function feReportTableRows(rows, remarksLabel) {
+  return `<table style="margin-bottom:24px">
+  <thead><tr><th>Serial #</th><th>Floor</th><th>Location</th><th>F.E. Type</th><th>Capacity</th><th>Status</th><th>${remarksLabel}</th></tr></thead>
+  <tbody>${rows.map(r=>`<tr><td>${r.serial_no}</td><td>${r.floor}</td><td>${r.location||''}</td><td>${r.type||''}</td><td>${r.capacity_lb?r.capacity_lb+' LBS':''}</td><td style="text-align:center">${feStatusBadgeHtml(r.status)}</td><td>${r.problem_desc||''}</td></tr>`).join('')}</tbody>
+  </table>`;
+}
 async function buildFireExtReportHtml(batch, rows) {
   batch = batch || currentBatch;
   rows = rows || feFilteredRows || [];
-  const label = batch ? `${clientName(batch.client_id)} (${UI.dateStr(batch.date_from)} – ${UI.dateStr(batch.date_to)})` : '';
-  // Exceptions first -- the client's own inspectors already lead their PDF
-  // reports with a "Defective or Used" section before the full listing,
-  // so this mirrors what they're used to reading.
-  const exceptions = rows.filter(r => ['defective','low pressure','missing','pullout'].includes(r.status));
-  // Skip this section when every visible row is already an exception
-  // (e.g. the batch detail view's Status filter was narrowed to
-  // "Use/Defective") -- the "All Units" table below would just repeat it.
-  const exceptionsSection = (exceptions.length && exceptions.length < rows.length) ? `
-  <h2 style="font-size:14px;margin-bottom:8px">⚠️ Defective or Used Fire Extinguishers (${exceptions.length})</h2>
-  <table style="margin-bottom:20px"><thead><tr><th>Serial #</th><th>Floor</th><th>Location</th><th>Type</th><th>Status</th><th>Problem Desc</th></tr></thead>
-  <tbody>${exceptions.map(r=>`<tr><td>${r.serial_no}</td><td>${r.floor}</td><td>${r.location||''}</td><td>${r.type||''}</td><td>${r.status}</td><td>${r.problem_desc||''}</td></tr>`).join('')}</tbody>
-  </table>` : '';
+  const client   = batch ? clientName(batch.client_id) : '';
+  const monthNum = batch ? parseInt((batch.date_from||'').slice(5,7), 10) : null;
+  const year     = batch ? (batch.date_from||'').slice(0,4) : '';
+  const good      = rows.filter(r => r.status === 'good');
+  const exceptions = rows.filter(r => r.status !== 'good');
+  const goodSection = good.length ? `
+  <div style="background:#d32f2f;color:#fff;font-weight:700;text-align:center;padding:8px;margin-bottom:10px;letter-spacing:.5px">ALL GOOD FIRE EXTINGUISHER RECORD SHEET</div>
+  <p style="text-align:center;font-weight:700;margin-bottom:2px">Preventive Maintenance of ${MONTH_NAMES[monthNum]||''} ${year}</p>
+  <p style="text-align:center;font-weight:700;color:#b8860b;margin-bottom:12px">${client}</p>
+  ${feReportTableRows(good, 'Problem Description')}` : '';
+  const exceptionsSection = exceptions.length ? `
+  <div style="background:#6b1e1e;color:#fff;font-weight:700;text-align:center;padding:8px;margin-bottom:12px;letter-spacing:.5px">Defective or Used Fire Extinguishers</div>
+  ${feReportTableRows(exceptions, 'Remarks')}` : '';
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fire Extinguisher Report</title>
   <style>
     body{font-family:Arial,sans-serif;padding:24px;color:#1e293b}
-    h1{font-size:18px;margin-bottom:4px}
-    p{font-size:12px;color:#64748b;margin-bottom:16px}
     table{width:100%;border-collapse:collapse;font-size:11px}
     th,td{border:1px solid #cbd5e1;padding:6px 8px;text-align:left}
-    th{background:#f1f5f9}
+    th{background:#6b1e1e;color:#fff;font-weight:700}
+    tbody tr:nth-child(even){background:#f5f5f5}
   </style></head><body>
-  <h1>🧯 Fire Extinguisher Preventive Maintenance Report</h1>
-  <p>${label} &nbsp;|&nbsp; Generated: ${new Date().toLocaleString('en-PH')}</p>
+  <p style="text-align:right;font-size:11px;color:#64748b;margin-bottom:16px">
+    Date Start: ${UI.dateStr(batch?.date_from)}<br>Date Finished: ${UI.dateStr(batch?.date_to)}
+  </p>
+  ${goodSection}
   ${exceptionsSection}
-  <h2 style="font-size:14px;margin-bottom:8px">Units (${rows.length})</h2>
-  <table><thead><tr><th>Serial #</th><th>Date Check</th><th>Floor</th><th>Location</th><th>Type</th><th>Capacity (lb)</th><th>Status</th><th>Problem Desc</th><th>Expiration</th></tr></thead>
-  <tbody>${rows.map(r=>`<tr><td>${r.serial_no}</td><td>${r.date_checked||''}</td><td>${r.floor}</td><td>${r.location||''}</td><td>${r.type||''}</td><td>${r.capacity_lb||''}</td><td>${r.status||''}</td><td>${r.problem_desc||''}</td><td>${r.expiration_date||''}</td></tr>`).join('')}</tbody>
-  </table></body></html>`;
+  <p style="font-size:10px;color:#94a3b8;margin-top:16px">Generated: ${new Date().toLocaleString('en-PH')}</p>
+  </body></html>`;
 }
 async function printReportHtml(batch, rows) {
   if (!rows.length) { UI.toast('No records to print','warning'); return; }
