@@ -1472,10 +1472,11 @@ async function buildFireExtReportHtml(batch, rows) {
   </div>` : '';
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fire Extinguisher Report</title>
   <style>
-    body{font-family:Arial,sans-serif;padding:24px;color:#1e293b}
+    body{font-family:Arial,sans-serif;padding:24px;color:#1e293b;margin:0}
+    p{margin:0;mso-margin-top-alt:0;mso-margin-bottom-alt:0}
     table{width:100%;border-collapse:collapse;font-size:11px}
-    td{border:1px solid #cbd5e1;padding:6px 8px;text-align:left}
-    .fe-report-head td{background:#6b1e1e;color:#fff;font-weight:700}
+    td{border:1px solid #cbd5e1;padding:4px 8px;text-align:left;vertical-align:middle;margin:0;mso-margin-top-alt:0;mso-margin-bottom-alt:0;line-height:1.2;mso-line-height-rule:exactly}
+    .fe-report-head td{background:#6b1e1e;color:#fff;font-weight:700;text-align:center}
     tbody tr:nth-child(even){background:#f5f5f5}
   </style></head><body>
   ${exceptionsSection}
