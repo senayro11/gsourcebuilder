@@ -2,11 +2,11 @@ key|value
 token|
 setup_done|true
 app_name|Enterprise System
-company_name|Gsource Builder & Trading Corp.
+company_name|GSOURCE BUILDER AND TRADING CORP
 mission|
 vision|
 logo|photos/company-logo.png?v=319243b6
 address|14-315 Picasso Bldg. Spazio Bernardo Condo. Brgy. Sauyo, Q.C
-contact_number|
-telephone|
+contact_number|0917-8967169
+telephone|02 83551202
 email|superadmin
