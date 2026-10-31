@@ -1651,22 +1651,23 @@ async function buildFireExtDashboardPageHtml(batch, rows, cfg) {
   const companyLogo = globalConfigValue(cfg, 'logo');
   const companyAddr = globalConfigValue(cfg, 'address');
   const logoUrl = companyLogo ? siteUrl(companyLogo) : '';
-  // The logo sits "behind text" (a floating watermark, not inline) --
-  // position:absolute + z-index:-1 removes it from the normal flow so
-  // it doesn't push the date line or heading around, with the mso-*
-  // properties telling Word's own wrap model to treat it the same way.
+  // Letterhead layout, not a watermark: logo top-left with Address/
+  // Client directly under it, "Dashboard" up on that same row (not
+  // pushed down below the logo), Date start/Finished top-right.
   const logoHtml = logoUrl
-    ? `<img src="${logoUrl}" width="115" height="43" style="position:absolute;top:0;left:50%;margin-left:-57px;width:1.2in;height:0.45in;object-fit:contain;opacity:.5;z-index:-1;mso-position-horizontal:center;mso-position-horizontal-rel:page;mso-position-vertical:top;mso-position-vertical-rel:page;mso-wrap-style:behind">`
+    ? `<img src="${logoUrl}" width="115" height="43" style="width:1.2in;height:0.45in;object-fit:contain">`
     : '';
   return `
-  <div style="position:relative;margin-bottom:12px">
-    ${logoHtml}
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+    <div>
+      ${logoHtml}
+      ${companyAddr ? `<div style="font-size:11px;margin-top:4px">Address: ${companyAddr}</div>` : ''}
+      ${client ? `<div style="font-size:11px">Client: ${client.client_name}</div>` : ''}
+    </div>
+    <div style="font-size:18px;font-weight:700;align-self:center">Dashboard</div>
     <div style="text-align:right;font-size:11px;color:#64748b">
       Date start: ${UI.dateStr(batch.date_from)}<br>Date Finished: ${UI.dateStr(batch.date_to)}
     </div>
-    <div style="text-align:center;font-size:18px;font-weight:700;margin-top:4px">Dashboard</div>
-    ${companyAddr ? `<div style="text-align:center;font-size:11px;margin-top:6px">Address: ${companyAddr}</div>` : ''}
-    ${client ? `<div style="text-align:center;font-size:11px">Client: ${client.client_name}</div>` : ''}
   </div>
   <div class="fe-dash-compact">
   ${feDashboardOverallTableHtml(rows)}
