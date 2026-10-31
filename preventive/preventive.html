@@ -1558,10 +1558,9 @@ function globalConfigValue(rows, key) { return rows.find(r => r.key === key)?.va
 function siteUrl(relativePath) {
   return `https://${GITHUB_CONFIG.owner}.github.io/${GITHUB_CONFIG.repo}/${relativePath}`;
 }
-async function buildFireExtCoverPageHtml(batch) {
+async function buildFireExtCoverPageHtml(batch, cfg) {
   if (!batch) return '';
   const client = allClients.find(c => c.id === batch.client_id);
-  const cfg = await readGlobalConfig().catch(() => []);
   const companyLogo   = globalConfigValue(cfg, 'logo');
   const companyName   = globalConfigValue(cfg, 'company_name');
   const companyAddr   = globalConfigValue(cfg, 'address');
@@ -1595,6 +1594,67 @@ async function buildFireExtCoverPageHtml(batch) {
   </div>
   <br clear="all" style="mso-special-character:line-break;page-break-before:always">`;
 }
+// Status rows in the Dashboard page's two tables, in the order the
+// client's own template uses -- "For Refill"/"Not checked" are this
+// report's labels for our 'low pressure'/'not check' statuses.
+const FE_DASHBOARD_STATUS_ROWS = [
+  ['good', 'Good'], ['defective', 'Defective'], ['low pressure', 'For Refill'],
+  ['pullout', 'Pull out'], ['missing', 'Missing'], ['not check', 'Not Checked']
+];
+function feDashboardOverallTableHtml(rows) {
+  const types = [...new Set(rows.map(r => r.type || 'None'))].sort();
+  const bodyRows = FE_DASHBOARD_STATUS_ROWS.map(([key, label]) => {
+    const statusRows = rows.filter(r => r.status === key);
+    const cells = types.map(t => statusRows.filter(r => (r.type || 'None') === t).length);
+    return `<tr><td>${label}</td>${cells.map(c => `<td style="text-align:center">${c}</td>`).join('')}<td style="text-align:center;font-weight:700">${statusRows.length}</td></tr>`;
+  }).join('');
+  const colTotals = types.map(t => rows.filter(r => (r.type || 'None') === t).length);
+  return `
+  <div style="font-weight:700;font-size:12px;margin-bottom:6px">Over all</div>
+  <table style="margin-bottom:6px">
+    <tbody>
+    <tr class="fe-report-head"><td>State</td>${types.map(t => `<td>${t}</td>`).join('')}<td>Total</td></tr>
+    ${bodyRows}
+    <tr style="font-weight:700;background:#f1f5f9"><td>Total</td>${colTotals.map(c => `<td style="text-align:center">${c}</td>`).join('')}<td style="text-align:center">${rows.length}</td></tr>
+    </tbody>
+  </table>
+  <div style="text-align:right;font-size:11px;font-weight:700;margin-bottom:24px">Over all Total: ${rows.length}</div>`;
+}
+function feDashboardFloorTableHtml(rows) {
+  const floors = [...new Set(rows.map(r => r.floor).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  const bodyRows = floors.map(f => {
+    const floorRows = rows.filter(r => r.floor === f);
+    const cells = FE_DASHBOARD_STATUS_ROWS.map(([key]) => floorRows.filter(r => r.status === key).length);
+    return `<tr><td>${f}</td>${cells.map(c => `<td style="text-align:center">${c}</td>`).join('')}<td style="text-align:center;font-weight:700">${floorRows.length}</td></tr>`;
+  }).join('');
+  const colTotals = FE_DASHBOARD_STATUS_ROWS.map(([key]) => rows.filter(r => r.status === key).length);
+  return `
+  <table>
+    <tbody>
+    <tr class="fe-report-head"><td>Floor</td>${FE_DASHBOARD_STATUS_ROWS.map(([, label]) => `<td>${label}</td>`).join('')}<td>Total Fire Ext</td></tr>
+    ${bodyRows}
+    <tr style="font-weight:700;background:#f1f5f9"><td>Total</td>${colTotals.map(c => `<td style="text-align:center">${c}</td>`).join('')}<td style="text-align:center">${rows.length}</td></tr>
+    </tbody>
+  </table>`;
+}
+async function buildFireExtDashboardPageHtml(batch, rows, cfg) {
+  if (!batch) return '';
+  const companyLogo = globalConfigValue(cfg, 'logo');
+  const logoUrl = companyLogo ? siteUrl(companyLogo) : '';
+  return `
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:10px">
+      ${logoUrl ? `<img src="${logoUrl}" width="115" height="43" style="width:1.2in;height:0.45in;object-fit:contain">` : ''}
+      <span style="font-size:16px;font-weight:700">Dashboard</span>
+    </div>
+    <div style="text-align:right;font-size:11px;color:#64748b">
+      Date start: ${UI.dateStr(batch.date_from)}<br>Date Finished: ${UI.dateStr(batch.date_to)}
+    </div>
+  </div>
+  ${feDashboardOverallTableHtml(rows)}
+  ${feDashboardFloorTableHtml(rows)}
+  <br clear="all" style="mso-special-character:line-break;page-break-before:always">`;
+}
 async function buildFireExtReportHtml(batch, rows) {
   batch = batch || currentBatch;
   rows = rows || feFilteredRows || [];
@@ -1603,7 +1663,9 @@ async function buildFireExtReportHtml(batch, rows) {
   const year     = batch ? (batch.date_from||'').slice(0,4) : '';
   const good      = rows.filter(r => r.status === 'good');
   const exceptions = rows.filter(r => r.status !== 'good');
-  const coverPage = await buildFireExtCoverPageHtml(batch);
+  const cfg = await readGlobalConfig().catch(() => []);
+  const coverPage = await buildFireExtCoverPageHtml(batch, cfg);
+  const dashboardPage = await buildFireExtDashboardPageHtml(batch, rows, cfg);
   const dateRangeHtml = `
   <p style="text-align:right;font-size:11px;color:#64748b;margin-bottom:16px">
     Date Start: ${UI.dateStr(batch?.date_from)}<br>Date Finished: ${UI.dateStr(batch?.date_to)}
@@ -1640,6 +1702,7 @@ async function buildFireExtReportHtml(batch, rows) {
   </style></head><body>
   <div class="Section1">
   ${coverPage}
+  ${dashboardPage}
   ${exceptionsSection}
   ${goodSection}
   <p style="font-size:10px;color:#94a3b8;margin-top:16px">Generated: ${new Date().toLocaleString('en-PH')}</p>
