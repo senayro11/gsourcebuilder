@@ -1654,34 +1654,20 @@ async function buildFireExtDashboardPageHtml(batch, rows, cfg) {
   const logoHtml = logoUrl
     ? `<img src="${logoUrl}" width="115" height="43" style="width:1.2in;height:0.45in;object-fit:contain">`
     : '';
-  // A plain table instead of flex -- "Dashboard" needs to line up with
-  // the logo's own row specifically, and "Date Finished" with the
-  // Address row below it, which a table's row-by-row grid gives for
-  // free; align-self on a flex row centered it against the whole
-  // (taller) logo+address+client block instead.
-  // Wrapped in a div -- a bare <table> right after the cover page's
-  // page-break marker made Word swallow that break and start the
-  // table at the bottom of the cover page instead of a fresh page.
+  // Letterhead layout: logo top-left with Address/Client directly under
+  // it, "Dashboard" up on that same row (not pushed down below the
+  // logo), Date start/Finished top-right.
   return `
-  <div>
-  <table style="margin-bottom:12px">
-    <tbody>
-    <tr style="background:#fff">
-      <td style="border:none;vertical-align:top">${logoHtml}</td>
-      <td style="border:none;vertical-align:middle;text-align:center;font-size:18px;font-weight:700">Dashboard</td>
-      <td style="border:none;vertical-align:top;text-align:right;font-size:11px;color:#64748b">Date start: ${UI.dateStr(batch.date_from)}</td>
-    </tr>
-    <tr style="background:#fff">
-      <td style="border:none;font-size:11px">${companyAddr ? `Address: ${companyAddr}` : ''}</td>
-      <td style="border:none"></td>
-      <td style="border:none;text-align:right;font-size:11px;color:#64748b">Date Finished: ${UI.dateStr(batch.date_to)}</td>
-    </tr>
-    <tr style="background:#fff">
-      <td style="border:none;font-size:11px">${client ? `Client: ${client.client_name}` : ''}</td>
-      <td style="border:none" colspan="2"></td>
-    </tr>
-    </tbody>
-  </table>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+    <div>
+      ${logoHtml}
+      ${companyAddr ? `<div style="font-size:11px;margin-top:4px">Address: ${companyAddr}</div>` : ''}
+      ${client ? `<div style="font-size:11px">Client: ${client.client_name}</div>` : ''}
+    </div>
+    <div style="font-size:18px;font-weight:700;align-self:center">Dashboard</div>
+    <div style="text-align:right;font-size:11px;color:#64748b">
+      Date start: ${UI.dateStr(batch.date_from)}<br>Date Finished: ${UI.dateStr(batch.date_to)}
+    </div>
   </div>
   <div class="fe-dash-compact">
   ${feDashboardOverallTableHtml(rows)}
