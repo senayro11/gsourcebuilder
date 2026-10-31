@@ -1647,7 +1647,9 @@ function feDashboardFloorTableHtml(rows) {
 }
 async function buildFireExtDashboardPageHtml(batch, rows, cfg) {
   if (!batch) return '';
+  const client = allClients.find(c => c.id === batch.client_id);
   const companyLogo = globalConfigValue(cfg, 'logo');
+  const companyAddr = globalConfigValue(cfg, 'address');
   const logoUrl = companyLogo ? siteUrl(companyLogo) : '';
   // The logo sits "behind text" (a floating watermark, not inline) --
   // position:absolute + z-index:-1 removes it from the normal flow so
@@ -1663,6 +1665,8 @@ async function buildFireExtDashboardPageHtml(batch, rows, cfg) {
       Date start: ${UI.dateStr(batch.date_from)}<br>Date Finished: ${UI.dateStr(batch.date_to)}
     </div>
     <div style="text-align:center;font-size:18px;font-weight:700;margin-top:4px">Dashboard</div>
+    ${companyAddr ? `<div style="text-align:center;font-size:11px;margin-top:6px">Address: ${companyAddr}</div>` : ''}
+    ${client ? `<div style="text-align:center;font-size:11px">Client: ${client.client_name}</div>` : ''}
   </div>
   <div class="fe-dash-compact">
   ${feDashboardOverallTableHtml(rows)}
