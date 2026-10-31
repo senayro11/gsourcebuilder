@@ -1659,7 +1659,11 @@ async function buildFireExtDashboardPageHtml(batch, rows, cfg) {
   // Address row below it, which a table's row-by-row grid gives for
   // free; align-self on a flex row centered it against the whole
   // (taller) logo+address+client block instead.
+  // Wrapped in a div -- a bare <table> right after the cover page's
+  // page-break marker made Word swallow that break and start the
+  // table at the bottom of the cover page instead of a fresh page.
   return `
+  <div>
   <table style="margin-bottom:12px">
     <tbody>
     <tr style="background:#fff">
@@ -1678,6 +1682,7 @@ async function buildFireExtDashboardPageHtml(batch, rows, cfg) {
     </tr>
     </tbody>
   </table>
+  </div>
   <div class="fe-dash-compact">
   ${feDashboardOverallTableHtml(rows)}
   ${feDashboardFloorTableHtml(rows)}
