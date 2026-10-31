@@ -1601,12 +1601,20 @@ const FE_DASHBOARD_STATUS_ROWS = [
   ['good', 'Good'], ['defective', 'Defective'], ['low pressure', 'For Refill'],
   ['pullout', 'Pull out'], ['missing', 'Missing'], ['not check', 'Not Checked']
 ];
+// A plain maroon header everywhere else, but here "status" is itself one
+// of the two dimensions being cross-tabbed -- color that one dimension
+// (whichever cell is a status, row-label or column-header) with the
+// same severity palette as the Status badges elsewhere in this report,
+// instead of leaving everything a single flat color.
+function feDashStatusCellHtml(label, key) {
+  return `<td style="background:${FE_PRINT_STATUS_COLOR[key] || '#6b1e1e'};color:#fff;font-weight:700;text-align:center">${label}</td>`;
+}
 function feDashboardOverallTableHtml(rows) {
   const types = [...new Set(rows.map(r => r.type || 'None'))].sort();
   const bodyRows = FE_DASHBOARD_STATUS_ROWS.map(([key, label]) => {
     const statusRows = rows.filter(r => r.status === key);
     const cells = types.map(t => statusRows.filter(r => (r.type || 'None') === t).length);
-    return `<tr><td>${label}</td>${cells.map(c => `<td style="text-align:center">${c}</td>`).join('')}<td style="text-align:center;font-weight:700">${statusRows.length}</td></tr>`;
+    return `<tr>${feDashStatusCellHtml(label, key)}${cells.map(c => `<td style="text-align:center">${c}</td>`).join('')}<td style="text-align:center;font-weight:700">${statusRows.length}</td></tr>`;
   }).join('');
   const colTotals = types.map(t => rows.filter(r => (r.type || 'None') === t).length);
   return `
@@ -1618,7 +1626,7 @@ function feDashboardOverallTableHtml(rows) {
     <tr style="font-weight:700;background:#f1f5f9"><td>Total</td>${colTotals.map(c => `<td style="text-align:center">${c}</td>`).join('')}<td style="text-align:center">${rows.length}</td></tr>
     </tbody>
   </table>
-  <div style="text-align:right;font-size:11px;font-weight:700;margin-bottom:24px">Over all Total: ${rows.length}</div>`;
+  <div style="text-align:right;font-size:11px;font-weight:700;margin-bottom:12px">Over all Total: ${rows.length}</div>`;
 }
 function feDashboardFloorTableHtml(rows) {
   const floors = [...new Set(rows.map(r => r.floor).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
@@ -1631,7 +1639,7 @@ function feDashboardFloorTableHtml(rows) {
   return `
   <table>
     <tbody>
-    <tr class="fe-report-head"><td>Floor</td>${FE_DASHBOARD_STATUS_ROWS.map(([, label]) => `<td>${label}</td>`).join('')}<td>Total Fire Ext</td></tr>
+    <tr><td style="background:#6b1e1e;color:#fff;font-weight:700;text-align:center">Floor</td>${FE_DASHBOARD_STATUS_ROWS.map(([key, label]) => feDashStatusCellHtml(label, key)).join('')}<td style="background:#6b1e1e;color:#fff;font-weight:700;text-align:center">Total Fire Ext</td></tr>
     ${bodyRows}
     <tr style="font-weight:700;background:#f1f5f9"><td>Total</td>${colTotals.map(c => `<td style="text-align:center">${c}</td>`).join('')}<td style="text-align:center">${rows.length}</td></tr>
     </tbody>
@@ -1641,18 +1649,25 @@ async function buildFireExtDashboardPageHtml(batch, rows, cfg) {
   if (!batch) return '';
   const companyLogo = globalConfigValue(cfg, 'logo');
   const logoUrl = companyLogo ? siteUrl(companyLogo) : '';
+  // The logo sits "behind text" (a floating watermark, not inline) --
+  // position:absolute + z-index:-1 removes it from the normal flow so
+  // it doesn't push the date line or heading around, with the mso-*
+  // properties telling Word's own wrap model to treat it the same way.
+  const logoHtml = logoUrl
+    ? `<img src="${logoUrl}" width="115" height="43" style="position:absolute;top:0;left:50%;margin-left:-57px;width:1.2in;height:0.45in;object-fit:contain;opacity:.5;z-index:-1;mso-position-horizontal:center;mso-position-horizontal-rel:page;mso-position-vertical:top;mso-position-vertical-rel:page;mso-wrap-style:behind">`
+    : '';
   return `
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-    <div style="display:flex;align-items:center;gap:10px">
-      ${logoUrl ? `<img src="${logoUrl}" width="115" height="43" style="width:1.2in;height:0.45in;object-fit:contain">` : ''}
-      <span style="font-size:16px;font-weight:700">Dashboard</span>
-    </div>
+  <div style="position:relative;margin-bottom:12px">
+    ${logoHtml}
     <div style="text-align:right;font-size:11px;color:#64748b">
       Date start: ${UI.dateStr(batch.date_from)}<br>Date Finished: ${UI.dateStr(batch.date_to)}
     </div>
+    <div style="text-align:center;font-size:18px;font-weight:700;margin-top:4px">Dashboard</div>
   </div>
+  <div class="fe-dash-compact">
   ${feDashboardOverallTableHtml(rows)}
   ${feDashboardFloorTableHtml(rows)}
+  </div>
   <br clear="all" style="mso-special-character:line-break;page-break-before:always">`;
 }
 async function buildFireExtReportHtml(batch, rows) {
@@ -1699,6 +1714,8 @@ async function buildFireExtReportHtml(batch, rows) {
     td{border:1px solid #cbd5e1;padding:4px 8px;text-align:left;vertical-align:middle;margin:0;mso-margin-top-alt:0;mso-margin-bottom-alt:0;line-height:1.2;mso-line-height-rule:exactly}
     .fe-report-head td{background:#6b1e1e;color:#fff;font-weight:700;text-align:center}
     tbody tr:nth-child(even){background:#f5f5f5}
+    .fe-dash-compact table{font-size:9px}
+    .fe-dash-compact td{padding:2px 4px}
   </style></head><body>
   <div class="Section1">
   ${coverPage}
